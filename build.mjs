@@ -42,13 +42,16 @@ const daysTo = (s) => Math.round((new Date(s) - new Date(TODAY)) / 86400000);
 const exTag = (s) => { const d = daysTo(s); return d>=0 && d<=7 ? `<span class="tag soon">${d===0?'today':d+'d'}</span>` : ''; };
 const yearAgo = new Date(new Date(TODAY).getTime() - 365*86400000).toISOString().slice(0,10);
 
-async function fetchRows(pages = 20) {
+async function fetchRaw(pages = 50) {
   const raw = [];
   for (let p = 0; p < pages; p++) {
     let json; try { json = getJSON(`${API}?pagestart=${p}&pagesize=250`); } catch { break; }
     const data = (json && json.data) || [];
     if (!data.length) break; raw.push(...data);
   }
+  return raw;
+}
+function parseDividends(raw) {
   const seen = new Set(), rows = [];
   for (const x of raw) {
     if (x.anncType !== 'DIVIDEND') continue;
@@ -61,6 +64,20 @@ async function fetchRows(pages = 20) {
     rows.push({ name, slug: slugify(name), exISO: ex, rec: iso(x.recDate), pay: iso(x.datePaid), annc: iso(x.dateAnnc), ccy, amt, amtNum: parseFloat(amt) });
   }
   return rows;
+}
+const ANNC_TYPES = { DIVIDEND:'Dividend', RIGHTS:'Rights', ENTITLEMENT:'Entitlement', OFFER:'Offer' };
+function parseAnnouncements(raw) {
+  const seen = new Set(), out = [];
+  for (const x of raw) {
+    const label = ANNC_TYPES[x.anncType]; if (!label) continue;
+    if (NOISE.test(x.name || '')) continue;
+    const name = titleCase(x.name || ''); if (!name) continue;
+    const annc = iso(x.dateAnnc); if (!annc) continue;
+    const key = `${name}|${annc}|${x.anncType}|${x.particulars}`; if (seen.has(key)) continue; seen.add(key);
+    out.push({ name, slug: slugify(name), annc, ex: iso(x.exDate), type: label, particulars: (x.particulars || '').replace(/\s+/g,' ').trim() });
+  }
+  out.sort((a,b) => a.annc < b.annc ? 1 : -1);
+  return out;
 }
 
 function fetchSecurities() {
@@ -102,11 +119,15 @@ const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link 
 const CUP = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 2.5c-.6.8.6 1.2 0 2M12 2.5c-.6.8.6 1.2 0 2"/></svg>`;
 const MOON = `<svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 const SUN = `<svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
-const NAV = `<header class="nav"><div class="wrap row">
+const BURGER = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
+const NAV = `<header class="nav">
+  <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
-  <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="#">Alerts</a></nav>
-  <div style="display:flex;align-items:center;gap:8px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button class="btn">Get ex-date alerts</button></div>
-</div></header>`;
+  <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/announcements/">Announcements</a></nav>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button class="btn deskonly">Get ex-date alerts</button><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  </div>
+  <div id="mmenu" class="mmenu"><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/announcements/">Announcements</a><a href="#">Alerts</a></div>
+</header>`;
 const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
     <form onsubmit="return false"><input type="email" placeholder="you@email.com"><button class="btn">Get free alerts</button></form>
@@ -140,6 +161,11 @@ const STYLE = `
   .btn{background:var(--accent);color:#fff;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:999px;border:0;cursor:pointer} .btn:hover{background:#c9692f}
   .tbtn{background:none;border:0;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;padding:6px;border-radius:8px} .tbtn:hover{color:var(--ink)}
   html[data-theme="dark"] .moon{display:none} html:not([data-theme="dark"]) .sun{display:none}
+  .deskonly{display:none} @media(min-width:820px){ .deskonly{display:inline-block} }
+  .mtoggle{display:inline-flex} @media(min-width:820px){ .mtoggle{display:none} }
+  .mmenu{display:none;border-top:1px solid var(--line)} .mmenu.open{display:block}
+  .mmenu a{display:block;padding:15px 20px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:500;font-size:15.5px} .mmenu a:last-child{border-bottom:0}
+  @media(min-width:820px){ .mmenu{display:none!important} }
   @media(min-width:820px){ .nav nav{display:flex} }
   .hero{padding:30px 0 4px} .kicker{color:var(--accent-dk);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
   .hero h1{font-family:'Poppins',sans-serif;font-weight:700;font-size:32px;line-height:1.08;letter-spacing:-.01em;margin:8px 0 10px}
@@ -208,7 +234,7 @@ ${NAV}
 ${body}
 ${ALERT}
 ${FOOTER}
-</main>${script}<script>(function(){var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};})();</script>
+</main>${script}<script>(function(){var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};var mt=document.getElementById('mtoggle'),mm=document.getElementById('mmenu');if(mt&&mm)mt.onclick=function(){mm.classList.toggle('open');};})();</script>
 </body></html>`;
 
 // ---------- homepage ----------
@@ -317,6 +343,43 @@ document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{do
   return shell(title, desc, canon, body, script);
 }
 
+// ---------- announcements ----------
+function announcementsPage(anns) {
+  const items = anns.slice(0, 200);
+  const rows = items.map(a => `        <tr data-t="${a.type}">
+          <td class="date">${pretty(a.annc)}</td>
+          <td><a class="co" href="/stock/${a.slug}/">${a.name}</a></td>
+          <td><span class="tag">${a.type}</span></td>
+          <td class="hide-m" style="color:var(--muted);font-size:13px">${esc(a.particulars).slice(0,80)}</td>
+          <td class="r date hide-m">${a.ex?pretty(a.ex):'—'}</td>
+        </tr>`).join('\n');
+  const body = `  <section class="hero" style="padding-bottom:4px">
+    <div class="kicker">Announcements</div>
+    <h1 class="serif" style="font-size:30px">SGX corporate actions</h1>
+    <p class="sub">Latest dividends, rights, entitlements and offers from SGX-listed companies — updated daily.</p>
+  </section>
+  <div class="chips">
+    <span class="chip on" data-t="all">All</span>
+    <span class="chip" data-t="Dividend">Dividends</span>
+    <span class="chip" data-t="Rights">Rights</span>
+    <span class="chip" data-t="Entitlement">Entitlements</span>
+    <span class="chip" data-t="Offer">Offers</span>
+  </div>
+  <div class="card" style="margin-top:12px"><table>
+    <thead><tr><th>Announced</th><th>Company</th><th>Type</th><th class="hide-m">Details</th><th class="r hide-m">Ex-date</th></tr></thead>
+    <tbody id="tb">
+${rows}
+    </tbody>
+  </table><div id="none" class="empty" style="display:none">No announcements match.</div></div>`;
+  const script = `<script>
+const tb=document.getElementById('tb'),none=document.getElementById('none');
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');const t=c.dataset.t;let vis=0;tb.querySelectorAll('tr').forEach(r=>{const ok=(t==='all'||r.dataset.t===t);r.style.display=ok?'':'none';if(ok)vis++;});none.style.display=vis?'none':'block';}));
+</script>`;
+  return shell('SGX Corporate Actions & Announcements — Dividends, Rights, Offers | StockKaki',
+    'Latest SGX corporate actions: dividends, rights issues, entitlements and offers from Singapore-listed companies. Updated daily.',
+    SITE + '/announcements/', body, script);
+}
+
 // ---------- per-stock page ----------
 function stockPage(c) {
   const upcoming = c.divs.filter(d => d.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1);
@@ -347,6 +410,7 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${nu
   const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/">Dividends</a> › ${c.name}</div>
     <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
+    ${c.price?`<div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:2px">S$${c.price} <span style="font-size:12px;color:var(--muted);font-weight:400">last price</span></div>`:''}
   </section>
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
   ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at S$${c.price} last`:''}.</p>` : ''}
@@ -384,9 +448,11 @@ function disclaimerPage() {
 
 // ---------- build ----------
 const secMap = fetchSecurities();
-const rows = await fetchRows(50);   // ~5-6 years of history for deeper track records
+const raw = await fetchRaw(50);   // ~5-6 years of history
+const rows = parseDividends(raw);
 for (const r of rows) { const m = matchTicker(r.name, secMap); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; } }
 const companies = groupCompanies(rows);
+const anns = parseAnnouncements(raw);
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
   .map(r => { const c = companies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false }; });
 const index = [...companies.values()].map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).sort((a,b)=> a.n<b.n?-1:1);
@@ -419,8 +485,10 @@ writeFileSync(new URL('reits/index.html', out), listPage({
   desc: 'All SGX-listed REITs and business trusts ranked by distribution yield. Live from SGX, updated daily.',
   kicker: 'S-REITs', h1: 'Singapore REITs by yield', sub: 'Every SGX REIT and business trust, ranked by distribution yield.',
   list: all.filter(c => c.isReit), canon: SITE + '/reits/', typeChips: false }));
+mkdirSync(new URL('announcements/', out), { recursive: true });
+writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
 
-const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
