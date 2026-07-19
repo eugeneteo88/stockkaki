@@ -80,57 +80,59 @@ function page(divs) {
 <title>StockKaki — Upcoming Singapore Dividends</title>
 <meta name="description" content="Every upcoming SGX dividend, REIT distribution and ex-date — clean, fast and free. Your Singapore investing kaki. Live from SGX.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  :root{ --ink:#0f1a14; --muted:#5c6b62; --line:#e7ece8; --bg:#fbfcfb; --card:#fff; --green:#0f7a52; --green-soft:#e7f4ee; --amber:#b7791f; --amber-soft:#fbf3e3; }
+  :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; }
   *{box-sizing:border-box;margin:0;padding:0} body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
-  .serif{font-family:'Fraunces',serif} a{color:inherit;text-decoration:none} .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-  header.nav{position:sticky;top:0;z-index:20;background:rgba(251,252,251,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-  .nav .row{display:flex;align-items:center;justify-content:space-between;height:62px}
-  .brand{display:flex;align-items:center;gap:9px;font-family:'Fraunces',serif;font-weight:600;font-size:20px}
-  .brand .dot{width:26px;height:26px;border-radius:8px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-family:'Inter'}
+  .serif{font-family:'Poppins',sans-serif;letter-spacing:-.01em} a{color:inherit;text-decoration:none} .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  header.nav{position:sticky;top:0;z-index:20;background:rgba(251,246,238,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav .row{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:20px}
+  .brand .dot{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
   .nav nav{display:none;gap:26px;font-size:14px;color:var(--muted);font-weight:500} .nav nav a:hover{color:var(--ink)}
-  .btn{background:var(--green);color:#fff;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:999px;border:0;cursor:pointer} .btn:hover{background:#0c6444}
+  .btn{background:var(--accent);color:#fff;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:999px;border:0;cursor:pointer} .btn:hover{background:#c9692f}
   @media(min-width:820px){ .nav nav{display:flex} }
-  .hero{padding:40px 0 8px} .kicker{color:var(--green);font-weight:600;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase}
-  .hero h1{font-family:'Fraunces',serif;font-weight:600;font-size:34px;line-height:1.12;letter-spacing:-.02em;margin:12px 0 10px}
-  .hero p{color:var(--muted);font-size:15.5px;max-width:580px} @media(min-width:820px){ .hero h1{font-size:44px} }
-  .live{display:inline-flex;align-items:center;gap:7px;background:var(--green-soft);color:var(--green);font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px}
-  .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .hero{padding:42px 0 8px} .kicker{color:var(--accent-dk);font-weight:600;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase}
+  .hero h1{font-family:'Poppins',sans-serif;font-weight:700;font-size:36px;line-height:1.08;letter-spacing:-.01em;margin:12px 0 12px}
+  .hero p{color:var(--muted);font-size:15.5px;max-width:560px} @media(min-width:820px){ .hero h1{font-size:48px} }
+  .live{display:inline-flex;align-items:center;gap:7px;background:var(--accent-soft);color:var(--accent-dk);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;font-family:'JetBrains Mono',monospace}
+  .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent)}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:22px 0 6px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
   .chip{white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted);background:#fff;border:1px solid var(--line);padding:7px 14px;border-radius:999px;cursor:pointer}
-  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 10px 34px -26px rgba(15,26,20,.5)}
+  .chip.on{background:var(--ink);color:#FBF6EE;border-color:var(--ink)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 36px -28px rgba(58,42,32,.55)}
   table{width:100%;border-collapse:collapse}
-  thead th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:14px 18px;border-bottom:1px solid var(--line)}
+  thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:14px 18px;border-bottom:1px solid var(--line)}
   thead th.r,tbody td.r{text-align:right}
-  tbody td{padding:15px 18px;border-bottom:1px solid var(--line);font-size:14.5px} tbody tr:last-child td{border-bottom:0} tbody tr:hover{background:#fafcfb}
-  .co{font-weight:600} .amt{font-variant-numeric:tabular-nums;font-weight:600} .date{font-variant-numeric:tabular-nums}
-  .tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--green-soft);color:var(--green)}
-  .tag.soon{background:var(--amber-soft);color:var(--amber)} .type{font-size:12.5px;color:var(--muted)}
+  tbody td{padding:15px 18px;border-bottom:1px solid var(--line);font-size:14.5px} tbody tr:last-child td{border-bottom:0} tbody tr:hover{background:#fffdf9}
+  .co{font-weight:600}
+  .amt{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:14px}
+  .date{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#6E5E50}
+  .tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-dk);font-family:'JetBrains Mono',monospace}
+  .tag.soon{background:#FBE1CF;color:#A94E17} .type{font-size:12.5px;color:var(--muted)}
   .hide-m{display:none} @media(min-width:820px){ .hide-m{display:table-cell} }
-  .mcards{display:grid;gap:12px} .mrow{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 16px;box-shadow:0 8px 26px -24px rgba(15,26,20,.5)}
+  .mcards{display:grid;gap:12px} .mrow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px;box-shadow:0 8px 26px -24px rgba(58,42,32,.5)}
   .mrow .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px} .mrow .meta{display:flex;gap:18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-  .mrow .meta div{font-size:12px;color:var(--muted)} .mrow .meta b{display:block;color:var(--ink);font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums}
+  .mrow .meta div{font-size:12px;color:var(--muted)} .mrow .meta b{display:block;color:var(--ink);font-size:14px;margin-top:2px;font-family:'JetBrains Mono',monospace}
   @media(min-width:820px){ .mobile-only{display:none} } @media(max-width:819px){ .desktop-only{display:none} }
-  .alert{margin:22px 0 8px;background:linear-gradient(120deg,#0f1a14,#12352a);color:#eaf5ef;border-radius:18px;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
-  .alert h3{font-family:'Fraunces',serif;font-weight:600;font-size:21px} .alert p{color:#b9cdc3;font-size:14px;max-width:520px}
-  .alert form{display:flex;gap:8px;flex-wrap:wrap} .alert input{flex:1;min-width:200px;border:0;border-radius:999px;padding:12px 16px;font-size:14px;font-family:inherit} .alert .btn{background:#4ade80;color:#06281c}
+  .alert{margin:24px 0 8px;background:var(--accent);color:#fff;border-radius:18px;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
+  .alert h3{font-family:'Poppins',sans-serif;font-weight:700;font-size:21px} .alert p{color:#FFE7D6;font-size:14px;max-width:520px}
+  .alert form{display:flex;gap:8px;flex-wrap:wrap} .alert input{flex:1;min-width:200px;border:0;border-radius:999px;padding:12px 16px;font-size:14px;font-family:inherit} .alert .btn{background:var(--ink);color:#fff}
   @media(min-width:820px){ .alert{flex-direction:row;align-items:center;justify-content:space-between} .alert .txt{max-width:52%} }
   footer{margin:50px 0 40px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:18px}
 </style>
 </head>
 <body>
 <header class="nav"><div class="wrap row">
-  <a class="brand" href="#"><span class="dot">K</span> StockKaki</a>
+  <a class="brand" href="#"><span class="dot"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 2.5c-.6.8.6 1.2 0 2M12 2.5c-.6.8.6 1.2 0 2"/></svg></span> StockKaki</a>
   <nav><a href="#" style="color:var(--ink);font-weight:600">Dividends</a><a href="#">Announcements</a><a href="#">Screener</a><a href="#">REITs</a><a href="#">Alerts</a></nav>
   <button class="btn">Get ex-date alerts</button>
 </div></header>
 <main class="wrap">
   <section class="hero">
-    <div class="kicker">StockKaki · Dividends</div>
-    <h1 class="serif">Upcoming Singapore dividends,<br>without the clutter.</h1>
-    <p>Every SGX dividend and ex-date, straight from source. Clean, fast, free — no pop-ups, no ad walls.</p>
+    <div class="kicker">Your investing kaki</div>
+    <h1 class="serif">Never miss a dividend, lah.</h1>
+    <p>Every SGX dividend and ex-date — clear, quick, and free. And we&rsquo;ll ping you before it goes ex. No pop-ups, no ad walls.</p>
     <p style="margin-top:14px"><span class="live"><span class="pulse"></span> Live from SGX · ${divs.length} upcoming · updated ${updated}</span></p>
   </section>
   <div class="chips"><span class="chip on">All</span><span class="chip">REITs &amp; Trusts</span><span class="chip">Ex-date this week</span><span class="chip">This month</span><span class="chip">SGD only</span></div>
