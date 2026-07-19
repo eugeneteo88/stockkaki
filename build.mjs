@@ -193,6 +193,7 @@ const STYLE = `
   .nextcard .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600} .nextcard .v{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:18px;margin-top:3px}
   .metaline{color:var(--muted);font-size:13.5px;margin-top:14px} .metaline b{color:var(--ink);font-family:'JetBrains Mono',monospace}
   .h2{font-family:'Poppins',sans-serif;font-weight:600;font-size:16px;margin:26px 0 10px}
+  .faq{max-width:760px} .faq-q{font-weight:600;margin-top:16px} .faq-a{color:var(--muted);font-size:14.5px;margin-top:4px;line-height:1.7}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 36px -28px rgba(58,42,32,.55)}
   table{width:100%;border-collapse:collapse}
   thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line)}
@@ -433,13 +434,31 @@ ${hist}
     </tbody>
   </table></div>
   <p class="metaline" style="font-size:12px">*Yield uses the current last price (S$${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
+  const faqs = [];
+  if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at S$${c.price} on the SGX.` });
+  if (c.divs.length) {
+    faqs.push({ q: `Does ${c.name} pay dividends?`, a: `Yes. ${c.name} has paid dividends over the last ${years.length} year${years.length>1?'s':''}${freq?`, currently ${freq.toLowerCase()}`:''}${ttmStr?`, totalling ${ttmStr} per security in the past 12 months`:''}.` });
+    faqs.push({ q: `What is ${c.name}'s dividend yield?`, a: c.yieldPct ? `${c.name}'s indicative dividend yield is about ${c.yieldPct.toFixed(2)}%, based on trailing 12-month dividends of ${ttmStr} per security against a last price of S$${c.price}.` : `${c.name} has no trailing 12-month dividends on record, so no indicative yield.` });
+    faqs.push({ q: `When is ${c.name}'s next ex-dividend date?`, a: next ? `${c.name}'s next ex-dividend date is ${pretty(next.exISO)}, paying ${money(next.ccy,next.amt)} per security (pay date ${pretty(next.pay)}). You must own the shares before the ex-date to be entitled.` : `No upcoming ex-dividend date has been announced for ${c.name}.` });
+  } else {
+    faqs.push({ q: `Does ${c.name} pay dividends?`, a: `${c.name} has not paid a dividend in the last ~6 years, based on SGX corporate-action filings.` });
+  }
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const ld = { "@context":"https://schema.org", "@graph":[
+    { "@type":"BreadcrumbList", "itemListElement":[
+      { "@type":"ListItem", "position":1, "name":"Stocks", "item":`${SITE}/screener/` },
+      { "@type":"ListItem", "position":2, "name":c.name, "item":`${SITE}/stock/${c.slug}/` } ] },
+    { "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) } ] };
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
     <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
     ${c.price?`<div class="quote"><span class="q-price">S$${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
   </section>
   ${divSection}
-  ${brokerSlot()}`;
+  ${faqHTML}
+  ${brokerSlot()}
+  ${jsonLd}`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
     `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price S$${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
