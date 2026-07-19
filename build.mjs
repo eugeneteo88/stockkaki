@@ -12,6 +12,9 @@ import { execFileSync } from 'node:child_process';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 const API = 'https://api.sgx.com/corporateactions/v1.0';
 const SITE = 'https://stockkaki.com';
+// Supabase — public values (safe to embed in the static site; RLS + service key guard the data)
+const SUPABASE_URL = 'https://limizehmxnaaqndacynm.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpbWl6ZWhteG5hYXFuZGFjeW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NzU3NjMsImV4cCI6MjEwMDA1MTc2M30.Hw04KSZ84VaVSczBOAlwOc9bfYADfb9tjKft4js9BD4';
 
 // SGX's CDN blocks Node's fetch (403) but allows curl — so shell out.
 function getJSON(url) {
@@ -234,7 +237,13 @@ ${NAV}
 ${body}
 ${ALERT}
 ${FOOTER}
-</main>${script}<script>(function(){var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};var mt=document.getElementById('mtoggle'),mm=document.getElementById('mmenu');if(mt&&mm)mt.onclick=function(){mm.classList.toggle('open');};})();</script>
+</main>${script}<script>
+var SBFN='${SUPABASE_URL}/functions/v1',SBK='${SUPABASE_ANON}';
+(function(){
+var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};
+var mt=document.getElementById('mtoggle'),mm=document.getElementById('mmenu');if(mt&&mm)mt.onclick=function(){mm.classList.toggle('open');};
+document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener('submit',function(ev){ev.preventDefault();var inp=f.querySelector('input');var e=(inp.value||'').trim();if(!e)return;var btn=f.querySelector('button');btn.textContent='…';btn.disabled=true;fetch(SBFN+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SBK,apikey:SBK},body:JSON.stringify({email:e})}).then(function(r){return r.json();}).then(function(d){if(d&&d.ok){f.innerHTML='<div style="color:#fff;font-weight:600">✓ Almost there — check your inbox to confirm.</div>';}else{btn.textContent='Try again';btn.disabled=false;}}).catch(function(){btn.textContent='Try again';btn.disabled=false;});});});
+})();</script>
 </body></html>`;
 
 // ---------- homepage ----------
@@ -446,6 +455,27 @@ function disclaimerPage() {
   return shell('Disclaimer | StockKaki', 'StockKaki disclaimer — information only, not financial advice. Data sourced from SGX; verify against official announcements.', SITE + '/disclaimer/', body);
 }
 
+// ---------- confirm / unsubscribe utility pages ----------
+function utilPage(title, rpc, okMsg, okSub, dupMsg) {
+  const body = `  <section class="hero" style="padding-bottom:6px">
+    <h1 class="serif" style="font-size:28px" id="msg">One moment…</h1>
+    <p class="sub" id="sub"></p>
+    <p style="margin-top:16px"><a href="/" style="color:var(--accent-dk);font-weight:600">&rarr; Back to StockKaki</a></p>
+  </section>`;
+  const script = `<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const sb=createClient('${SUPABASE_URL}','${SUPABASE_ANON}');
+const t=new URLSearchParams(location.search).get('t');
+const M=document.getElementById('msg'),S=document.getElementById('sub');
+if(!t){M.textContent='Invalid link';}
+else{const{data,error}=await sb.rpc('${rpc}',{p_token:t});
+ if(error){M.textContent='Something went wrong';S.textContent='Please try again later.';}
+ else if(data){M.textContent=${JSON.stringify(okMsg)};S.textContent=${JSON.stringify(okSub)};}
+ else{M.textContent=${JSON.stringify(dupMsg)};}}
+</script>`;
+  return shell(title + ' | StockKaki', title, SITE + '/', body, script);
+}
+
 // ---------- build ----------
 const secMap = fetchSecurities();
 const raw = await fetchRaw(50);   // ~5-6 years of history
@@ -487,6 +517,12 @@ writeFileSync(new URL('reits/index.html', out), listPage({
   list: all.filter(c => c.isReit), canon: SITE + '/reits/', typeChips: false }));
 mkdirSync(new URL('announcements/', out), { recursive: true });
 writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
+mkdirSync(new URL('confirm/', out), { recursive: true });
+writeFileSync(new URL('confirm/index.html', out), utilPage('Confirm your alerts', 'confirm_subscriber', "You're in! 🦁", "You'll get StockKaki dividend & ex-date alerts.", 'Already confirmed (or the link expired).'));
+mkdirSync(new URL('unsubscribe/', out), { recursive: true });
+writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'unsubscribe', 'Unsubscribed', 'You will no longer receive StockKaki emails.', 'Already unsubscribed.'));
+mkdirSync(new URL('api/', out), { recursive: true });
+writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 
 const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),

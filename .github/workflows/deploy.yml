@@ -21,6 +21,12 @@ jobs:
           node-version: 22
       - name: Build (fetch SGX + generate site)
         run: node build.mjs
+      - name: Send weekly dividend alerts (Mondays)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: node send-alerts.mjs
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
