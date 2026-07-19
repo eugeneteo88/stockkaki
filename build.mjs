@@ -85,12 +85,12 @@ function parseAnnouncements(raw) {
 }
 
 function fetchSecurities() {
-  let json; try { json = getJSON('https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc,n,type,lt,change_vs_pc_percentage,vl'); } catch { return new Map(); }
+  let json; try { json = getJSON('https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc,n,type,lt,change_vs_pc_percentage,vl'); } catch { return []; }
   const list = (json && json.data && json.data.prices) || [];
   const ok = new Set(['stocks','reits','etfs','businesstrusts']);
-  const map = new Map();
-  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; const k = secNorm(s.n); if (k && !map.has(k)) map.set(k, { ticker: s.nc, price: s.lt, type: s.type, chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
-  return map;
+  const out = [];
+  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; if (NOISE.test(s.n)) continue; out.push({ ticker: s.nc, name: s.n, type: s.type, price: s.lt, chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
+  return out;
 }
 const matchTicker = (name, map) => {
   const k = secNorm(name); if (!k) return null;
@@ -420,11 +420,7 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${nu
     </tbody>
   </table></div>` : '';
   const hist = c.divs.map(d => `        <tr><td class="date">${pretty(d.exISO)}${d.exISO>=TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td><td class="r date hide-m">${pretty(d.rec)}</td><td class="r date hide-m">${pretty(d.pay)}</td><td class="r date hide-m">${pretty(d.annc)}</td></tr>`).join('\n');
-  const body = `  <section class="hero" style="padding-bottom:4px">
-    <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
-    <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
-    ${c.price?`<div class="quote"><span class="q-price">S$${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
-  </section>
+  const divSection = c.divs.length ? `
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
   ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at S$${c.price} last`:''}.</p>` : ''}
   ${signals ? `<p class="metaline">${signals}.</p>` : ''}
@@ -436,11 +432,17 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${nu
 ${hist}
     </tbody>
   </table></div>
-  <p class="metaline" style="font-size:12px">*Yield uses the current last price (S$${c.price||'—'}) against each year's total — indicative only.</p>
+  <p class="metaline" style="font-size:12px">*Yield uses the current last price (S$${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
+  const body = `  <section class="hero" style="padding-bottom:4px">
+    <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
+    <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
+    ${c.price?`<div class="quote"><span class="q-price">S$${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
+  </section>
+  ${divSection}
   ${brokerSlot()}`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
-  return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Dividend History, Yield & Next Ex-Date | StockKaki`,
-    `${c.name} dividends — ${c.yieldPct?`indicative yield ${c.yieldPct.toFixed(2)}%, `:''}upcoming ex-dates, amounts, record and pay dates.${nextTxt} Live from SGX.`,
+  return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
+    `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price S$${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
     `${SITE}/stock/${c.slug}/`, body);
 }
 
@@ -481,15 +483,37 @@ else{const{data,error}=await sb.rpc('${rpc}',{p_token:t});
 }
 
 // ---------- build ----------
-const secMap = fetchSecurities();
+const secList = fetchSecurities();
+const secByNorm = new Map();
+for (const s of secList) { const k = secNorm(s.name); if (k && !secByNorm.has(k)) secByNorm.set(k, s); }
 const raw = await fetchRaw(50);   // ~5-6 years of history
 const rows = parseDividends(raw);
-for (const r of rows) { const m = matchTicker(r.name, secMap); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; r.chgPct = m.chgPct; r.vol = m.vol; } }
-const companies = groupCompanies(rows);
+for (const r of rows) { const m = matchTicker(r.name, secByNorm); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; r.chgPct = m.chgPct; r.vol = m.vol; } }
+const divCompanies = groupCompanies(rows);
 const anns = parseAnnouncements(raw);
+
+// MASTER list = every SGX security, with dividend data merged where names match.
+const divByNorm = new Map();
+for (const c of divCompanies.values()) { const k = secNorm(c.name); if (k && !divByNorm.has(k)) divByNorm.set(k, c); }
+const companies = [];
+const seenSlug = new Set(), usedDiv = new Set();
+for (const s of secList) {
+  const dc = divByNorm.get(secNorm(s.name));
+  const slug = dc ? dc.slug : slugify(s.name);
+  if (!slug || seenSlug.has(slug)) continue; seenSlug.add(slug);
+  if (dc) usedDiv.add(dc.slug);
+  companies.push({
+    name: dc ? dc.name : s.name, slug,
+    ticker: s.ticker, price: s.price, chgPct: s.chgPct, vol: s.vol, secType: s.type,
+    isReit: s.type==='reits' || s.type==='businesstrusts' || /\breit\b|\btrust\b/i.test(s.name),
+    divs: dc ? dc.divs : [], ttm: dc ? dc.ttm : 0, yieldPct: dc ? dc.yieldPct : null,
+  });
+}
+for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has(c.slug)) continue; seenSlug.add(c.slug); companies.push(c); }
+
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
-  .map(r => { const c = companies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false }; });
-const index = [...companies.values()].map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).sort((a,b)=> a.n<b.n?-1:1);
+  .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false }; });
+const index = companies.map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).sort((a,b)=> a.n<b.n?-1:1);
 
 const out = new URL('./dist/', import.meta.url);
 rmSync(out, { recursive: true, force: true });
@@ -500,19 +524,20 @@ mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
 
 let n = 0;
-for (const c of companies.values()) {
+for (const c of companies) {
   const dir = new URL(`stock/${c.slug}/`, out);
   mkdirSync(dir, { recursive: true });
   writeFileSync(new URL('index.html', dir), stockPage(c));
   n++;
 }
-const all = [...companies.values()];
+const all = companies;
+const dividendStocks = all.filter(c => c.divs.length > 0);
 mkdirSync(new URL('screener/', out), { recursive: true });
 writeFileSync(new URL('screener/index.html', out), listPage({
   title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
   desc: 'The highest-yielding SGX dividend stocks and REITs, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.',
-  kicker: 'Screener · Rankings', h1: 'Best dividend stocks in Singapore', sub: `${all.length} dividend-paying SGX stocks, REITs & ETFs — ranked by highest yield, updated daily.`,
-  list: all, canon: SITE + '/screener/', typeChips: true }));
+  kicker: 'Screener · Rankings', h1: 'Best dividend stocks in Singapore', sub: `${dividendStocks.length} dividend-paying SGX counters — ranked by highest yield, updated daily. (All ${all.length} SGX stocks are searchable above.)`,
+  list: dividendStocks, canon: SITE + '/screener/', typeChips: true }));
 mkdirSync(new URL('reits/', out), { recursive: true });
 writeFileSync(new URL('reits/index.html', out), listPage({
   title: 'Singapore REIT Dividends & Distribution Yields | StockKaki',
@@ -533,5 +558,26 @@ writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
 writeFileSync(new URL('robots.txt', out), `User-agent: *\nAllow: /\nSitemap: ${SITE}/sitemap.xml\n`);
+writeFileSync(new URL('llms.txt', out), `# StockKaki — Singapore dividend & stock tracker
+> Free, clean tool for SGX dividends, ex-dates, yields and stock info. Data sourced from the Singapore Exchange (SGX), updated daily. Not financial advice.
+
+## Key pages
+- Upcoming SGX dividends & ex-dates: ${SITE}/
+- Best dividend stocks (screener, ranked by yield): ${SITE}/screener/
+- Singapore REITs by distribution yield: ${SITE}/reits/
+- SGX corporate actions / announcements: ${SITE}/announcements/
+- Per-stock pages (price, dividend history, yield, ex-dates) for all ${all.length} SGX counters: ${SITE}/stock/<slug>/ — full list in ${SITE}/sitemap.xml
+
+## What each stock page answers
+- Latest last price, day change and volume
+- Next ex-date, amount and pay date
+- Dividend history (up to ~6 years) and dividends-by-year with indicative yield
+- Trailing-12-month dividend and indicative yield (TTM dividends / last price)
+- Pay frequency and year-over-year dividend growth
+
+## Notes
+- Yields are indicative (trailing 12-month dividends / last price). Verify against official SGX announcements.
+- Disclaimer: ${SITE}/disclaimer/
+`);
 
 console.log(`Built: homepage (${upcoming.length} upcoming, ${index.length} in search) + ${n} stock pages + sitemap (${urls.length} urls).`);
