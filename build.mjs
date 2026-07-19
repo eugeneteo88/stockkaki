@@ -6,7 +6,7 @@
  * stock (dividend history, annual summary, next ex-date, yield), sitemap.xml
  * and robots.txt. Run daily via GitHub Action.  node build.mjs
  */
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
@@ -232,6 +232,8 @@ const shell = (title, desc, canon, body, script='') => `<!DOCTYPE html>
 <script>(function(){try{var t=localStorage.getItem('theme');if(!t&&window.matchMedia)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="google-site-verification" content="GP6YGT1x9z7T6QlUkLDTXvfbGlqkocw2RSWOWmKkO1Q">
+<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#E07A3B">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${canon}">
@@ -538,6 +540,7 @@ const index = companies.map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).so
 const out = new URL('./dist/', import.meta.url);
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
+for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
 writeFileSync(new URL('index.html', out), homepage(upcoming, index));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
