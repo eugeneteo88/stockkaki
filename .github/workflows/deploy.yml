@@ -1,0 +1,30 @@
+name: Build & deploy StockKaki
+
+# Rebuilds the site from live SGX data and deploys — on push, daily, or manually.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '10 22 * * *'   # 22:10 UTC = 06:10 Singapore, daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build (fetch SGX + generate site)
+        run: node build.mjs
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          cname: stockkaki.com
+          force_orphan: true
