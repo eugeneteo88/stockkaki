@@ -109,10 +109,21 @@ const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
     <form onsubmit="return false"><input type="email" placeholder="you@email.com"><button class="btn">Get free alerts</button></form>
   </section>`;
-const FOOTER = `<footer>
-    <p style="margin-bottom:10px"><strong>StockKaki</strong> — your Singapore investing kaki. Data from SGX filings, updated daily.</p>
-    <p class="disc">For information only — not financial advice, an offer, or a recommendation. Yields are indicative (trailing 12-month dividends ÷ last price). Verify against official SGX announcements before acting. Not affiliated with SGX. © 2026.</p>
-  </footer>`;
+
+// Broker affiliate slot. TODO(Eugene): replace `u` with your real affiliate/referral links.
+const BROKERS = [
+  { n: 'moomoo SG',           u: 'https://www.moomoo.com/sg',            d: 'Low fees · welcome gifts' },
+  { n: 'Tiger Brokers',       u: 'https://www.tigerbrokers.com.sg',      d: 'Popular with SG investors' },
+  { n: 'Interactive Brokers', u: 'https://www.interactivebrokers.com',   d: 'Global markets, low cost' },
+];
+const brokerSlot = () => `<aside class="brokers">
+    <div class="bk-h"><span class="bk-t">Start collecting dividends</span><span class="bk-ad">Affiliate</span></div>
+    <p class="bk-sub">Open a brokerage account to buy SGX dividend stocks — compare popular options:</p>
+    <div class="bk-list">
+${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="sponsored noopener"><b>${b.n}</b><span>${b.d}</span></a>`).join('\n')}
+    </div>
+  </aside>`;
+const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data from SGX, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; }
@@ -165,7 +176,15 @@ const STYLE = `
   .alert h3{font-family:'Poppins',sans-serif;font-weight:700;font-size:21px} .alert p{color:#FFE7D6;font-size:14px;max-width:520px}
   .alert form{display:flex;gap:8px;flex-wrap:wrap} .alert input{flex:1;min-width:200px;border:0;border-radius:999px;padding:12px 16px;font-size:14px;font-family:inherit} .alert .btn{background:var(--ink);color:#fff}
   @media(min-width:820px){ .alert{flex-direction:row;align-items:center;justify-content:space-between} .alert .txt{max-width:52%} }
-  footer{margin:44px 0 40px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:18px}
+  .brokers{margin:24px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .bk-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .bk-t{font-family:'Poppins',sans-serif;font-weight:600;font-size:15px}
+  .bk-ad{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex:0 0 auto}
+  .bk-sub{color:var(--muted);font-size:13px;margin:6px 0 14px}
+  .bk-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px} @media(max-width:620px){.bk-list{grid-template-columns:1fr}}
+  .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
+  footer{margin:36px 0 40px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px}
 `;
 const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 
@@ -219,7 +238,8 @@ function homepage(upcoming, index) {
     <tbody id="tb">
 ${upcoming.map(rowHTML).join('\n')}
     </tbody>
-  </table><div id="none" class="empty" style="display:none">No dividends match that filter.</div></div>`;
+  </table><div id="none" class="empty" style="display:none">No dividends match that filter.</div></div>
+  ${brokerSlot()}`;
   const script = `<script>
 const IDX=${idxJson};
 const q=document.getElementById('q'),qr=document.getElementById('qres');
@@ -271,11 +291,27 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${nu
 ${hist}
     </tbody>
   </table></div>
-  <p class="metaline" style="font-size:12px">*Yield uses the current last price (S$${c.price||'—'}) against each year's total — indicative only.</p>`;
+  <p class="metaline" style="font-size:12px">*Yield uses the current last price (S$${c.price||'—'}) against each year's total — indicative only.</p>
+  ${brokerSlot()}`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Dividend History, Yield & Next Ex-Date | StockKaki`,
     `${c.name} dividends — ${c.yieldPct?`indicative yield ${c.yieldPct.toFixed(2)}%, `:''}upcoming ex-dates, amounts, record and pay dates.${nextTxt} Live from SGX.`,
     `${SITE}/stock/${c.slug}/`, body);
+}
+
+// ---------- disclaimer ----------
+function disclaimerPage() {
+  const body = `  <section class="hero" style="padding-bottom:4px">
+    <div class="crumb"><a href="/">Dividends</a> › Disclaimer</div>
+    <h1 class="serif" style="font-size:28px">Disclaimer</h1>
+  </section>
+  <div style="max-width:720px;color:var(--muted);font-size:14.5px;line-height:1.75">
+    <p style="margin:12px 0">StockKaki provides Singapore dividend and corporate-action information for <b style="color:var(--ink)">general information only</b>. It is not financial advice, a recommendation, an offer, or a solicitation to buy or sell any security.</p>
+    <p style="margin:12px 0">Figures — including ex-dates, amounts and indicative yields — are sourced automatically from the Singapore Exchange (SGX) and may contain errors, omissions or delays. Indicative yield is trailing 12-month dividends divided by the last available price, and is an estimate only. Always verify against the official SGX announcement before making any decision.</p>
+    <p style="margin:12px 0">StockKaki is <b style="color:var(--ink)">not affiliated with, endorsed by, or connected to SGX</b>. All company names and tickers belong to their respective owners. Some outbound links may be affiliate links.</p>
+    <p style="margin:12px 0">Nothing here should be relied upon for investment decisions. Consider your own circumstances and, where appropriate, consult a licensed financial adviser. StockKaki accepts no liability for any loss arising from use of this information.</p>
+  </div>`;
+  return shell('Disclaimer | StockKaki', 'StockKaki disclaimer — information only, not financial advice. Data sourced from SGX; verify against official announcements.', SITE + '/disclaimer/', body);
 }
 
 // ---------- build ----------
@@ -292,6 +328,8 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 writeFileSync(new URL('index.html', out), homepage(upcoming, index));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
+mkdirSync(new URL('disclaimer/', out), { recursive: true });
+writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
 
 let n = 0;
 for (const c of companies.values()) {
@@ -300,7 +338,7 @@ for (const c of companies.values()) {
   writeFileSync(new URL('index.html', dir), stockPage(c));
   n++;
 }
-const urls = [SITE + '/', ...[...companies.values()].map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/disclaimer/', ...[...companies.values()].map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
