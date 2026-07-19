@@ -100,10 +100,12 @@ const groupCompanies = (rows) => {
 const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">`;
 const CUP = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 2.5c-.6.8.6 1.2 0 2M12 2.5c-.6.8.6 1.2 0 2"/></svg>`;
+const MOON = `<svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const SUN = `<svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
 const NAV = `<header class="nav"><div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
   <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="#">Alerts</a></nav>
-  <button class="btn">Get ex-date alerts</button>
+  <div style="display:flex;align-items:center;gap:8px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button class="btn">Get ex-date alerts</button></div>
 </div></header>`;
 const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
@@ -126,15 +128,18 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
 const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data from SGX, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
 
 const STYLE = `
-  :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; }
+  :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
+  html[data-theme="dark"]{ --ink:#F3EBE0; --muted:#A08D79; --line:#33291F; --bg:#17120E; --card:#211A14; --accent:#E9944F; --accent-soft:#3A2A1C; --accent-dk:#EDA766; --nav-bg:rgba(23,18,14,.92); --row-hover:#2A2018; }
   *{box-sizing:border-box;margin:0;padding:0} body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
   .serif{font-family:'Poppins',sans-serif;letter-spacing:-.01em} a{color:inherit;text-decoration:none} .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-  header.nav{position:sticky;top:0;z-index:20;background:rgba(251,246,238,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  header.nav{position:sticky;top:0;z-index:20;background:var(--nav-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
   .nav .row{display:flex;align-items:center;justify-content:space-between;height:60px}
   .brand{display:flex;align-items:center;gap:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:20px}
   .brand .dot{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
   .nav nav{display:none;gap:24px;font-size:14px;color:var(--muted);font-weight:500} .nav nav a:hover{color:var(--ink)}
   .btn{background:var(--accent);color:#fff;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:999px;border:0;cursor:pointer} .btn:hover{background:#c9692f}
+  .tbtn{background:none;border:0;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;padding:6px;border-radius:8px} .tbtn:hover{color:var(--ink)}
+  html[data-theme="dark"] .moon{display:none} html:not([data-theme="dark"]) .sun{display:none}
   @media(min-width:820px){ .nav nav{display:flex} }
   .hero{padding:30px 0 4px} .kicker{color:var(--accent-dk);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
   .hero h1{font-family:'Poppins',sans-serif;font-weight:700;font-size:32px;line-height:1.08;letter-spacing:-.01em;margin:8px 0 10px}
@@ -142,17 +147,17 @@ const STYLE = `
   @media(max-width:819px){ .hero{padding:22px 0 4px} .hero h1{font-size:26px} .hero .sub{display:none} }
   .crumb{color:var(--muted);font-size:13px;margin-bottom:6px} .crumb a:hover{color:var(--accent-dk)}
   .search{position:relative;margin-top:16px;max-width:540px}
-  .search input{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px 16px 13px 44px;font-size:15px;font-family:inherit;color:var(--ink)}
+  .search input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:13px 16px 13px 44px;font-size:15px;font-family:inherit;color:var(--ink)}
   .search input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   .search .ic{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-  #qres{position:absolute;top:52px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 44px -20px rgba(58,42,32,.45);overflow:hidden;display:none;z-index:30;max-height:340px;overflow-y:auto}
+  #qres{position:absolute;top:52px;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 44px -20px rgba(0,0,0,.35);overflow:hidden;display:none;z-index:30;max-height:340px;overflow-y:auto}
   #qres a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line);font-size:14px} #qres a:last-child{border-bottom:0} #qres a:hover{background:var(--accent-soft)}
   #qres .noqr{padding:13px 16px;color:var(--muted);font-size:13px}
   .live{display:inline-flex;align-items:center;gap:7px;margin-top:14px;background:var(--accent-soft);color:var(--accent-dk);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;font-family:'JetBrains Mono',monospace}
   .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent)}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:18px 0 6px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
-  .chip{white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted);background:#fff;border:1px solid var(--line);padding:7px 14px;border-radius:999px;cursor:pointer;user-select:none}
-  .chip.on{background:var(--ink);color:#FBF6EE;border-color:var(--ink)}
+  .chip{white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 14px;border-radius:999px;cursor:pointer;user-select:none}
+  .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .nextcard{margin:18px 0 4px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;gap:28px;align-items:center}
   .nextcard .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600} .nextcard .v{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:18px;margin-top:3px}
   .metaline{color:var(--muted);font-size:13.5px;margin-top:14px} .metaline b{color:var(--ink);font-family:'JetBrains Mono',monospace}
@@ -161,7 +166,7 @@ const STYLE = `
   table{width:100%;border-collapse:collapse}
   thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line)}
   thead th.r,tbody td.r{text-align:right}
-  tbody td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:14.5px} tbody tr:last-child td{border-bottom:0} tbody tr:hover{background:#fffdf9}
+  tbody td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:14.5px} tbody tr:last-child td{border-bottom:0} tbody tr:hover{background:var(--row-hover)}
   .co{font-weight:600;color:inherit} a.co:hover{color:var(--accent-dk)}
   .tick{color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;margin-left:7px}
   .amt{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:14px}
@@ -174,7 +179,7 @@ const STYLE = `
   @media(max-width:560px){ thead th,tbody td{padding:12px 10px;font-size:13px} .tick{display:none} .amt,.yld{font-size:13px} }
   .alert{margin:26px 0 8px;background:var(--accent);color:#fff;border-radius:18px;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
   .alert h3{font-family:'Poppins',sans-serif;font-weight:700;font-size:21px} .alert p{color:#FFE7D6;font-size:14px;max-width:520px}
-  .alert form{display:flex;gap:8px;flex-wrap:wrap} .alert input{flex:1;min-width:200px;border:0;border-radius:999px;padding:12px 16px;font-size:14px;font-family:inherit} .alert .btn{background:var(--ink);color:#fff}
+  .alert form{display:flex;gap:8px;flex-wrap:wrap} .alert input{flex:1;min-width:200px;border:0;border-radius:999px;padding:12px 16px;font-size:14px;font-family:inherit} .alert .btn{background:#20160E;color:#fff}
   @media(min-width:820px){ .alert{flex-direction:row;align-items:center;justify-content:space-between} .alert .txt{max-width:52%} }
   .brokers{margin:24px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
   .bk-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -182,7 +187,7 @@ const STYLE = `
   .bk-ad{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex:0 0 auto}
   .bk-sub{color:var(--muted);font-size:13px;margin:6px 0 14px}
   .bk-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px} @media(max-width:620px){.bk-list{grid-template-columns:1fr}}
-  .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
   .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
   footer{margin:36px 0 40px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px}
 `;
@@ -190,6 +195,7 @@ const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fi
 
 const shell = (title, desc, canon, body, script='') => `<!DOCTYPE html>
 <html lang="en"><head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t&&window.matchMedia)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
@@ -202,7 +208,7 @@ ${NAV}
 ${body}
 ${ALERT}
 ${FOOTER}
-</main>${script}
+</main>${script}<script>(function(){var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};})();</script>
 </body></html>`;
 
 // ---------- homepage ----------
@@ -403,9 +409,9 @@ for (const c of companies.values()) {
 const all = [...companies.values()];
 mkdirSync(new URL('screener/', out), { recursive: true });
 writeFileSync(new URL('screener/index.html', out), listPage({
-  title: 'SGX Dividend Stock Screener — Yields & Ex-Dates | StockKaki',
-  desc: 'Screen every SGX dividend stock, REIT and ETF by yield. Search, filter and sort — live from SGX, updated daily.',
-  kicker: 'Screener', h1: 'SGX dividend screener', sub: 'Every dividend-paying SGX counter, ranked by yield. Search or filter.',
+  title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
+  desc: 'The highest-yielding SGX dividend stocks and REITs, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.',
+  kicker: 'Screener · Rankings', h1: 'Best dividend stocks in Singapore', sub: `${all.length} dividend-paying SGX stocks, REITs & ETFs — ranked by highest yield, updated daily.`,
   list: all, canon: SITE + '/screener/', typeChips: true }));
 mkdirSync(new URL('reits/', out), { recursive: true });
 writeFileSync(new URL('reits/index.html', out), listPage({
