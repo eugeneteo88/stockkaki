@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#FBF6EE"/>
+  <rect width="1200" height="12" fill="#E07A3B"/>
+  <g transform="translate(84,92)">
+    <rect width="70" height="70" rx="18" fill="#E07A3B"/>
+    <g fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" transform="translate(14,15) scale(1.75)">
+      <path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/>
+      <path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/>
+      <path d="M8 2.5c-.6.8.6 1.2 0 2M12 2.5c-.6.8.6 1.2 0 2"/>
+    </g>
+    <text x="90" y="48" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#3A2A20">StockKaki</text>
+  </g>
+  <text x="84" y="300" font-family="Arial, Helvetica, sans-serif" font-size="74" font-weight="700" fill="#2A1F17">Singapore dividends,</text>
+  <text x="84" y="388" font-family="Arial, Helvetica, sans-serif" font-size="74" font-weight="700" fill="#2A1F17">ex-dates &amp; yields.</text>
+  <text x="84" y="462" font-family="Arial, Helvetica, sans-serif" font-size="33" fill="#8C7A69">Clean, free, updated daily — every SGX stock, dividend &amp; REIT.</text>
+  <rect x="84" y="516" width="250" height="58" rx="29" fill="#E07A3B"/>
+  <text x="209" y="554" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#ffffff" text-anchor="middle">stockkaki.com</text>
+</svg>

@@ -237,6 +237,8 @@ const shell = (title, desc, canon, body, script='') => `<!DOCTYPE html>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${canon}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="StockKaki"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${canon}"><meta property="og:image" content="${SITE}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${SITE}/og.png">
 ${FONTS}
 <style>${STYLE}</style>
 </head><body>
@@ -540,7 +542,7 @@ const index = companies.map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).so
 const out = new URL('./dist/', import.meta.url);
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
-for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
+for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
 writeFileSync(new URL('index.html', out), homepage(upcoming, index));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
