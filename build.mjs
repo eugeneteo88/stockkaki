@@ -6,7 +6,7 @@
  * next ex-date, for SEO), sitemap.xml and robots.txt. Run daily via GitHub Action.
  *   node build.mjs
  */
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
@@ -31,6 +31,9 @@ const titleCase = (s) => (s||'').toLowerCase().split(/\s+/).map(w => {
   return FIXWORD[t] || t;
 }).join(' ');
 const slugify = (s) => (s||'').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,64);
+// structured products / warrants / leverage certs — not real dividend stocks
+const NOISE = /autocall|socgen|soc gen|macq|bnpp|\bcbbc\b|call warrant|put warrant|daily leverage|-callable|\bdlc\b|structured warrant/i;
+const secNorm = (s) => (s||'').toLowerCase().replace(/&/g,' and ').replace(/\b(ltd|limited|pte|plc|corp|corporation|holdings?|group|company|co|the|berhad|bhd|reit|trust|inc|industries|international)\b/g,'').replace(/[^a-z0-9]/g,'');
 const money = (ccy, amt) => `${ccy==='USD'?'US$':ccy==='SGD'?'S$':ccy+' '}${amt}`;
 const esc = (s) => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
@@ -52,6 +55,7 @@ async function fetchRows(pages = 20) {
     if (x.anncType !== 'DIVIDEND') continue;
     const ex = iso(x.exDate); if (!ex) continue;
     const m = (x.particulars || '').match(/Rate:\s*([A-Z]{3})?\s*([\d.]+)/i); if (!m) continue;
+    if (NOISE.test(x.name || '')) continue;              // drop warrants/DLCs/autocalls
     const name = titleCase(x.name || ''); if (!name) continue;
     const ccy = (m[1] || 'SGD').toUpperCase(), amt = m[2];
     const key = `${name}|${ex}|${amt}`; if (seen.has(key)) continue; seen.add(key);
@@ -69,6 +73,22 @@ const groupCompanies = (rows) => {
   }
   for (const c of map.values()) c.divs.sort((a,b) => a.exISO < b.exISO ? 1 : -1);
   return map;
+};
+
+// SGX securities list -> normalised name -> {ticker, price} (tradeable types only)
+function fetchSecurities() {
+  let json; try { json = getJSON('https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc,n,type,lt'); } catch { return new Map(); }
+  const list = (json && json.data && json.data.prices) || [];
+  const ok = new Set(['stocks','reits','etfs','businesstrusts']);
+  const map = new Map();
+  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; const k = secNorm(s.n); if (k && !map.has(k)) map.set(k, { ticker: s.nc, price: s.lt }); }
+  return map;
+}
+const matchTicker = (name, map) => {
+  const k = secNorm(name); if (!k) return null;
+  if (map.has(k)) return map.get(k);
+  for (const [sk, v] of map) { if (sk.length >= 6 && k.startsWith(sk)) return v; } // sec name is a prefix of the (longer) filing name
+  return null;
 };
 
 // ---------- shared chrome ----------
@@ -122,6 +142,7 @@ const STYLE = `
   thead th.r,tbody td.r{text-align:right}
   tbody td{padding:15px 18px;border-bottom:1px solid var(--line);font-size:14.5px} tbody tr:last-child td{border-bottom:0} tbody tr:hover{background:#fffdf9}
   .co{font-weight:600;color:inherit} a.co:hover{color:var(--accent-dk)}
+  .tick{color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;margin-left:7px}
   .amt{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:14px}
   .date{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#6E5E50}
   .tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-dk);font-family:'JetBrains Mono',monospace}
@@ -155,7 +176,7 @@ ${FOOTER}
 </main></body></html>`;
 
 // ---------- homepage ----------
-const rowHTML = (r) => `        <tr><td><a class="co" href="/stock/${r.slug}/">${r.name}</a></td><td class="date">${pretty(r.exISO)} ${exTag(r.exISO)}</td><td class="r amt">${money(r.ccy,r.amt)}</td><td class="hide-m date">${pretty(r.rec)}</td><td class="hide-m date">${pretty(r.pay)}</td><td class="hide-m type">Dividend</td></tr>`;
+const rowHTML = (r) => `        <tr><td><a class="co" href="/stock/${r.slug}/">${r.name}</a>${r.ticker?` <span class="tick">${r.ticker}</span>`:''}</td><td class="date">${pretty(r.exISO)} ${exTag(r.exISO)}</td><td class="r amt">${money(r.ccy,r.amt)}</td><td class="hide-m date">${pretty(r.rec)}</td><td class="hide-m date">${pretty(r.pay)}</td><td class="hide-m type">Dividend</td></tr>`;
 const cardHTML = (r) => `    <div class="mrow"><div class="top"><div><a class="co" href="/stock/${r.slug}/">${r.name}</a><div class="type">Dividend</div></div><span class="tag${daysTo(r.exISO)<=7?' soon':''}">${daysTo(r.exISO)<=7?('Ex in '+daysTo(r.exISO)+'d'):pretty(r.exISO)}</span></div><div class="meta"><div>Ex-date<b>${pretty(r.exISO)}</b></div><div>Amount<b>${money(r.ccy,r.amt)}</b></div><div>Pay date<b>${pretty(r.pay)}</b></div></div></div>`;
 
 function homepage(upcoming) {
@@ -186,14 +207,16 @@ function stockPage(c) {
   const next = upcoming[0];
   const ttm = c.divs.filter(d => d.ccy==='SGD' && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((s,d)=>s+d.amtNum,0);
   const ttmStr = ttm>0 ? ('S$'+ttm.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')) : null;
+  const tk = c.divs.find(d => d.ticker);
+  const yieldPct = (tk && tk.price>0 && ttm>0) ? (ttm/tk.price*100) : null;
   const rows = c.divs.map(d => `        <tr><td class="date">${pretty(d.exISO)}${d.exISO>=TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td><td class="hide-m date">${pretty(d.rec)}</td><td class="hide-m date">${pretty(d.pay)}</td><td class="hide-m date">${pretty(d.annc)}</td></tr>`).join('\n');
   const body = `  <section class="hero" style="padding-bottom:6px">
     <div class="crumb"><a href="/">Dividends</a> › ${c.name}</div>
-    <h1 class="serif" style="font-size:30px">${c.name}</h1>
+    <h1 class="serif" style="font-size:30px">${c.name}${tk?` <span class="tick">${tk.ticker}</span>`:''}</h1>
     <p>Dividend history and upcoming ex-dates for ${c.name}, live from SGX.</p>
   </section>
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div></div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
-  ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security.</p>` : ''}
+  ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security.${yieldPct?` &middot; Indicative yield <b>${yieldPct.toFixed(2)}%</b> at S$${tk.price} last.`:''}</p>` : ''}
   <div class="card" style="margin-top:18px"><table>
     <thead><tr><th>Ex-date</th><th class="r">Amount</th><th class="hide-m">Record date</th><th class="hide-m">Pay date</th><th class="hide-m">Announced</th></tr></thead>
     <tbody>
@@ -207,11 +230,14 @@ ${rows}
 }
 
 // ---------- build ----------
+const secMap = fetchSecurities();
 const rows = await fetchRows(20);
+for (const r of rows) { const m = matchTicker(r.name, secMap); if (m) { r.ticker = m.ticker; r.price = m.price; } }
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1);
 const companies = groupCompanies(rows);
 
 const out = new URL('./dist/', import.meta.url);
+rmSync(out, { recursive: true, force: true });   // clean stale pages
 mkdirSync(out, { recursive: true });
 writeFileSync(new URL('index.html', out), homepage(upcoming));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
