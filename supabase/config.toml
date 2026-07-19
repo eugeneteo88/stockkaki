@@ -1,0 +1,4 @@
+project_id = "limizehmxnaaqndacynm"
+
+[functions.subscribe]
+verify_jwt = false
