@@ -91,7 +91,7 @@ const groupCompanies = (rows) => {
     c.ticker = tk ? tk.ticker : null; c.price = tk ? tk.price : null; c.secType = tk ? tk.secType : null;
     c.ttm = c.divs.filter(d => d.ccy==='SGD' && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((s,d)=>s+d.amtNum,0);
     c.yieldPct = (c.price>0 && c.ttm>0) ? c.ttm/c.price*100 : null;
-    c.isReit = c.secType==='reits' || c.secType==='businesstrusts';
+    c.isReit = c.secType==='reits' || c.secType==='businesstrusts' || /\breit\b|\btrust\b/i.test(c.name);
   }
   return map;
 };
@@ -102,7 +102,7 @@ const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link 
 const CUP = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 2.5c-.6.8.6 1.2 0 2M12 2.5c-.6.8.6 1.2 0 2"/></svg>`;
 const NAV = `<header class="nav"><div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
-  <nav><a href="/">Dividends</a><a href="#">Screener</a><a href="#">REITs</a><a href="#">Alerts</a></nav>
+  <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="#">Alerts</a></nav>
   <button class="btn">Get ex-date alerts</button>
 </div></header>`;
 const ALERT = `<section class="alert">
@@ -261,6 +261,56 @@ document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
     SITE + '/', body, script);
 }
 
+// ---------- list pages (screener / reits) ----------
+const companyRow = (c) => {
+  const y = c.yieldPct!=null ? c.yieldPct.toFixed(2) : null;
+  const special = c.yieldPct!=null && c.yieldPct > 20;   // likely a one-off special dividend
+  const yldCell = y ? (special ? `<span class="yld" style="color:var(--muted)" title="Trailing yield likely inflated by a one-off special dividend">${y}%*</span>` : `<span class="yld">${y}%</span>`) : '—';
+  const nx = c.divs.find(d => d.exISO >= TODAY);
+  return `        <tr data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-y="${c.yieldPct!=null?c.yieldPct:-1}">
+          <td><a class="co" href="/stock/${c.slug}/">${c.name}</a>${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</td>
+          <td class="r">${yldCell}</td>
+          <td class="r amt">${c.ttm>0?'S$'+num(c.ttm):'—'}</td>
+          <td class="r date hide-m">${nx?pretty(nx.exISO):'—'}</td>
+        </tr>`;
+};
+function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips }) {
+  // realistic yields (≤20%) rank first; likely one-off specials (>20%) and no-yield sink to the bottom
+  const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
+  const sorted = [...list].sort((a,b) => key(b) - key(a));
+  const chips = typeChips ? `<div class="chips">
+    <span class="chip on" data-f="all">All</span>
+    <span class="chip" data-f="stock">Stocks</span>
+    <span class="chip" data-f="reit">REITs &amp; Trusts</span>
+    <span class="chip" data-f="etf">ETFs</span>
+  </div>` : '';
+  const body = `  <section class="hero" style="padding-bottom:4px">
+    <div class="kicker">${kicker}</div>
+    <h1 class="serif" style="font-size:30px">${h1}</h1>
+    <p class="sub">${sub}</p>
+    <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
+  </section>
+  ${chips}
+  <div class="card" style="margin-top:12px"><table>
+    <thead><tr><th>Company</th><th class="r">Yield ↓</th><th class="r">12-mo div</th><th class="r hide-m">Next ex-date</th></tr></thead>
+    <tbody id="tb">
+${sorted.map(companyRow).join('\n')}
+    </tbody>
+  </table><div id="none" class="empty" style="display:none">No match.</div></div>
+  <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely includes a one-off special dividend.</p>`;
+  const script = `<script>
+const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none');
+function apply(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';let vis=0;
+ tb.querySelectorAll('tr').forEach(r=>{let ok=(!v||r.dataset.s.includes(v));
+  if(ok&&f==='reit')ok=r.dataset.reit==='1'; if(ok&&f==='etf')ok=r.dataset.etf==='1'; if(ok&&f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
+  r.style.display=ok?'':'none'; if(ok)vis++;});
+ none.style.display=vis?'none':'block';}
+q.addEventListener('input',apply);
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');apply();}));
+</script>`;
+  return shell(title, desc, canon, body, script);
+}
+
 // ---------- per-stock page ----------
 function stockPage(c) {
   const upcoming = c.divs.filter(d => d.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1);
@@ -269,6 +319,17 @@ function stockPage(c) {
   const byYear = {};
   for (const d of c.divs) { if (d.ccy!=='SGD') continue; const y = d.exISO.slice(0,4); byYear[y] = (byYear[y]||0) + d.amtNum; }
   const years = Object.keys(byYear).sort().reverse();
+  const nowY = TODAY.slice(0,4);
+  const complete = years.filter(y => y < nowY);
+  let growth = null;
+  if (complete.length >= 2 && byYear[complete[1]] > 0) growth = (byYear[complete[0]] - byYear[complete[1]]) / byYear[complete[1]] * 100;
+  let freq = null;
+  if (complete.length) { const cnt = c.divs.filter(d => d.ccy==='SGD' && d.exISO.slice(0,4)===complete[0]).length; freq = cnt>=4?'Quarterly':cnt===3?'Thrice yearly':cnt===2?'Semi-annual':cnt===1?'Annual':null; }
+  const sig = [];
+  if (freq) sig.push(`Pays <b>${freq}</b>`);
+  if (years.length) sig.push(`<b>${years.length}</b> year${years.length>1?'s':''} of dividends on record`);
+  if (growth != null) sig.push(`latest full year <b>${growth>=0?'+':''}${growth.toFixed(1)}%</b> YoY`);
+  const signals = sig.join(' &middot; ');
   const annual = years.length ? `<div class="h2">Dividends by year</div>
   <div class="card"><table>
     <thead><tr><th>Year</th><th class="r">Total / security</th><th class="r">Yield*</th></tr></thead>
@@ -283,6 +344,7 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${nu
   </section>
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
   ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at S$${c.price} last`:''}.</p>` : ''}
+  ${signals ? `<p class="metaline">${signals}.</p>` : ''}
   ${annual}
   <div class="h2">Full dividend history</div>
   <div class="card"><table>
@@ -338,7 +400,21 @@ for (const c of companies.values()) {
   writeFileSync(new URL('index.html', dir), stockPage(c));
   n++;
 }
-const urls = [SITE + '/', SITE + '/disclaimer/', ...[...companies.values()].map(c => `${SITE}/stock/${c.slug}/`)];
+const all = [...companies.values()];
+mkdirSync(new URL('screener/', out), { recursive: true });
+writeFileSync(new URL('screener/index.html', out), listPage({
+  title: 'SGX Dividend Stock Screener — Yields & Ex-Dates | StockKaki',
+  desc: 'Screen every SGX dividend stock, REIT and ETF by yield. Search, filter and sort — live from SGX, updated daily.',
+  kicker: 'Screener', h1: 'SGX dividend screener', sub: 'Every dividend-paying SGX counter, ranked by yield. Search or filter.',
+  list: all, canon: SITE + '/screener/', typeChips: true }));
+mkdirSync(new URL('reits/', out), { recursive: true });
+writeFileSync(new URL('reits/index.html', out), listPage({
+  title: 'Singapore REIT Dividends & Distribution Yields | StockKaki',
+  desc: 'All SGX-listed REITs and business trusts ranked by distribution yield. Live from SGX, updated daily.',
+  kicker: 'S-REITs', h1: 'Singapore REITs by yield', sub: 'Every SGX REIT and business trust, ranked by distribution yield.',
+  list: all.filter(c => c.isReit), canon: SITE + '/reits/', typeChips: false }));
+
+const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
