@@ -378,7 +378,7 @@ function disclaimerPage() {
 
 // ---------- build ----------
 const secMap = fetchSecurities();
-const rows = await fetchRows(20);
+const rows = await fetchRows(50);   // ~5-6 years of history for deeper track records
 for (const r of rows) { const m = matchTicker(r.name, secMap); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; } }
 const companies = groupCompanies(rows);
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
