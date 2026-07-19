@@ -38,6 +38,7 @@ const NOISE = /autocall|socgen|soc gen|macq|bnpp|\bcbbc\b|call warrant|put warra
 const secNorm = (s) => (s||'').toLowerCase().replace(/&/g,' and ').replace(/\b(ltd|limited|pte|plc|corp|corporation|holdings?|group|company|co|the|berhad|bhd|reit|trust|inc|industries|international)\b/g,'').replace(/[^a-z0-9]/g,'');
 const money = (ccy, amt) => `${ccy==='USD'?'US$':ccy==='SGD'?'S$':ccy+' '}${amt}`;
 const num = (n) => n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+const fmtVol = (n) => (n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n));
 const esc = (s) => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
 const TODAY = new Date().toISOString().slice(0,10);
@@ -84,11 +85,11 @@ function parseAnnouncements(raw) {
 }
 
 function fetchSecurities() {
-  let json; try { json = getJSON('https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc,n,type,lt'); } catch { return new Map(); }
+  let json; try { json = getJSON('https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc,n,type,lt,change_vs_pc_percentage,vl'); } catch { return new Map(); }
   const list = (json && json.data && json.data.prices) || [];
   const ok = new Set(['stocks','reits','etfs','businesstrusts']);
   const map = new Map();
-  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; const k = secNorm(s.n); if (k && !map.has(k)) map.set(k, { ticker: s.nc, price: s.lt, type: s.type }); }
+  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; const k = secNorm(s.n); if (k && !map.has(k)) map.set(k, { ticker: s.nc, price: s.lt, type: s.type, chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
   return map;
 }
 const matchTicker = (name, map) => {
@@ -109,6 +110,7 @@ const groupCompanies = (rows) => {
     c.divs.sort((a,b) => a.exISO < b.exISO ? 1 : -1);
     const tk = c.divs.find(d => d.ticker);
     c.ticker = tk ? tk.ticker : null; c.price = tk ? tk.price : null; c.secType = tk ? tk.secType : null;
+    c.chgPct = tk ? tk.chgPct : null; c.vol = tk ? tk.vol : null;
     c.ttm = c.divs.filter(d => d.ccy==='SGD' && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((s,d)=>s+d.amtNum,0);
     c.yieldPct = (c.price>0 && c.ttm>0) ? c.ttm/c.price*100 : null;
     c.isReit = c.secType==='reits' || c.secType==='businesstrusts' || /\breit\b|\btrust\b/i.test(c.name);
@@ -198,6 +200,8 @@ const STYLE = `
   tbody td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:14.5px} tbody tr:last-child td{border-bottom:0} tbody tr:hover{background:var(--row-hover)}
   .co{font-weight:600;color:inherit} a.co:hover{color:var(--accent-dk)}
   .tick{color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;margin-left:7px}
+  .quote{display:flex;align-items:baseline;gap:14px;margin-top:4px;flex-wrap:wrap}
+  .q-price{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600} .q-chg{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600} .q-vol{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
   .amt{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:14px}
   .yld{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:14px;color:var(--accent-dk)}
   .date{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#6E5E50}
@@ -417,9 +421,9 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${nu
   </table></div>` : '';
   const hist = c.divs.map(d => `        <tr><td class="date">${pretty(d.exISO)}${d.exISO>=TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td><td class="r date hide-m">${pretty(d.rec)}</td><td class="r date hide-m">${pretty(d.pay)}</td><td class="r date hide-m">${pretty(d.annc)}</td></tr>`).join('\n');
   const body = `  <section class="hero" style="padding-bottom:4px">
-    <div class="crumb"><a href="/">Dividends</a> › ${c.name}</div>
+    <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
     <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
-    ${c.price?`<div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:2px">S$${c.price} <span style="font-size:12px;color:var(--muted);font-weight:400">last price</span></div>`:''}
+    ${c.price?`<div class="quote"><span class="q-price">S$${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
   </section>
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
   ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at S$${c.price} last`:''}.</p>` : ''}
@@ -480,7 +484,7 @@ else{const{data,error}=await sb.rpc('${rpc}',{p_token:t});
 const secMap = fetchSecurities();
 const raw = await fetchRaw(50);   // ~5-6 years of history
 const rows = parseDividends(raw);
-for (const r of rows) { const m = matchTicker(r.name, secMap); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; } }
+for (const r of rows) { const m = matchTicker(r.name, secMap); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; r.chgPct = m.chgPct; r.vol = m.vol; } }
 const companies = groupCompanies(rows);
 const anns = parseAnnouncements(raw);
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
