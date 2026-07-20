@@ -143,7 +143,9 @@ function fetchSecurities() {
   const list = (json && json.data && json.data.prices) || [];
   const ok = new Set(['stocks','reits','etfs','businesstrusts']);
   const out = [];
-  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; if (NOISE.test(s.n)) continue; out.push({ ticker: s.nc, name: TICKER_ALIAS[s.nc] || s.n, type: s.type, price: s.lt, cur: s.cur || 'SGD', chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
+  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; if (NOISE.test(s.n)) continue;
+    if (/\s(?:R\d*|W\d*)$/.test(s.n) || /\b(?:rights?|nil.?paid|warrants?)\b/i.test(s.n)) continue;   // rights/warrants/nil-paid entitlements — not real companies (e.g. "TC Auto R", "AcroMeta Grp R1")
+    out.push({ ticker: s.nc, name: TICKER_ALIAS[s.nc] || s.n, type: s.type, price: s.lt, cur: s.cur || 'SGD', chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
   return out;
 }
 // ---------- Yahoo Finance dividends (.SI) — accurate DPU incl. scrip REITs (free) ----------
