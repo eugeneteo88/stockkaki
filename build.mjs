@@ -145,7 +145,7 @@ function fetchSecurities() {
 }
 // ---------- Yahoo Finance dividends (.SI) — accurate DPU incl. scrip REITs (free) ----------
 function fetchYahooDivs(ticker) {
-  let j; try { j = JSON.parse(execFileSync('curl', ['-s','-m','20','-A',UA,'--compressed', `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}.SI?range=10y&interval=1mo&events=div`], { maxBuffer: 16*1024*1024 }).toString('utf8')); } catch { return null; }
+  let j; try { j = JSON.parse(execFileSync('curl', ['-s','-m','20','-A',UA,'--compressed', `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}.SI?range=10y&interval=1wk&events=div`], { maxBuffer: 16*1024*1024 }).toString('utf8')); } catch { return null; }
   const r = j && j.chart && j.chart.result && j.chart.result[0];
   if (!r || !r.meta) return null;
   const cur = r.meta.currency || 'SGD';
@@ -155,7 +155,10 @@ function fetchYahooDivs(ticker) {
   divs.sort((a,b) => a.exISO < b.exISO ? 1 : -1);
   const m = r.meta;
   const meta = { w52lo: m.fiftyTwoWeekLow, w52hi: m.fiftyTwoWeekHigh, dayLo: m.regularMarketDayLow, dayHi: m.regularMarketDayHigh, vol: m.regularMarketVolume, price: m.regularMarketPrice };
-  return { cur, divs, meta };
+  const ts = r.timestamp || [], cl = (r.indicators && r.indicators.quote && r.indicators.quote[0] && r.indicators.quote[0].close) || [];
+  const prices = [];
+  for (let i = 0; i < ts.length; i++) if (cl[i] != null) prices.push({ t: ts[i], c: cl[i] });    // weekly closes for the price chart
+  return { cur, divs, meta, prices };
 }
 // Yahoo cookie+crumb (needed for the fundamentals/quote endpoint) — fetched once per build.
 function yahooCrumb() {
@@ -187,9 +190,10 @@ function fetchYahooNews(ticker) {
     const title = decodeEntities((it.match(/<title>([\s\S]*?)<\/title>/)||[])[1] || '');
     const link = ((it.match(/<link>([\s\S]*?)<\/link>/)||[])[1] || '').trim();
     const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
+    const desc = decodeEntities((it.match(/<description>([\s\S]*?)<\/description>/)||[])[1] || '').replace(/<[^>]+>/g,'').slice(0,180);
     if (!title || !link) continue;
     let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
-    out.push({ title, link, dateISO });
+    out.push({ title, link, dateISO, desc });
     if (out.length >= 6) break;
   }
   return out;
@@ -311,7 +315,7 @@ const brokerSlot = () => `<aside class="brokers">
 ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="sponsored noopener"><b>${b.n}</b><span>${b.d}</span></a>`).join('\n')}
     </div>
   </aside>`;
-const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data from SGX, MAS &amp; Yahoo Finance, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
+const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data compiled from public sources, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer &amp; sources</a></p></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
@@ -370,8 +374,10 @@ const STYLE = `
   .ov-range-f{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
   .newslist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;box-shadow:0 12px 36px -28px rgba(58,42,32,.55);margin-top:16px}
   .newsitem{display:block;padding:14px 0;border-bottom:1px solid var(--line);color:inherit} .newsitem:last-child{border-bottom:0}
-  .news-t{display:block;font-weight:500;font-size:15px;line-height:1.4} .newsitem:hover .news-t{color:var(--accent-dk)}
-  .news-m{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
+  .news-t{display:block;font-weight:600;font-size:15px;line-height:1.4} .newsitem:hover .news-t{color:var(--accent-dk)}
+  .news-d{display:block;font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
+  .news-m{display:block;font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
+  .ov-chart-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);margin:16px 0 4px} .ov-chart-h span:last-child{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:16px;color:var(--ink)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 36px -28px rgba(58,42,32,.55)}
   table{width:100%;border-collapse:collapse}
   thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line)}
@@ -663,6 +669,33 @@ document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{do
 }
 
 // ---------- per-stock page ----------
+// Inline SVG price chart (weekly closes, ~last 5 years) for the Overview tab.
+function priceChart(prices, cur) {
+  if (!prices || prices.length < 8) return '';
+  const P = prices.slice(-260);
+  const cs = P.map(p => p.c), lo = Math.min(...cs), hi = Math.max(...cs), span = (hi-lo) || 1;
+  const W=680, H=190, PL=6, PR=56, PT=12, PB=22;
+  const X = i => PL + (W-PL-PR) * (P.length>1 ? i/(P.length-1) : 0);
+  const Y = v => PT + (H-PT-PB) * (1 - (v-lo)/span);
+  const line = P.map((p,i) => X(i).toFixed(1)+','+Y(p.c).toFixed(1)).join(' ');
+  const up = P[P.length-1].c >= P[0].c, col = up ? '#0c9a63' : '#c0392b';
+  const area = `${X(0).toFixed(1)},${(H-PB).toFixed(1)} ${line} ${X(P.length-1).toFixed(1)},${(H-PB).toFixed(1)}`;
+  const s = csym(cur);
+  const fM = monthYr(new Date(P[0].t*1000).toISOString().slice(0,7));
+  const lM = monthYr(new Date(P[P.length-1].t*1000).toISOString().slice(0,7));
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="price chart">
+    <defs><linearGradient id="pcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity="0.22"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <line x1="${PL}" y1="${Y(hi).toFixed(1)}" x2="${W-PR}" y2="${Y(hi).toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/>
+    <line x1="${PL}" y1="${Y(lo).toFixed(1)}" x2="${W-PR}" y2="${Y(lo).toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/>
+    <polygon points="${area}" fill="url(#pcg)"/>
+    <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="${W-PR+6}" y="${(Y(hi)+4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${s}${hi.toFixed(2)}</text>
+    <text x="${W-PR+6}" y="${(Y(lo)+4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${s}${lo.toFixed(2)}</text>
+    <text x="${PL}" y="${H-6}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${fM}</text>
+    <text x="${(W-PR).toFixed(1)}" y="${H-6}" fill="var(--muted)" font-size="11" text-anchor="end" font-family="'JetBrains Mono',monospace">${lM}</text>
+  </svg>`;
+}
+
 function stockPage(c) {
   const upcoming = c.divs.filter(d => d.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1);
   const next = upcoming[0];
@@ -705,7 +738,7 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">${CS}$
 ${hist}
     </tbody>
   </table></div>
-  <p class="metaline" style="font-size:12px">*Yield uses the current last price (${CS}${c.price||'—'}) against each year's total — indicative only.${c.yahoo?' Dividend amounts via Yahoo Finance; upcoming ex-dates from SGX.':''}</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
+  <p class="metaline" style="font-size:12px">*Yield uses the current last price (${CS}${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
   const faqs = [];
   if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at ${CS}${c.price} on the SGX.` });
   if (c.divs.length) {
@@ -724,9 +757,8 @@ ${hist}
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
   const newsSection = (c.news && c.news.length) ? `
   <div class="newslist">
-${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${n.dateISO?pretty(n.dateISO)+' · ':''}Yahoo Finance ↗</span></a>`).join('\n')}
-  </div>
-  <p class="metaline" style="font-size:12px">Headlines via Yahoo Finance — opens in a new tab. Not an endorsement.</p>` : '';
+${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span>${n.desc?`<span class="news-d">${esc(n.desc)}</span>`:''}<span class="news-m">${n.dateISO?pretty(n.dateISO)+' · ':''}read full ↗</span></a>`).join('\n')}
+  </div>` : '';
   // ---- Overview tab: fundamentals (Yahoo) ----
   const f = c.fund;
   const fcur = (f && f.cur) || c.cur || 'SGD';
@@ -740,10 +772,10 @@ ${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank"
     ['Dividend yield', c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : null],
     ['Volume', f.vol ? fmtVol(f.vol) : null],
   ].filter(x => x[1]!=null) : [];
-  const overviewSection = (ovStats.length || rangePos!=null) ? `<div class="ovgrid">${ovStats.map(s => `<div class="ovstat"><span class="ov-k">${s[0]}</span><span class="ov-v">${s[1]}</span></div>`).join('')}</div>
+  const pchart = priceChart(c.prices, fcur);
+  const overviewSection = (ovStats.length || rangePos!=null || pchart) ? `${pchart ? `<div class="ov-chart-h"><span>Price</span><span>${CSf}${c.price!=null?c.price:'—'}</span></div>${pchart}` : ''}<div class="ovgrid"${pchart?' style="margin-top:18px"':''}>${ovStats.map(s => `<div class="ovstat"><span class="ov-k">${s[0]}</span><span class="ov-v">${s[1]}</span></div>`).join('')}</div>
   ${rangePos!=null ? `<div class="ov-range"><div class="ov-range-h"><span>52-week range</span></div><div class="ov-bar"><div class="ov-mark" style="left:${rangePos.toFixed(1)}%"></div></div><div class="ov-range-f"><span>${CSf}${f.w52lo}</span><span style="color:var(--ink)">now ${CSf}${c.price}</span><span>${CSf}${f.w52hi}</span></div></div>` : ''}
-  ${(f&&f.dayLo!=null&&f.dayHi!=null) ? `<p class="metaline" style="margin-top:16px">Day range <b>${CSf}${f.dayLo} – ${CSf}${f.dayHi}</b>.</p>` : ''}
-  <p class="metaline" style="font-size:12px">Fundamentals via Yahoo Finance — indicative.</p>` : `<p class="metaline">Company fundamentals aren't available for this counter yet.</p>`;
+  ${(f&&f.dayLo!=null&&f.dayHi!=null) ? `<p class="metaline" style="margin-top:16px">Day range <b>${CSf}${f.dayLo} – ${CSf}${f.dayHi}</b>.</p>` : ''}` : `<p class="metaline">Company fundamentals aren't available for this counter yet.</p>`;
   // ---- tabs ----
   const tabDefs = [];
   if (c.divs.length) tabDefs.push(['div','Dividends',divSection]);
@@ -1007,8 +1039,8 @@ function disclaimerPage() {
   </section>
   <div style="max-width:720px;color:var(--muted);font-size:14.5px;line-height:1.75">
     <p style="margin:12px 0">StockKaki provides Singapore dividend and corporate-action information for <b style="color:var(--ink)">general information only</b>. It is not financial advice, a recommendation, an offer, or a solicitation to buy or sell any security.</p>
-    <p style="margin:12px 0">Figures — including ex-dates, amounts and indicative yields — are sourced automatically from the Singapore Exchange (SGX) and may contain errors, omissions or delays. Indicative yield is trailing 12-month dividends divided by the last available price, and is an estimate only. Always verify against the official SGX announcement before making any decision.</p>
-    <p style="margin:12px 0">StockKaki is <b style="color:var(--ink)">not affiliated with, endorsed by, or connected to SGX</b>. All company names and tickers belong to their respective owners. Some outbound links may be affiliate links.</p>
+    <p style="margin:12px 0"><b style="color:var(--ink)">Sources.</b> Figures — prices, dividends, ex-dates, fundamentals, savings-bond rates and news — are <b style="color:var(--ink)">compiled automatically from a range of public and third-party sources</b>, including the Singapore Exchange (SGX), the Monetary Authority of Singapore (MAS) and Yahoo Finance. We work to make the information as accurate and complete as possible, but it may contain errors, omissions or delays. Indicative yield is trailing 12-month dividends divided by the last available price — an estimate only. <b style="color:var(--ink)">Always verify against the official source</b> before making any decision.</p>
+    <p style="margin:12px 0">StockKaki is <b style="color:var(--ink)">not affiliated with, endorsed by, or connected to SGX, MAS, Yahoo, or any data provider</b>. All company names and tickers belong to their respective owners. News headlines link to third-party sites and are not endorsements. Some outbound links may be affiliate links.</p>
     <p style="margin:12px 0">Nothing here should be relied upon for investment decisions. Consider your own circumstances and, where appropriate, consult a licensed financial adviser. StockKaki accepts no liability for any loss arising from use of this information.</p>
   </div>`;
   return shell('Disclaimer | StockKaki', 'StockKaki disclaimer — information only, not financial advice. Data sourced from SGX; verify against official announcements.', SITE + '/disclaimer/', body);
@@ -1085,6 +1117,7 @@ for (const c of yTargets) {
   const y = fetchYahooDivs(c.ticker);
   await ySleep(140);                                          // gentle pacing — a bit faster than a human, no hammering
   if (y && y.meta) c.fund = y.meta;                           // free 52-week range / day range / volume
+  if (y && y.prices && y.prices.length) c.prices = y.prices;  // weekly closes for the price chart
   if (y && y.divs.length) {
     const cur = y.cur || c.cur || 'SGD';
     const past = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
