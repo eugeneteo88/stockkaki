@@ -21,6 +21,13 @@ jobs:
           node-version: 22
       - name: Build (fetch SGX + generate site)
         run: node build.mjs
+      - name: Persist last-good data cache (news + dividends + fundamentals)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f data/yahoo-cache.json 2>/dev/null || true
+          git commit -m "chore: update last-good data cache [skip ci]" || echo "no cache change"
+          git push || echo "push skipped"
       - name: Keyword radar (Google Autocomplete → /keywords/)
         run: node keywords.mjs || true
       - name: Send weekly dividend alerts (Mondays)

@@ -6,7 +6,7 @@
  * stock (dividend history, annual summary, next ex-date, yield), sitemap.xml
  * and robots.txt. Run daily via GitHub Action.  node build.mjs
  */
-import { writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 
@@ -193,10 +193,33 @@ function fetchYahooNews(ticker) {
     const desc = decodeEntities((it.match(/<description>([\s\S]*?)<\/description>/)||[])[1] || '').replace(/<[^>]+>/g,'').slice(0,180);
     if (!title || !link) continue;
     let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
-    out.push({ title, link, dateISO, desc });
+    out.push({ title, link, dateISO, desc, source: 'Yahoo Finance' });
     if (out.length >= 6) break;
   }
   return out;
+}
+// ---------- Google News (free, no key): per-company SG financial news, aggregating BT / The Edge / Straits Times / CNA / Reuters etc. ----------
+// Quality outlets we surface (others are dropped to keep the feed to proper SG/global financial press).
+const NEWS_OK = new Set(['The Business Times','The Edge Singapore','The Straits Times','CNA','Channel NewsAsia','Reuters','Bloomberg','Yahoo Finance','StockStory','Nikkei Asia','Financial Times','Seeking Alpha','The Motley Fool Singapore','Mothership','MarketWatch','Business Insider','Singapore Business Review','The Business Times Singapore','Yahoo Finance Singapore','SGX','South China Morning Post','Forbes','Investing.com','Simply Wall St','Straits Times']);
+const cleanCoName = (name) => (name||'').replace(/\b(Ltd|Limited|Pte|Plc|Corp|Corporation|Holdings?|Group|Berhad|Bhd|Inc|Company|Co)\b\.?/gi,'').replace(/\bCNY|USD|SGD|HKD|GBP|EUR\b/g,'').replace(/\s{2,}/g,' ').trim();
+function fetchGoogleNews(name) {
+  const q = encodeURIComponent(`"${cleanCoName(name)}" (SGX OR Singapore OR dividend)`);
+  let xml; try { xml = execFileSync('curl', ['-s','-m','15','-A',UA, `https://news.google.com/rss/search?q=${q}&hl=en-SG&gl=SG&ceid=SG:en`], { maxBuffer: 12*1024*1024 }).toString('utf8'); } catch { return []; }
+  const good = [], rest = [];
+  for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const it = m[1];
+    let title = decodeEntities((it.match(/<title>([\s\S]*?)<\/title>/)||[])[1] || '');
+    const link = ((it.match(/<link>([\s\S]*?)<\/link>/)||[])[1] || '').trim();
+    const source = decodeEntities((it.match(/<source[^>]*>([\s\S]*?)<\/source>/)||[])[1] || '').trim();
+    const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
+    if (!title || !link) continue;
+    title = title.replace(new RegExp('\\s*-\\s*' + source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*$'), '').trim();   // Google appends " - Source"
+    let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
+    const item = { title, link, dateISO, source, desc: '' };
+    (NEWS_OK.has(source) ? good : rest).push(item);
+  }
+  const merged = [...good, ...rest.slice(0, Math.max(0, 3 - good.length))];   // prefer quality outlets; backfill lightly so it's never empty
+  return merged.slice(0, 6);
 }
 // ---------- Singapore Savings Bonds (MAS) ----------
 function getMAS(path) {
@@ -285,17 +308,22 @@ const MOON = `<svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill=
 const SUN = `<svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
 const BURGER = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
 const CLOSE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+const WA = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.8 1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5s-.5-1.3-.7-1.8-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3A3 3 0 0 0 6.3 10a5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c2 .8 2 .6 2.4.5a2.6 2.6 0 0 0 1.7-1.2 2 2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>`;
+// TODO(Eugene): paste your WhatsApp channel/community invite link here to activate the "Join channel" button.
+const WHATSAPP_URL = 'https://whatsapp.com/channel/';
+const NAVLINKS = `<a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/announcements/">News</a>`;
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
-  <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/ssb/">SSB</a><a href="/announcements/">Announcements</a></nav>
-  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button class="btn deskonly">Get ex-date alerts</button><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  <nav>${NAVLINKS}</nav>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="btn wa deskonly" href="${WHATSAPP_URL}" target="_blank" rel="noopener">${WA} Join channel</a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
 </header>
 <div id="mscrim" class="mscrim"></div>
 <aside id="mmenu" class="mmenu" aria-hidden="true">
   <div class="mmenu-head"><a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a><button id="mclose" class="tbtn" aria-label="Close menu">${CLOSE}</button></div>
-  <a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/ssb/">SSB</a><a href="/announcements/">Announcements</a><a href="#">Alerts</a>
+  <nav class="mmenu-links">${NAVLINKS}</nav>
+  <div class="mmenu-cta"><a class="btn wa" href="${WHATSAPP_URL}" target="_blank" rel="noopener">${WA} Join channel</a></div>
 </aside>`;
 const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
@@ -332,13 +360,19 @@ const STYLE = `
   .tbtn{background:none;border:0;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;padding:6px;border-radius:8px} .tbtn:hover{color:var(--ink)}
   html[data-theme="dark"] .moon{display:none} html:not([data-theme="dark"]) .sun{display:none}
   .deskonly{display:none} @media(min-width:820px){ .deskonly{display:inline-block} }
+  .btn.wa.deskonly{display:none} @media(min-width:820px){ .btn.wa.deskonly{display:inline-flex} }
   .mtoggle{display:inline-flex} @media(min-width:820px){ .mtoggle{display:none} }
   .mscrim{position:fixed;inset:0;background:rgba(20,14,10,.55);opacity:0;visibility:hidden;transition:opacity .25s ease;z-index:40}
   .mscrim.open{opacity:1;visibility:visible}
-  .mmenu{position:fixed;top:0;right:0;height:100%;width:min(82vw,300px);background:var(--card);border-left:1px solid var(--line);box-shadow:-16px 0 44px -20px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
+  .mmenu{position:fixed;top:0;bottom:0;right:0;width:min(82vw,300px);background:var(--card);border-left:1px solid var(--line);box-shadow:-16px 0 44px -20px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
   .mmenu.open{transform:translateX(0)}
   .mmenu-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 12px 20px;border-bottom:1px solid var(--line)} .mmenu-head .brand{font-size:18px}
-  .mmenu>a{display:block;padding:15px 22px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:500;font-size:16px} .mmenu>a:hover{background:var(--row-hover);color:var(--accent-dk)}
+  .mmenu-links{display:flex;flex-direction:column}
+  .mmenu-links a{display:block;padding:15px 22px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:500;font-size:16px;opacity:0;transform:translateX(14px);transition:opacity .3s ease,transform .3s ease} .mmenu-links a:hover{background:var(--row-hover);color:var(--accent-dk)}
+  .mmenu.open .mmenu-links a{opacity:1;transform:none}
+  .mmenu.open .mmenu-links a:nth-child(1){transition-delay:.04s}.mmenu.open .mmenu-links a:nth-child(2){transition-delay:.08s}.mmenu.open .mmenu-links a:nth-child(3){transition-delay:.12s}.mmenu.open .mmenu-links a:nth-child(4){transition-delay:.16s}.mmenu.open .mmenu-links a:nth-child(5){transition-delay:.2s}.mmenu.open .mmenu-links a:nth-child(6){transition-delay:.24s}
+  .mmenu-cta{margin-top:auto;padding:18px 20px 26px} .mmenu-cta .btn.wa{display:flex;width:100%;justify-content:center;padding:13px}
+  .btn.wa{display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff} .btn.wa:hover{background:#1fb857}
   @media(min-width:820px){ .mmenu,.mscrim{display:none!important} }
   @media(min-width:820px){ .nav nav{display:flex} }
   .hero{padding:30px 0 4px} .kicker{color:var(--accent-dk);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
@@ -477,6 +511,55 @@ const STYLE = `
   .chartwrap{margin-top:6px} .leg{display:flex;gap:18px;font-size:12px;color:var(--muted);margin:2px 0 10px}
   .leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
   .stepup tr.hl td{background:var(--accent-soft)} .stepup tr.hl td:first-child{font-weight:700}
+  /* ---- home hub ---- */
+  .hub-hero{padding:34px 0 6px} @media(max-width:560px){.hub-hero{padding:22px 0 4px}}
+  .hub-hero h1{font-family:'Poppins',sans-serif;font-weight:700;font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:8px 0 10px;max-width:14ch} @media(max-width:560px){.hub-hero h1{font-size:27px}}
+  .hub-hero .sub{color:var(--muted);font-size:15px;max-width:440px}
+  .hub-search{position:relative;margin-top:18px;max-width:560px}
+  .hub-search input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:15px 16px 15px 46px;font-size:15px;font-family:inherit;color:var(--ink);box-shadow:0 10px 30px -22px rgba(58,42,32,.5)}
+  .hub-search input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .hub-search .ic{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+  .trend{display:flex;gap:8px;align-items:center;margin-top:18px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} .trend::-webkit-scrollbar{display:none}
+  .trend .tl{color:var(--muted);font-size:13px;flex:0 0 auto}
+  .tchip{flex:0 0 auto;white-space:nowrap;font-size:13px;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 13px} .tchip:hover{border-color:var(--accent);background:var(--accent-soft)} .tchip b{color:var(--accent-dk);font-weight:600}
+  .hub-h{font-family:'Poppins',sans-serif;font-weight:600;font-size:18px;margin:34px 0 12px;display:flex;align-items:baseline;justify-content:space-between}
+  .hub-h a{font-size:13px;font-weight:500;color:var(--accent-dk)}
+  .catgrid{display:grid;grid-template-columns:1fr;gap:12px} @media(min-width:620px){.catgrid{grid-template-columns:1fr 1fr}}
+  .cat{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;transition:.15s} .cat:hover{border-color:var(--accent);background:var(--row-hover)}
+  .cat .ci{width:44px;height:44px;flex:0 0 auto;border-radius:12px;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center}
+  .cat .ct{font-family:'Poppins',sans-serif;font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:8px}
+  .cat .cn{font-size:11.5px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
+  .cat .cd{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5} .cat .cd b{color:var(--ink);font-family:'JetBrains Mono',monospace}
+  .trgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(min-width:720px){.trgrid{grid-template-columns:repeat(4,1fr)}}
+  .trcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px} .trcard:hover{border-color:var(--accent)}
+  .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:5px}
+  .trcard .tp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
+  .trcard .tm{font-size:12px;margin-top:4px;font-family:'JetBrains Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:#0c9a63} .trcard .tm .down{color:#c0392b}
+  .hubnews{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 18px}
+  .hubnews a{display:block;padding:15px 0;border-bottom:1px solid var(--line);color:inherit} .hubnews a:last-child{border-bottom:0}
+  .hubnews .nt{font-weight:600;font-size:15px;line-height:1.4} .hubnews a:hover .nt{color:var(--accent-dk)}
+  .hubnews .nm{font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
+  /* ---- category-page Top 10 block ---- */
+  .pill-n{opacity:.72;font-weight:500;margin-left:2px}
+  .top10{display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px} @media(min-width:640px){.top10{grid-template-columns:1fr 1fr}}
+  .t10{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 15px;transition:.15s} .t10:hover{border-color:var(--accent);background:var(--row-hover)}
+  .t10 .rk{flex:0 0 auto;width:29px;height:29px;border-radius:9px;background:var(--accent-soft);color:var(--accent-dk);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+  .t10.gold .rk{background:var(--accent);color:#fff}
+  .t10 .ti{flex:1;min-width:0;display:block} .t10 .tn{display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .t10 .tn .tick{margin-left:5px}
+  .t10 .ts{display:block;color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .t10 .ty{flex:0 0 auto;text-align:right} .t10 .tyv{display:block;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--accent-dk)} .t10 .tyv.mut{color:var(--muted);font-weight:600} .t10 .tp{display:block;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+  /* ---- stock header: tags, actions, KPI strip ---- */
+  .st-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .st-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+  .st-tag{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px 9px} .st-tag.mono{font-family:'JetBrains Mono',monospace}
+  .st-acts{flex:0 0 auto;display:flex;gap:8px}
+  .st-save{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--accent-dk);background:var(--accent-soft);border:1px solid transparent;border-radius:999px;padding:8px 13px;cursor:pointer;font-family:inherit}
+  .st-bell{display:inline-flex;align-items:center;justify-content:center;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;width:37px;height:37px;cursor:pointer} .st-bell:hover{color:var(--accent-dk);border-color:var(--accent)}
+  .st-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px} @media(max-width:560px){.st-kpi{grid-template-columns:1fr 1fr}}
+  .kbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .kbox .kl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+  .kbox .kv{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;margin-top:3px} .kbox .kv.acc{color:var(--accent-dk)}
+  .st-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);font-size:13px;font-weight:500;padding:11px 18px;border-radius:999px;box-shadow:0 12px 30px -12px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.25s ease;z-index:60} .st-toast.on{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
 `;
 const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 
@@ -498,7 +581,6 @@ ${FONTS}
 ${NAV}
 <main class="wrap">
 ${body}
-${ALERT}
 ${FOOTER}
 </main>${script}<script>
 var SBFN='${SUPABASE_URL}/functions/v1',SBK='${SUPABASE_ANON}';
@@ -514,70 +596,56 @@ document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener(
 })();</script>
 </body></html>`;
 
-// ---------- homepage ---------- (SG stock-market dashboard: adaptive dividend vs stock views)
-const homeRow = (c) => {
-  const y = c.yieldPct!=null ? c.yieldPct.toFixed(2) : null;
-  const special = c.yieldPct!=null && c.yieldPct > 20;
-  const yTitle = special ? ' title="Trailing yield likely inflated by a one-off special dividend"' : (c.divIncomplete ? ` title="${esc(SCRIP_TITLE)}"` : '');
-  const yTxt = y ? (special ? y+'%*' : y+'%') : (c.divIncomplete ? 'scrip' : '—');
-  const yCls = 'lr-yield c-div' + ((!y || special || c.divIncomplete) ? ' mut' : '');
-  const priceTxt = c.price ? csym(c.cur)+c.price : '—';
-  const divTxt = c.divIncomplete ? 'scrip' : (c.ttm>0 ? csym(c.cur)+num(c.ttm) : '—');
-  const nx = c.divs.find(d => d.exISO >= TODAY);
-  const f = c.fund || {};
-  const mc = fmtCap(f.cur||c.cur, f.mktCap) || '—';
-  const pe = f.pe!=null ? f.pe.toFixed(1) : '—';
-  const chg = (c.chgPct!=null && c.chgPct!==0) ? c.chgPct : (f.chg!=null ? f.chg : null);
-  const chgTxt = (chg!=null && chg!==0) ? (chg>0?'+':'')+chg.toFixed(2)+'%' : '—';
-  const chgCls = 'lr-chg c-stk' + (chg>0?' up':chg<0?' down':'');
-  const pay = (c.ttm>0 || c.divIncomplete) ? 1 : 0;
-  const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
-  const week = nx && daysTo(nx.exISO) <= 7 ? 1 : 0;
-  const divMeta = [ c.price?priceTxt:null, c.divIncomplete?'scrip':(c.ttm>0?'Div '+csym(c.cur)+num(c.ttm):null), nx?'Ex '+prettyShort(nx.exISO):null ].filter(Boolean).join('  ·  ') || '—';
-  const stkMeta = [ c.price?priceTxt:null, f.mktCap?mc:null, f.pe!=null?'P/E '+pe:null ].filter(Boolean).join('  ·  ') || '—';
-  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-pay="${pay}" data-week="${week}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}" data-mc="${f.mktCap||0}" data-pe="${f.pe||0}" data-chg="${chg!=null?chg:0}">
-          <span class="lr-name"><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
-          <span class="lr-price">${priceTxt}</span>
-          <span class="${yCls}"${yTitle}>${yTxt}</span>
-          <span class="lr-div c-div">${divTxt}</span>
-          <span class="lr-ex c-div">${nx?prettyShort(nx.exISO):'—'}</span>
-          <span class="lr-mc c-stk">${mc}</span>
-          <span class="lr-pe c-stk">${pe}</span>
-          <span class="${chgCls}">${chgTxt}</span>
-          <span class="lr-meta c-div">${divMeta}</span>
-          <span class="lr-meta c-stk">${stkMeta}</span>
-        </a>`;
+// ---------- homepage ---------- (a light hub: search-first, category cards, trending, news)
+const CAT_IC = {
+  div:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 5-7"/></svg>`,
+  reit: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16"/><path d="M15 9h4a1 1 0 0 1 1 1v11"/><path d="M8 8h.01M11 8h.01M8 12h.01M11 12h.01M8 16h.01M11 16h.01"/></svg>`,
+  etf:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg>`,
+  cal:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
+  ssb:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>`,
+  hy:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>`,
 };
-function homepage(listed, index) {
+const catCard = (href, ic, title, count, desc) => `    <a class="cat" href="${href}"><span class="ci">${CAT_IC[ic]}</span><span style="min-width:0"><span class="ct">${title}${count!=null?`<span class="cn">${count}</span>`:''}</span><span class="cd">${desc}</span></span></a>`;
+const trCard = (c) => {
+  const CS = csym(c.cur);
+  const chg = c.chg;
+  const chgTxt = (chg!=null && chg!==0) ? `<span class="${chg>0?'up':'down'}">${chg>0?'▲':'▼'} ${Math.abs(chg).toFixed(1)}%</span>` : '';
+  const yTxt = c.yieldPct!=null ? `<span class="ty">${c.yieldPct.toFixed(2)}% yield</span>` : '';
+  return `    <a class="trcard" href="/stock/${c.slug}/"><div class="tn">${c.name}${c.ticker?`<span class="tt">${c.ticker}</span>`:''}</div><div class="tp">${c.price?CS+c.price:'—'}</div><div class="tm">${[yTxt,chgTxt].filter(Boolean).join(' · ')||'&nbsp;'}</div></a>`;
+};
+function homepage(listed, index, hub) {
   const idxJson = JSON.stringify(index).replace(/</g,'\\u003c');
-  const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
-  const sorted = [...listed].sort((a,b) => key(b) - key(a));   // dividend-forward default (payers on top)
-  const body = `  <section class="hero" style="padding:22px 0 4px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 12px">Singapore stocks</h1>
-    <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
-    <div class="hint">${listed.length} SGX-listed counters · updated ${pretty(TODAY)}</div>
+  const trendingChips = (hub.trending||[]).slice(0,6).map(c =>
+    `<a class="tchip" href="/stock/${c.slug}/">${c.name.split(/\s|-/)[0]}${c.yieldPct!=null?` <b>${c.yieldPct.toFixed(1)}%</b>`:''}</a>`).join('');
+  const cards = [
+    catCard('/dividends/', 'div', 'Best dividend stocks', hub.divCount, 'Every SGX payer ranked by dividend yield.'),
+    catCard('/reits/', 'reit', 'Best REITs to buy', hub.reitCount, 'S-REITs &amp; trusts by distribution yield.'),
+    catCard('/etfs/', 'etf', 'Best ETFs', hub.etfCount, 'SGX ETFs ranked by distribution yield.'),
+    catCard('/dividend-calendar/', 'cal', 'Dividend calendar', null, 'Upcoming ex-dates &amp; pay dates, in order.'),
+    catCard('/ssb/', 'ssb', 'Savings Bonds (SSB)', null, hub.ssbLo!=null?`This month <b>${hub.ssbLo.toFixed(2)}%</b> → <b>${hub.ssbHi.toFixed(2)}%</b>. Rates, swap &amp; calculator.`:'Rates, step-up schedule, swap &amp; calculator.'),
+    catCard('/dividends/', 'hy', 'Highest yield', hub.hyCount, 'Top yielders — with a risk note on the specials.'),
+  ].join('\n');
+  const trending = (hub.trending||[]).slice(0,4).map(trCard).join('\n');
+  const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news</div>
+  <div class="hubnews">
+${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
+  </div>` : '';
+  const body = `  <section class="hub-hero">
+    <span class="kicker">🎋 Huat with StockKaki</span>
+    <h1>Every Singapore stock, one clean search.</h1>
+    <p class="sub">Dividends, yields, ex-dates, REITs, ETFs and savings bonds — free, fast, no clutter.</p>
+    <div class="hub-search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search a stock or ticker — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
+    <div class="trend"><span class="tl">Trending:</span>${trendingChips}</div>
   </section>
-  <div class="chips">
-    <span class="chip on" data-f="all">Dividends</span>
-    <span class="chip" data-f="reit">REITs &amp; Trusts</span>
-    <span class="chip" data-f="etf">ETFs</span>
-    <span class="chip" data-f="week">Ex this week</span>
-    <span class="chip" data-f="stock">Stocks</span>
+  <div class="hub-h">Browse by what you're after</div>
+  <div class="catgrid">
+${cards}
   </div>
-  <div class="lsort sort-div"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="e">Ex-date</button><button data-sort="n">A–Z</button></div>
-  <div class="lsort sort-stk" hidden><button data-sort="mc" class="on">Market cap</button><button data-sort="pe">P/E</button><button data-sort="chg">% change</button><button data-sort="n">A–Z</button></div>
-  <div class="ltable cols-home2 m-div" style="margin-top:12px" id="lt">
-    <div class="lrow lhead">
-      <span data-sort="n">Company</span><span class="lr-price">Price</span>
-      <span class="lr-yield c-div" data-sort="y">Yield</span><span class="lr-div c-div" data-sort="d">12-mo div</span><span class="lr-ex c-div" data-sort="e">Next ex-date</span>
-      <span class="lr-mc c-stk" data-sort="mc">Market cap</span><span class="lr-pe c-stk" data-sort="pe">P/E</span><span class="lr-chg c-stk" data-sort="chg">Change</span>
-    </div>
-    <div id="tb">
-${sorted.map(homeRow).join('\n')}
-    </div>
+  <div class="hub-h">Trending stocks <a href="/dividends/">See all ${hub.divCount} →</a></div>
+  <div class="trgrid">
+${trending}
   </div>
-  <div id="none" class="empty" style="display:none">No stocks match.</div>
-  <p class="metaline" style="font-size:12px">Curated lists: <a href="/screener/" style="color:var(--accent-dk)">best dividend stocks</a> · <a href="/reits/" style="color:var(--accent-dk)">best REITs</a> · <a href="/etfs/" style="color:var(--accent-dk)">best ETFs</a> · <a href="/dividend-calendar/" style="color:var(--accent-dk)">dividend calendar</a> · <a href="/ssb/" style="color:var(--accent-dk)">savings bonds</a>.</p>
+${newsHTML}
   ${brokerSlot()}`;
   const script = `<script>
 const IDX=${idxJson};
@@ -586,36 +654,10 @@ q.addEventListener('input',()=>{const v=q.value.trim().toLowerCase();if(!v){qr.s
   const h=IDX.filter(x=>x.n.toLowerCase().includes(v)||(x.t&&x.t.toLowerCase().includes(v))).slice(0,8);
   qr.innerHTML=h.length?h.map(x=>'<a href="/stock/'+x.s+'/"><span>'+x.n+'</span><span class="tick" style="margin:0">'+(x.t||'')+'</span></a>').join(''):'<div class="noqr">No match — try a ticker like Z74</div>';
   qr.style.display='block';});
-document.addEventListener('click',e=>{if(!e.target.closest('.search'))qr.style.display='none';});
-const lt=document.getElementById('lt'),tb=document.getElementById('tb'),none=document.getElementById('none');
-const sortDiv=document.querySelector('.sort-div'),sortStk=document.querySelector('.sort-stk');
-let sk='',sd=-1;
-function sortBy(k,reset){if(reset)sk='';if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
- const rows=[...tb.querySelectorAll('.lrow')];
- rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'||k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
- rows.forEach(r=>tb.appendChild(r));
- document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
- document.querySelectorAll('.lsort:not([hidden]) button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));}
-function applyPill(f){const stk=(f==='stock');
- lt.classList.toggle('m-stk',stk);lt.classList.toggle('m-div',!stk);
- sortDiv.hidden=stk;sortStk.hidden=!stk;
- let vis=0;
- tb.querySelectorAll('.lrow').forEach(r=>{let ok;
-  if(f==='all')ok=r.dataset.pay==='1';
-  else if(f==='reit')ok=r.dataset.pay==='1'&&r.dataset.reit==='1';
-  else if(f==='etf')ok=r.dataset.pay==='1'&&r.dataset.etf==='1';
-  else if(f==='week')ok=r.dataset.week==='1';
-  else ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
-  r.style.display=ok?'':'none';if(ok)vis++;});
- none.style.display=vis?'none':'block';
- sortBy(stk?'mc':(f==='week'?'e':'y'),true);}
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');applyPill(c.dataset.f);}));
-document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
-document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
-applyPill('all');
+document.addEventListener('click',e=>{if(!e.target.closest('.hub-search'))qr.style.display='none';});
 </script>`;
-  return shell('StockKaki — Singapore Stocks, Dividends, Yields & REITs',
-    'Every SGX-listed stock, REIT and ETF — dividend yields, ex-dates, price, market cap and P/E in one clean board. Search any Singapore stock. Free, updated daily.',
+  return shell('StockKaki — Singapore Dividends, Stocks, REITs, ETFs & Savings Bonds',
+    'The clean way to track Singapore dividends. Search any SGX stock, browse the best dividend stocks, REITs, ETFs, the dividend calendar and Savings Bonds — free, updated daily.',
     SITE + '/', body, script, '/og/home.png');
 }
 
@@ -647,12 +689,30 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
   const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
   let sorted = [...list].sort((a,b) => key(b) - key(a));
   if (limit) sorted = sorted.slice(0, limit);
+  const nStock = list.filter(c => !c.isReit && c.secType!=='etfs').length;
+  const nReit = list.filter(c => c.isReit).length;
+  const nEtf = list.filter(c => c.secType==='etfs').length;
   const chips = typeChips ? `<div class="chips">
-    <span class="chip on" data-f="all">All</span>
-    <span class="chip" data-f="stock">Stocks</span>
-    <span class="chip" data-f="reit">REITs &amp; Trusts</span>
-    <span class="chip" data-f="etf">ETFs</span>
+    <span class="chip on" data-f="all">All <span class="pill-n">${list.length}</span></span>
+    <span class="chip" data-f="stock">Stocks <span class="pill-n">${nStock}</span></span>
+    <span class="chip" data-f="reit">REITs &amp; Trusts <span class="pill-n">${nReit}</span></span>
+    <span class="chip" data-f="etf">ETFs <span class="pill-n">${nEtf}</span></span>
   </div>` : '';
+  // curated Top-10 block (leads the page for the "top 10 …" search intent)
+  const top10 = sorted.filter(c => c.yieldPct!=null && c.yieldPct<=20 || c.divIncomplete).slice(0, 10);
+  const t10Card = (c, i) => {
+    const CS = csym(c.cur);
+    const type = c.secType==='etfs' ? 'ETF' : c.isReit ? 'REIT' : 'Stock';
+    const sub = [type, (c.ttm>0 && !c.divIncomplete) ? `${CS}${num(c.ttm)} / yr` : (c.divIncomplete?'scrip payer':null)].filter(Boolean).join(' · ');
+    const y = c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : (c.divIncomplete?'scrip':'—');
+    const yCls = 'tyv' + ((c.yieldPct==null||c.divIncomplete) ? ' mut' : '');
+    return `      <a class="t10${i<3?' gold':''}" href="/stock/${c.slug}/"><span class="rk">${i+1}</span><span class="ti"><span class="tn">${c.name}${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span><span class="ts">${sub}</span></span><span class="ty"><span class="${yCls}">${y}</span>${c.price?`<span class="tp">${CS}${c.price}</span>`:''}</span></a>`;
+  };
+  const topBlock = (sorted.length > 10 && top10.length >= 6) ? `  <div class="hub-h" style="margin-bottom:12px">Top 10 ${h1.replace(/^Best /,'').replace(/ in Singapore$/,'')} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">by yield</span></div>
+  <div class="top10">
+${top10.map(t10Card).join('\n')}
+  </div>
+  <div class="hub-h">All ${h1.replace(/^Best /,'').replace(/ in Singapore$/,'')}</div>` : '';
   const faqHTML = (faqs && faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
   const jsonLd = (faqs && faqs.length) ? `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
@@ -662,6 +722,7 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
   </section>
   ${intro ? `<div class="intro">${intro}</div>` : ''}
   ${chips}
+  ${topBlock}
   <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="n">A–Z</button></div>
   <div class="ltable cols-screener" style="margin-top:12px">
     <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
@@ -859,13 +920,13 @@ ${hist}
   const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
   const ld = { "@context":"https://schema.org", "@graph":[
     { "@type":"BreadcrumbList", "itemListElement":[
-      { "@type":"ListItem", "position":1, "name":"Stocks", "item":`${SITE}/screener/` },
+      { "@type":"ListItem", "position":1, "name":"Dividends", "item":`${SITE}/dividends/` },
       { "@type":"ListItem", "position":2, "name":c.name, "item":`${SITE}/stock/${c.slug}/` } ] },
     { "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) } ] };
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
   const newsSection = (c.news && c.news.length) ? `
   <div class="newslist">
-${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span>${n.desc?`<span class="news-d">${esc(n.desc)}</span>`:''}<span class="news-m">${n.dateISO?pretty(n.dateISO)+' · ':''}read full ↗</span></a>`).join('\n')}
+${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span>${n.desc?`<span class="news-d">${esc(n.desc)}</span>`:''}<span class="news-m">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}${(n.source||n.dateISO)?' · ':''}read full ↗</span></a>`).join('\n')}
   </div>` : '';
   // ---- Overview tab: fundamentals (Yahoo) ----
   const f = c.fund;
@@ -898,17 +959,35 @@ ${c.anns.map(a => `    <div class="annrow"><span class="ann-type"><span class="t
   if (c.anns && c.anns.length) tabDefs.push(['ann','Announcements',annSection]);
   const tabsHTML = `<div class="tabs">${tabDefs.map((t,i) => `<button class="tab${i===0?' on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>
 ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden'}>${t[2]}</div>`).join('\n')}`;
+  const typeLabel = c.secType==='etfs' ? 'ETF' : c.isReit ? 'REIT' : 'Stock';
+  const STAR = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6L18.2 21 12 17l-6.2 4 1.6-6.9L2 9.5 9 9z"/></svg>`;
+  const BELL = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>`;
+  const kpi = c.ticker ? `<div class="st-kpi">
+    <div class="kbox"><div class="kl">Div yield</div><div class="kv acc">${c.yieldPct!=null?c.yieldPct.toFixed(2)+'%':'—'}</div></div>
+    <div class="kbox"><div class="kl">P/E</div><div class="kv">${(f&&f.pe!=null)?f.pe.toFixed(1):'—'}</div></div>
+    <div class="kbox"><div class="kl">Mkt cap</div><div class="kv">${fmtCap(fcur, f&&f.mktCap)||'—'}</div></div>
+    <div class="kbox"><div class="kl">52-wk high</div><div class="kv">${(f&&f.w52hi!=null)?CSf+f.w52hi:'—'}</div></div>
+  </div>` : '';
   const body = `  <section class="hero" style="padding-bottom:4px">
-    <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
-    <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
-    ${c.price?`<div class="quote"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
+    <div class="crumb"><a href="/dividends/">Dividends</a> › ${c.name}</div>
+    <div class="st-head">
+      <div style="min-width:0">
+        <h1 class="serif" style="font-size:26px;line-height:1.2">${c.name}</h1>
+        <div class="st-tags"><span class="st-tag mono">SGX: ${c.ticker||'—'}</span><span class="st-tag">${typeLabel}</span>${c.cur&&c.cur!=='SGD'?`<span class="st-tag">${c.cur}</span>`:''}</div>
+      </div>
+      ${c.ticker?`<div class="st-acts"><button class="st-save" id="stSave">${STAR} Save</button><button class="st-bell" id="stBell" aria-label="Alerts">${BELL}</button></div>`:''}
+    </div>
+    ${c.price?`<div class="quote" style="margin-top:14px"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
     ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
+    ${kpi}
   </section>
   ${tabsHTML}
   ${faqHTML}
   ${brokerSlot()}
+  <div class="st-toast" id="stToast">Accounts are coming soon — you'll be able to save stocks &amp; get ex-date alerts by email.</div>
   ${jsonLd}`;
-  const tabScript = `<script>document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.tabpane').forEach(function(p){p.hidden=true;});var e=document.getElementById('t-'+t.dataset.tab);if(e)e.hidden=false;});});</script>`;
+  const tabScript = `<script>document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.tabpane').forEach(function(p){p.hidden=true;});var e=document.getElementById('t-'+t.dataset.tab);if(e)e.hidden=false;});});
+(function(){var to=document.getElementById('stToast');function t(){if(!to)return;to.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){to.classList.remove('on');},3400);}['stSave','stBell'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',t);});})();</script>`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
     `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price ${CS}${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
@@ -1226,42 +1305,71 @@ for (const s of secList) {
 for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has(c.slug)) continue; seenSlug.add(c.slug); companies.push(c); }
 for (const c of companies) c.anns = (annBySlug[c.slug] || []).slice(0, 12);   // this stock's recent SGX filings
 
-// ---- Accurate dividends from Yahoo Finance: fixes scrip REITs + gives real DPU. SGX keeps upcoming ex-dates. ----
+// ---- Accurate dividends (Yahoo) + per-stock news (Google News → Yahoo fallback), with a last-good cache. ----
+// SKIP_YAHOO=1 → fast local build: no live fetch, but STILL uses data/yahoo-cache.json so pages aren't blank.
+// Production/CI runs on a fresh IP, does the full fetch, and re-commits the cache. A throttled build degrades
+// gracefully to yesterday's cached data instead of showing blanks.
+const SKIP_YAHOO = process.env.SKIP_YAHOO === '1';
 const ySleep = (ms) => new Promise(r => setTimeout(r, ms));
-const yTargets = companies.filter(c => c.ticker && (c.isReit || c.secType==='etfs' || c.divs.length > 0));   // incl. ETFs so their distributions load
-let yFixed = 0;
-let yNews = 0;
-for (const c of yTargets) {
+const CACHE_URL = new URL('./data/yahoo-cache.json', import.meta.url);
+let cache = {};
+try { if (existsSync(CACHE_URL)) cache = JSON.parse(readFileSync(CACHE_URL, 'utf8')); } catch { cache = {}; }
+// Apply a Yahoo/cache record {fund,news,cur,ydivs} onto a company (re-merges SGX upcoming ex-dates with cached past divs).
+const applyY = (c, rec) => {
+  if (!rec) return;
+  if (rec.fund) c.fund = { ...(c.fund||{}), ...rec.fund };
+  if (rec.news && rec.news.length) c.news = rec.news;
+  if (rec.ydivs && rec.ydivs.length) {
+    const cur = rec.cur || c.cur || 'SGD';
+    const past = rec.ydivs.filter(d => d.exISO <= TODAY);
+    const soon = c.divs.filter(d => d.exISO > TODAY);          // fresh SGX-announced future ex-dates
+    c.cur = cur;
+    c.divs = [...soon, ...past].sort((a,b) => a.exISO < b.exISO ? 1 : -1);
+    c.ttm = past.filter(d => d.exISO >= yearAgo).reduce((s,d) => s + d.amtNum, 0);
+    c.yieldPct = (c.price > 0 && c.ttm > 0) ? c.ttm / c.price * 100 : null;
+    c.divIncomplete = false;
+    c.yahoo = true;
+  }
+};
+for (const c of companies) if (cache[c.slug]) applyY(c, cache[c.slug]);   // 1) last-good baseline
+const yTargets = SKIP_YAHOO ? [] : companies.filter(c => c.ticker && (c.isReit || c.secType==='etfs' || c.divs.length > 0));   // incl. ETFs so their distributions load
+let yFixed = 0, yNews = 0;
+const fresh = {};                                                          // this run's successful fetches → persisted to cache
+if (SKIP_YAHOO) console.log(`SKIP_YAHOO=1 — fast build using cache (${Object.keys(cache).length} cached counters), no live fetch.`);
+for (const c of yTargets) {                                                // 2) live fetch (overrides baseline on success)
+  const rec = {};
   const y = fetchYahooDivs(c.ticker);
-  await ySleep(140);                                          // gentle pacing — a bit faster than a human, no hammering
-  if (y && y.meta) c.fund = y.meta;                           // free 52-week range / day range / volume
-  if (y && y.prices && y.prices.length) c.prices = y.prices;  // weekly closes for the price chart
+  await ySleep(140);
+  if (y && y.meta) rec.fund = y.meta;
+  if (y && y.prices && y.prices.length) c.prices = y.prices;               // chart data (not cached — regenerated live)
   if (y && y.divs.length) {
     const cur = y.cur || c.cur || 'SGD';
-    const past = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
-    if (past.length) {
-      const soon = c.divs.filter(d => d.exISO > TODAY);       // SGX-announced future ex-dates (Yahoo only has past)
-      c.cur = cur;
-      c.divs = [...soon, ...past].sort((a,b) => a.exISO < b.exISO ? 1 : -1);
-      c.ttm = past.filter(d => d.exISO >= yearAgo).reduce((s,d) => s + d.amtNum, 0);
-      c.yieldPct = (c.price > 0 && c.ttm > 0) ? c.ttm / c.price * 100 : null;
-      c.divIncomplete = false;
-      c.yahoo = true;
-      yFixed++;
-    }
+    const ydivs = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
+    if (ydivs.length) { rec.cur = cur; rec.ydivs = ydivs; yFixed++; }
   }
-  const news = fetchYahooNews(c.ticker);                      // per-stock news feed (free Yahoo RSS)
+  let news = fetchGoogleNews(c.name);                                      // Google News (Business Times / The Edge / ST / CNA …) primary
   await ySleep(140);
-  if (news.length) { c.news = news; yNews++; }
+  if (!news.length) { news = fetchYahooNews(c.ticker); await ySleep(120); }   // Yahoo RSS fallback
+  if (news.length) { rec.news = news; yNews++; }
+  if (Object.keys(rec).length) { applyY(c, rec); fresh[c.slug] = { ...(cache[c.slug]||{}), ...rec }; }
 }
-console.log(`Yahoo: dividends patched ${yFixed}/${yTargets.length} · news on ${yNews}`);
+if (!SKIP_YAHOO) console.log(`Enrichment: dividends ${yFixed}/${yTargets.length} · news ${yNews} (Google→Yahoo)`);
 
 // Fundamentals (market cap, P/E, P/B, EPS, 52-week) for ALL listed counters — batched, ~15 calls.
-const cr = yahooCrumb();
-const Q = fetchYahooQuotes(companies.filter(c => c.ticker).map(c => c.ticker), cr);
-let yFund = 0;
-for (const c of companies) { if (c.ticker && Q[c.ticker]) { c.fund = { ...(c.fund||{}), ...Q[c.ticker] }; yFund++; } }
-console.log(`Yahoo fundamentals: ${yFund} counters${cr ? '' : ' (crumb failed — 52-week only)'}`);
+if (!SKIP_YAHOO) {
+  const cr = yahooCrumb();
+  const Q = fetchYahooQuotes(companies.filter(c => c.ticker).map(c => c.ticker), cr);
+  let yFund = 0;
+  for (const c of companies) { if (c.ticker && Q[c.ticker]) { c.fund = { ...(c.fund||{}), ...Q[c.ticker] }; fresh[c.slug] = { ...(cache[c.slug]||{}), ...(fresh[c.slug]||{}), fund: c.fund }; yFund++; } }
+  console.log(`Yahoo fundamentals: ${yFund} counters${cr ? '' : ' (crumb failed — 52-week only)'}`);
+  // persist merged last-good cache (fund + news + dividends) for the next run / a throttled build
+  try {
+    const merged = { ...cache, ...fresh };
+    mkdirSync(new URL('./data/', import.meta.url), { recursive: true });
+    writeFileSync(CACHE_URL, JSON.stringify(merged));
+    console.log(`Cache saved: ${Object.keys(merged).length} counters → data/yahoo-cache.json`);
+  } catch (e) { console.log('Cache save failed:', e.message); }
+}
 
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
   .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false, divIncomplete: c?c.divIncomplete:divIncomplete(r.slug) }; });
@@ -1272,13 +1380,41 @@ const listed = all.filter(c => c.ticker);                                   // c
 const dividendStocks = listed.filter(c => c.ttm > 0 || c.divIncomplete);
 const exWeekCount = dividendStocks.filter(c => { const nx = c.divs.find(d => d.exISO >= TODAY); return nx && daysTo(nx.exISO) <= 7; }).length;
 
+// ---- home-hub data: counts, trending (biggest names), latest news, SSB rate range ----
+const reitCountH = listed.filter(c => c.isReit).length;
+const etfCountH = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete)).length;
+const hyCount = dividendStocks.filter(c => c.yieldPct!=null && c.yieldPct>=6 && c.yieldPct<=20).length;
+const _seenTrend = new Set();   // one card per company — drop secondary/foreign-currency lines (e.g. "Singtel 10", "YZJ Shipbldg CNY")
+const _haveCap = listed.some(c => c.fund && c.fund.mktCap);
+const _trendPool = _haveCap
+  ? [...listed].filter(c => c.cur==='SGD' && c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap)
+  : [...dividendStocks].filter(c => c.cur==='SGD').sort((a,b) => (b.ttm||0) - (a.ttm||0));   // fallback (no Yahoo): biggest dividend payers
+const trending = _trendPool
+  .filter(c => { const k = c.name.toLowerCase().split(/[\s-]/)[0]; if (_seenTrend.has(k)) return false; _seenTrend.add(k); return true; })
+  .slice(0, 6)
+  .map(c => ({ name: c.name, ticker: c.ticker, slug: c.slug, price: c.price, cur: c.cur, yieldPct: c.yieldPct,
+    chg: (c.chgPct!=null && c.chgPct!==0) ? c.chgPct : (c.fund && c.fund.chg!=null ? c.fund.chg : null) }));
+// Hub "Latest news": curate to the biggest, best-known counters + whitelisted outlets only — avoids obscure
+// micro-caps and ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news).
+const _newsSlugs = new Set([...listed].filter(c => c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap).slice(0, 60).map(c => c.slug));
+const hubNews = companies.filter(c => _newsSlugs.has(c.slug) && c.news && c.news.length)
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, source: n.source || '' })))
+  .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
+  .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)   // de-dupe identical headlines across stocks
+  .slice(0, 5);
+const hub = { divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
+  ssbLo: ssb && ssb.current ? ssb.current.y1 : null, ssbHi: ssb && ssb.current ? ssb.current.y10 : null,
+  trending, news: hubNews };
+
 const out = new URL('./dist/', import.meta.url);
-rmSync(out, { recursive: true, force: true });
+// Clear dist's CONTENTS rather than rmdir'ing dist itself — on Windows the folder handle can be
+// held (Explorer window, Defender, indexer) causing EBUSY on rmdir even when children are deletable.
 mkdirSync(out, { recursive: true });
+for (const entry of readdirSync(out)) rmSync(new URL(entry, out), { recursive: true, force: true, maxRetries: 12, retryDelay: 300 });
 for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
 mkdirSync(new URL('og/', out), { recursive: true });   // per-page social cards (assets/og/*.png → /og/*.png)
 try { const ogDir = new URL('assets/og/', import.meta.url); for (const f of readdirSync(ogDir)) if (f.endsWith('.png')) copyFileSync(new URL(f, ogDir), new URL(`og/${f}`, out)); } catch {}
-writeFileSync(new URL('index.html', out), homepage(listed, index));
+writeFileSync(new URL('index.html', out), homepage(listed, index, hub));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
@@ -1290,8 +1426,8 @@ for (const c of companies) {
   writeFileSync(new URL('index.html', dir), stockPage(c));
   n++;
 }
-mkdirSync(new URL('screener/', out), { recursive: true });
-writeFileSync(new URL('screener/index.html', out), listPage({
+mkdirSync(new URL('dividends/', out), { recursive: true });
+writeFileSync(new URL('dividends/index.html', out), listPage({
   title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
   desc: 'The highest-yielding SGX dividend stocks and REITs, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.',
   h1: 'Best dividend stocks in Singapore', sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listed.length} listed stocks above.)`,
@@ -1302,7 +1438,10 @@ writeFileSync(new URL('screener/index.html', out), listPage({
     { q: 'Are dividends taxed in Singapore?', a: 'No. Singapore uses a one-tier corporate tax system, so dividends paid to individual shareholders are tax-free, and there is no capital-gains tax.' },
     { q: 'How do I buy dividend stocks in Singapore?', a: 'Through any SGX brokerage (DBS Vickers, moomoo, Tiger, Interactive Brokers and others) or with SRS funds. You must own the shares before the ex-dividend date to receive the next payout.' },
   ],
-  list: dividendStocks, canon: SITE + '/screener/', typeChips: true, og: '/og/screener.png' }));
+  list: dividendStocks, canon: SITE + '/dividends/', typeChips: true, og: '/og/screener.png' }));
+// keep the old /screener/ URL alive → 301-style redirect to the renamed /dividends/ page
+mkdirSync(new URL('screener/', out), { recursive: true });
+writeFileSync(new URL('screener/index.html', out), `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Best Dividend Stocks in Singapore | StockKaki</title><link rel="canonical" href="${SITE}/dividends/"><meta http-equiv="refresh" content="0; url=/dividends/"><meta name="robots" content="noindex,follow"></head><body>Redirecting to <a href="/dividends/">Best dividend stocks in Singapore</a>…</body></html>`);
 mkdirSync(new URL('reits/', out), { recursive: true });
 const reitList = listed.filter(c => c.isReit);
 writeFileSync(new URL('reits/index.html', out), listPage({
@@ -1343,7 +1482,7 @@ writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'u
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 
-const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
@@ -1353,7 +1492,7 @@ writeFileSync(new URL('llms.txt', out), `# StockKaki — Singapore dividend & st
 
 ## Key pages
 - Upcoming SGX dividends & ex-dates: ${SITE}/
-- Best dividend stocks (screener, ranked by yield): ${SITE}/screener/
+- Best dividend stocks (ranked by yield): ${SITE}/dividends/
 - Singapore REITs by distribution yield: ${SITE}/reits/
 - Singapore Savings Bonds (SSB) rates, step-up schedule & returns calculator: ${SITE}/ssb/
 - SGX corporate actions / announcements: ${SITE}/announcements/
