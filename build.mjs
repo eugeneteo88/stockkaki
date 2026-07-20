@@ -321,15 +321,22 @@ const STYLE = `
   .lr-yield{color:var(--accent-dk);font-weight:600} .lr-yield.mut{color:var(--muted);font-weight:500}
   .lr-ex,.lr-exd{color:#6E5E50;font-size:12.5px} html[data-theme="dark"] .lr-ex,html[data-theme="dark"] .lr-exd{color:var(--muted)}
   .lr-meta{display:none} .lr-tag{margin-left:6px}
+  .lr-sub{font-size:12px;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .lr-type .tag{vertical-align:middle}
   .cols-screener .lrow{grid-template-columns:minmax(0,1fr) 92px 82px 104px 108px}
   .cols-home .lrow{grid-template-columns:minmax(0,1fr) 122px 92px 84px}
+  .cols-annc .lrow{grid-template-columns:minmax(0,1fr) 104px 92px 96px}
+  .cols-annc .lr-name{flex-direction:column;align-items:flex-start;gap:1px}
+  .cols-annc .lr-co{max-width:100%}
+  .cols-ssbr .lrow{grid-template-columns:minmax(0,1fr) 78px 86px 116px 74px}
   .lsort{display:none}
   @media(max-width:560px){
-    .cols-screener .lrow,.cols-home .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
+    .cols-screener .lrow,.cols-home .lrow,.cols-annc .lrow,.cols-ssbr .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
     .lhead{display:none}
-    .lr-price,.lr-div,.lr-ex,.lr-amt,.lr-exd{display:none}
+    .lr-price,.lr-div,.lr-ex,.lr-amt,.lr-exd,.lr-sub{display:none}
     .lr-name{grid-column:1;grid-row:1} .lr-name .tick{display:inline}
     .lr-yield{grid-column:2;grid-row:1;font-size:16px}
+    .cols-annc .lr-type{grid-column:2;grid-row:1;text-align:right}
     .lr-meta{display:block;grid-column:1/-1;grid-row:2;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted)}
     .lsort{display:flex;gap:8px;margin:14px 0 -2px;overflow-x:auto;scrollbar-width:none} .lsort::-webkit-scrollbar{display:none}
     .lsort button{white-space:nowrap;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 13px;border-radius:999px;cursor:pointer}
@@ -537,13 +544,17 @@ sortBy('y');
 // ---------- announcements ----------
 function announcementsPage(anns) {
   const items = anns.slice(0, 200);
-  const rows = items.map(a => `        <tr data-t="${a.type}">
-          <td class="date">${pretty(a.annc)}</td>
-          <td><a class="co" href="/stock/${a.slug}/">${a.name}</a></td>
-          <td><span class="tag">${a.type}</span></td>
-          <td class="hide-m" style="color:var(--muted);font-size:13px">${esc(a.particulars).slice(0,80)}</td>
-          <td class="r date hide-m">${a.ex?pretty(a.ex):'—'}</td>
-        </tr>`).join('\n');
+  const rows = items.map(a => {
+    const det = esc(a.particulars || '');
+    const meta = [pretty(a.annc), a.ex ? 'Ex '+prettyShort(a.ex) : null, det ? det.slice(0,46) : null].filter(Boolean).join('  ·  ');
+    return `        <a class="lrow" href="/stock/${a.slug}/" data-t="${a.type}">
+          <span class="lr-name"><span class="lr-co">${a.name}</span><span class="lr-sub">${det.slice(0,72) || '—'}</span></span>
+          <span class="lr-type"><span class="tag">${a.type}</span></span>
+          <span class="lr-exd">${pretty(a.annc)}</span>
+          <span class="lr-ex">${a.ex ? prettyShort(a.ex) : '—'}</span>
+          <span class="lr-meta">${meta}</span>
+        </a>`;
+  }).join('\n');
   const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="kicker">Announcements</div>
     <h1 class="serif" style="font-size:30px">SGX corporate actions</h1>
@@ -556,15 +567,16 @@ function announcementsPage(anns) {
     <span class="chip" data-t="Entitlement">Entitlements</span>
     <span class="chip" data-t="Offer">Offers</span>
   </div>
-  <div class="card" style="margin-top:12px"><table>
-    <thead><tr><th>Announced</th><th>Company</th><th>Type</th><th class="hide-m">Details</th><th class="r hide-m">Ex-date</th></tr></thead>
-    <tbody id="tb">
+  <div class="ltable cols-annc" style="margin-top:12px">
+    <div class="lrow lhead"><span>Company</span><span class="lr-type">Type</span><span class="lr-exd">Announced</span><span class="lr-ex">Ex-date</span></div>
+    <div id="tb">
 ${rows}
-    </tbody>
-  </table><div id="none" class="empty" style="display:none">No announcements match.</div></div>`;
+    </div>
+  </div>
+  <div id="none" class="empty" style="display:none">No announcements match.</div>`;
   const script = `<script>
 const tb=document.getElementById('tb'),none=document.getElementById('none');
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');const t=c.dataset.t;let vis=0;tb.querySelectorAll('tr').forEach(r=>{const ok=(t==='all'||r.dataset.t===t);r.style.display=ok?'':'none';if(ok)vis++;});none.style.display=vis?'none':'block';}));
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');const t=c.dataset.t;let vis=0;tb.querySelectorAll('.lrow').forEach(r=>{const ok=(t==='all'||r.dataset.t===t);r.style.display=ok?'':'none';if(ok)vis++;});none.style.display=vis?'none':'block';}));
 </script>`;
   return shell('SGX Corporate Actions & Announcements — Dividends, Rights, Offers | StockKaki',
     'Latest SGX corporate actions: dividends, rights issues, entitlements and offers from Singapore-listed companies. Updated daily.',
@@ -688,14 +700,19 @@ function ssbPage(ssb, sgs) {
     return `        <tr${hl}><td class="date">Year ${y}</td><td class="r amt">${cp.toFixed(2)}%</td><td class="r yld">${c.returns[i].toFixed(2)}%</td></tr>`;
   }).join('\n');
 
-  // recent issues
-  const recentRows = ssb.recent.map(r => `        <tr>
-          <td><b>${monthYr(r.issueISO)}</b> <span class="tick">${r.code}</span></td>
-          <td class="r amt">${r.y1.toFixed(2)}%</td>
-          <td class="r yld">${r.y10.toFixed(2)}%</td>
-          <td class="r amt hide-m">${r.applied&&r.size?'S$'+r.applied.toFixed(0)+'m / '+r.size.toFixed(0)+'m':'—'}</td>
-          <td class="r date hide-m">${r.cutoff!=null?'S$'+r.cutoff.toFixed(2):'—'}</td>
-        </tr>`).join('\n');
+  // recent issues (grid row: month+code, 1-yr, 10-yr avg, applied/offered, cut-off)
+  const recentRows = ssb.recent.map(r => {
+    const applied = (r.applied && r.size) ? 'S$'+r.applied.toFixed(0)+'m / '+r.size.toFixed(0)+'m' : '—';
+    const meta = `1-yr ${r.y1.toFixed(2)}%  ·  ${applied!=='—' ? applied+' applied' : 'just opened'}`;
+    return `        <div class="lrow">
+          <span class="lr-name"><span class="lr-co">${monthYr(r.issueISO)}</span><span class="tick">${r.code}</span></span>
+          <span class="lr-div">${r.y1.toFixed(2)}%</span>
+          <span class="lr-yield">${r.y10.toFixed(2)}%</span>
+          <span class="lr-amt">${applied}</span>
+          <span class="lr-price">${r.cutoff!=null ? 'S$'+r.cutoff.toFixed(2) : '—'}</span>
+          <span class="lr-meta">${meta}</span>
+        </div>`;
+  }).join('\n');
 
   // trend chart (inline SVG, no libs) — 1-yr rate vs 10-yr average return
   const S = ssb.series, n = S.length;
@@ -786,12 +803,10 @@ ${stepRows}
   </div>
 
   <div class="h2">Recent issues</div>
-  <div class="card"><table>
-    <thead><tr><th>Issue</th><th class="r">1-yr</th><th class="r">10-yr avg</th><th class="r hide-m">Applied / offered</th><th class="r hide-m">Cut-off</th></tr></thead>
-    <tbody>
+  <div class="ltable cols-ssbr">
+    <div class="lrow lhead"><span>Issue</span><span class="lr-div">1-yr</span><span class="lr-yield">10-yr avg</span><span class="lr-amt">Applied / offered</span><span class="lr-price">Cut-off</span></div>
 ${recentRows}
-    </tbody>
-  </table></div>
+  </div>
   <p class="metaline" style="font-size:12px">Data from the Monetary Authority of Singapore (MAS), updated each issue. Not financial advice — see <a href="/disclaimer/" style="color:var(--accent-dk)">disclaimer</a>.</p>
 
   ${faqHTML}
