@@ -419,11 +419,9 @@ function homepage(payers, exWeekCount, index) {
   const idxJson = JSON.stringify(index).replace(/</g,'\\u003c');
   const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
   const sorted = [...payers].sort((a,b) => key(b) - key(a));
-  const body = `  <section class="hero" style="padding-bottom:4px">
-    <div class="kicker">🦁 Huat with dividends</div>
-    <h1 class="serif">Catch every payout.</h1>
-    <p class="sub">Every SGX dividend stock — ranked by yield, with price, payout and next ex-date. Live, clean, free.</p>
-    <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 13px">Dividends</h1>
+    <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
     <div><span class="live"><span class="pulse"></span> ${sorted.length} dividend payers · ${exWeekCount} going ex this week · updated ${pretty(TODAY)}</span></div>
   </section>
   <div class="chips">
@@ -504,10 +502,9 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips }) {
     <span class="chip" data-f="reit">REITs &amp; Trusts</span>
     <span class="chip" data-f="etf">ETFs</span>
   </div>` : '';
-  const body = `  <section class="hero" style="padding-bottom:4px">
-    <div class="kicker">${kicker}</div>
-    <h1 class="serif" style="font-size:30px">${h1}</h1>
-    <p class="sub">${sub}</p>
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">${h1}</h1>
+    <p class="sub" style="margin-bottom:13px">${sub}</p>
     <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
   </section>
   ${chips}
@@ -557,10 +554,9 @@ function announcementsPage(anns) {
           <span class="lr-meta">${meta}</span>
         </a>`;
   }).join('\n');
-  const body = `  <section class="hero" style="padding-bottom:4px">
-    <div class="kicker">Announcements</div>
-    <h1 class="serif" style="font-size:30px">SGX corporate actions</h1>
-    <p class="sub">Latest dividends, rights, entitlements and offers from SGX-listed companies — updated daily.</p>
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Announcements</h1>
+    <p class="sub" style="margin-bottom:0">Latest SGX dividends, rights, entitlements and offers — updated daily.</p>
   </section>
   <div class="chips">
     <span class="chip on" data-t="all">All</span>
@@ -795,11 +791,9 @@ function ssbPage(ssb, sgs) {
     { "@type":"FAQPage","mainEntity":faqs.map(f=>({ "@type":"Question","name":f.q,"acceptedAnswer":{ "@type":"Answer","text":f.a } })) } ] };
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
 
-  const body = `  <section class="hero" style="padding-bottom:2px">
-    <div class="crumb"><a href="/">StockKaki</a> › Singapore Savings Bonds</div>
-    <div class="kicker">🇸🇬 Singapore Savings Bonds</div>
-    <h1 class="serif" style="font-size:30px">Singapore Savings Bonds (SSB)</h1>
-    <p class="sub">This month's SSB rate, the full 10-year step-up, and how much you'd earn — straight from MAS, updated every issue.</p>
+  const body = `  <section class="hero" style="padding:22px 0 2px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Savings Bonds</h1>
+    <p class="sub" style="margin-bottom:0">This month's SSB rates, the 10-year step-up, returns & swap calculators, and allotment — from MAS, updated every issue.</p>
   </section>
   <div class="ssb-card">
     ${statusHTML}
@@ -932,6 +926,11 @@ else{const{data,error}=await sb.rpc('${rpc}',{p_token:t});
 
 // ---------- build ----------
 const secList = fetchSecurities();
+// The securities feed is properly cased ("SBS Transit", "ESR REIT") while the dividend feed is
+// ALL-CAPS — so harvest genuine acronyms (all-caps tokens) from it to fix title-casing. Some feed
+// names are fully caps, so skip common corporate/geographic/English words to avoid false acronyms.
+const NOTACR = new Set('LTD LIMITED GROUP HOLDINGS HOLDING CORP CORPORATION COMPANY PTE INC BERHAD BHD PLC THE AND FOR NEW ASIA PACIFIC ASIAN GLOBAL INTERNATIONAL INTL NATIONAL INDUSTRIES INDUSTRIAL RESOURCES TECHNOLOGY TECH CHINA INDIA SINGAPORE JAPAN KOREA EUROPE EUROPEAN AMERICA RETAIL PROPERTY PROPERTIES CAPITAL MARINE ENERGY FOOD FOODS GREEN HEALTH MEDICAL HEALTHCARE FINANCIAL FINANCE SERVICE SERVICES SYSTEMS SYSTEM SOLUTIONS LOGISTICS MARITIME SHIPPING PETROLEUM CHEMICAL CHEMICALS MEDIA DIGITAL INVESTMENT INVESTMENTS MANAGEMENT DEVELOPMENT ENGINEERING MANUFACTURING ELECTRONICS HOTEL HOTELS RESORT RESORTS LAND CITY METAL METALS STEEL POWER WATER GLOBAL WORLD UNITED FIRST GREAT BANK BANKING INSURANCE TELECOM AGRICULTURE PLANTATION PLANTATIONS PALM PAPER PRINT CONSTRUCTION ENTERPRISE ENTERPRISES VENTURES PARTNERS COMMERCIAL HOSPITALITY TRANSIT PHARMA MINING GOLD LIFE HOME'.split(' '));
+for (const s of secList) { for (const w of (s.name||'').split(/[^A-Za-z]+/)) { if (w.length>=2 && w.length<=6 && /^[A-Z]+$/.test(w) && !NOTACR.has(w)) ACR.add(w); } }
 const secByNorm = new Map();
 for (const s of secList) { const k = secNorm(s.name); if (k && !secByNorm.has(k)) secByNorm.set(k, s); }
 const ssb = fetchSSB();           // Singapore Savings Bonds (MAS)
