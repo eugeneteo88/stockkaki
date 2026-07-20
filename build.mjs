@@ -49,6 +49,12 @@ const TICKER_ALIAS = {
   S68:'Singapore Exchange', S63:'Singapore Tech Engineering', G13:'Genting Singapore',
   Y92:'Thai Beverage', C07:'Jardine Cycle & Carriage', J36:'Jardine Matheson Holdings',
   C09:'City Developments', D01:'DFI Retail Group', U96:'Sembcorp Industries', BS6:'Yangzijiang Shipbldg',
+  // REITs/trusts the price feed abbreviates or smushes vs the dividend feed's fuller name
+  J85:'CDL Hospitality Trusts', Q5T:'Far East Hospitality Trust', BUOU:'Frasers Logistics & Commercial Trust',
+  CMOU:'Keppel Pacific Oak US REIT', JYEU:'Lendlease Global Commercial REIT', BTOU:'Manulife US REIT',
+  OXMU:'Prime US REIT', P40U:'Starhill Global REIT', T82U:'Suntec Real Estate Inv Trust',
+  ODBU:'United Hampshire US REIT', AW9U:'First Real Estate Inv Trust', NS8U:'Hutchison Port Holdings Trust',
+  P7VU:'Hutchison Port Holdings Trust',
 };
 const secNorm = (s) => {
   s = (s||'').toLowerCase().replace(/&/g,' and ')
@@ -164,6 +170,24 @@ function fetchSSB() {
   if (!rows.length) return null;
   return { current: rows[0], recent: rows.slice(0, 12), series: rows.slice(0, 36).reverse() };
 }
+// Project the NEXT (unannounced) SSB from MAS daily SGS benchmark yields.
+// MAS sets each issue's rates from the average SGS yields the month before applications open,
+// so the 1st-year rate tracks the 1Y yield and the N-year average return tracks the NY yield.
+function fetchSGSYields() {
+  let recs;
+  try { recs = getMAS('pricesandyields?rows=6000&fields=end_of_period,benchmark_tenor,bid_yield').result.records; } catch { return null; }
+  const withY = (recs || []).filter(r => r.bid_yield != null);
+  if (!withY.length) return null;
+  const latest = withY.map(r => r.end_of_period).sort().slice(-1)[0];
+  const ym = latest.slice(0, 7);                                   // reference month = latest data month
+  const monthRows = withY.filter(r => r.end_of_period.startsWith(ym));
+  const avg = (t) => { const rs = monthRows.filter(r => String(r.benchmark_tenor)===t); return rs.length ? rs.reduce((s,r)=>s+r.bid_yield,0)/rs.length : null; };
+  const days = new Set(monthRows.map(r => r.end_of_period)).size;
+  const y1 = avg('1'), y10 = avg('10');
+  if (y1==null || y10==null) return null;
+  return { refYM: ym, days, y1, y2: avg('2'), y5: avg('5'), y10 };
+}
+const monthAdd = (ym, n) => { let [y,m] = ym.split('-').map(Number); m += n; y += Math.floor((m-1)/12); m = ((m-1)%12+12)%12+1; return `${MONTHS[m-1]} ${y}`; };
 
 // Exact normalised match only. (A loose startsWith() fallback used to mis-attach e.g.
 // "Keppel Pacific Oak US REIT" → "Keppel Ltd" because both start with "keppel".)
@@ -182,7 +206,7 @@ const groupCompanies = (rows) => {
     c.ticker = tk ? tk.ticker : null; c.price = tk ? tk.price : null; c.secType = tk ? tk.secType : null;
     c.chgPct = tk ? tk.chgPct : null; c.vol = tk ? tk.vol : null;
     c.cur = tk ? tk.cur : (c.divs[0] ? c.divs[0].ccy : 'SGD');   // trading currency, so USD/GBP payers aren't dropped
-    c.isReit = c.secType==='reits' || c.secType==='businesstrusts' || /\breit\b|\btrust\b/i.test(c.name);
+    c.isReit = c.secType==='reits' || c.secType==='businesstrusts' || (c.secType!=='etfs' && /\breit\b|\btrust\b/i.test(c.name));
     c.divIncomplete = c.isReit && divIncomplete(c.slug);   // scrip/DRP hides the amount only for the multi-component REIT filings
     c.ttm = c.divs.filter(d => d.ccy===c.cur && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((s,d)=>s+d.amtNum,0);
     c.yieldPct = (c.price>0 && c.ttm>0 && !c.divIncomplete) ? c.ttm/c.price*100 : null;
@@ -571,6 +595,7 @@ ${hist}
     <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
     <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
     ${c.price?`<div class="quote"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
+    ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
   </section>
   ${divSection}
   ${faqHTML}
@@ -582,8 +607,27 @@ ${hist}
     `${SITE}/stock/${c.slug}/`, body);
 }
 
+// Projected next-issue card from SGS benchmark yields.
+function projCard(ssb, sgs) {
+  if (!sgs || !ssb) return '';
+  const c = ssb.current;
+  const refMonth = monthAdd(sgs.refYM, 0), appMonth = monthAdd(sgs.refYM, 1);
+  const d = sgs.y10 - c.y10;
+  const dir = Math.abs(d) < 0.03 ? '≈ about the same as' : d > 0 ? '↑ higher than' : '↓ lower than';
+  return `  <div class="h2">Next issue — projected</div>
+  <div class="ssb-card" style="border-left-color:#3E8FB0">
+    <span class="ssb-status" style="background:var(--bg);color:var(--muted)">Projection · ${refMonth} SGS yields · ${sgs.days} trading day${sgs.days>1?'s':''} so far</span>
+    <div class="ssb-stats">
+      <div class="bigstat"><div class="k">Projected 1st-year</div><div class="v" style="color:#3E8FB0">~${sgs.y1.toFixed(2)}%</div><div class="cap">now ${c.y1.toFixed(2)}%</div></div>
+      <div class="bigstat"><div class="k">Projected 10-yr average</div><div class="v" style="color:#3E8FB0">~${sgs.y10.toFixed(2)}%</div><div class="cap">${dir} the ${c.y10.toFixed(2)}% now</div></div>
+    </div>
+    <p class="ssb-meta">Projected average return by holding period: <b>1yr ~${sgs.y1.toFixed(2)}%</b> · 2yr ~${sgs.y2!=null?sgs.y2.toFixed(2):'—'}% · 5yr ~${sgs.y5!=null?sgs.y5.toFixed(2):'—'}% · <b>10yr ~${sgs.y10.toFixed(2)}%</b>. The next issue's applications open around early ${appMonth}, when MAS confirms the final rate. This is an estimate from SGS benchmark yields (MAS sets SSB rates from the prior month's average yields) — not an official figure.</p>
+  </div>
+`;
+}
+
 // ---------- Singapore Savings Bonds ----------
-function ssbPage(ssb) {
+function ssbPage(ssb, sgs) {
   if (!ssb) {
     const body = `  <section class="hero"><div class="kicker">🇸🇬 Singapore Savings Bonds</div><h1 class="serif" style="font-size:30px">SSB rates</h1>
     <p class="sub">Live SSB rates from MAS are temporarily unavailable — please check back shortly.</p></section>`;
@@ -672,7 +716,7 @@ function ssbPage(ssb) {
     </div>
     <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds. Rates are the same at every bank — they're set by MAS.</p>
   </div>
-
+${projCard(ssb, sgs)}
   <div class="h2">How much you'd earn</div>
   <div class="ssb-card" style="border-left-color:var(--line)">
     <div class="calc">
@@ -771,6 +815,7 @@ const secList = fetchSecurities();
 const secByNorm = new Map();
 for (const s of secList) { const k = secNorm(s.name); if (k && !secByNorm.has(k)) secByNorm.set(k, s); }
 const ssb = fetchSSB();           // Singapore Savings Bonds (MAS)
+const sgs = fetchSGSYields();     // SGS benchmark yields → project the next SSB issue
 const raw = await fetchRaw(50);   // ~5-6 years of history
 SCRIP = collectScrip(raw);        // stocks whose trailing distributions hide the amount (scrip/DRP)
 const rows = parseDividends(raw);
@@ -791,7 +836,7 @@ for (const s of secList) {
   const cur = s.cur || 'SGD';
   const divs = dc ? dc.divs : [];
   const ttm = divs.filter(d => d.ccy===cur && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((a,d)=>a+d.amtNum,0);   // yield in the counter's own currency (USD price ÷ USD dividend)
-  const isReit = s.type==='reits' || s.type==='businesstrusts' || /\breit\b|\btrust\b/i.test(s.name);
+  const isReit = s.type==='reits' || s.type==='businesstrusts' || (s.type!=='etfs' && /\breit\b|\btrust\b/i.test(s.name));
   const incomplete = isReit && divIncomplete(slug);
   companies.push({
     name: dc ? dc.name : s.name, slug,
@@ -822,23 +867,26 @@ for (const c of companies) {
   n++;
 }
 const all = companies;
-const dividendStocks = all.filter(c => c.divs.length > 0);
+const listed = all.filter(c => c.ticker);                                   // currently trading on SGX (has a live counter)
+// Screener = listed counters that pay NOW (trailing-12-month distribution, or a REIT scrip payer) — so every row has a real number, no blanks.
+const dividendStocks = listed.filter(c => c.ttm > 0 || c.divIncomplete);
 mkdirSync(new URL('screener/', out), { recursive: true });
 writeFileSync(new URL('screener/index.html', out), listPage({
   title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
   desc: 'The highest-yielding SGX dividend stocks and REITs, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.',
-  kicker: 'Screener · Rankings', h1: 'Best dividend stocks in Singapore', sub: `${dividendStocks.length} dividend-paying SGX counters — ranked by highest yield, updated daily. (All ${all.length} SGX stocks are searchable above.)`,
+  kicker: 'Screener · Rankings', h1: 'Best dividend stocks in Singapore', sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listed.length} listed stocks above.)`,
   list: dividendStocks, canon: SITE + '/screener/', typeChips: true }));
 mkdirSync(new URL('reits/', out), { recursive: true });
+const reitList = listed.filter(c => c.isReit);
 writeFileSync(new URL('reits/index.html', out), listPage({
   title: 'Singapore REIT Dividends & Distribution Yields | StockKaki',
   desc: 'All SGX-listed REITs and business trusts ranked by distribution yield. Live from SGX, updated daily.',
-  kicker: 'S-REITs', h1: 'Singapore REITs by yield', sub: 'Every SGX REIT and business trust, ranked by distribution yield.',
-  list: all.filter(c => c.isReit), canon: SITE + '/reits/', typeChips: false }));
+  kicker: 'S-REITs', h1: 'Singapore REITs by yield', sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
+  list: reitList, canon: SITE + '/reits/', typeChips: false }));
 mkdirSync(new URL('announcements/', out), { recursive: true });
 writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
 mkdirSync(new URL('ssb/', out), { recursive: true });
-writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb));
+writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb, sgs));
 mkdirSync(new URL('confirm/', out), { recursive: true });
 writeFileSync(new URL('confirm/index.html', out), utilPage('Confirm your alerts', 'confirm_subscriber', "You're in! 🦁", "You'll get StockKaki dividend & ex-date alerts.", 'Already confirmed (or the link expired).'));
 mkdirSync(new URL('unsubscribe/', out), { recursive: true });
