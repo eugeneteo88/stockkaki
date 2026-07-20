@@ -8,6 +8,7 @@
  */
 import { writeFileSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 const API = 'https://api.sgx.com/corporateactions/v1.0';
@@ -68,6 +69,7 @@ const csym = (cur) => CSYM[cur] || (cur ? cur+' ' : 'S$');
 const money = (ccy, amt) => `${ccy==='USD'?'US$':ccy==='SGD'?'S$':ccy+' '}${amt}`;
 const num = (n) => n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
 const fmtVol = (n) => (n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n));
+const fmtCap = (cur, n) => { if (!n) return null; const s = csym(cur); return n>=1e9 ? s+(n/1e9).toFixed(2)+'B' : n>=1e6 ? s+(n/1e6).toFixed(0)+'M' : s+n.toFixed(0); };
 const esc = (s) => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
 const TODAY = new Date().toISOString().slice(0,10);
@@ -151,7 +153,30 @@ function fetchYahooDivs(ticker) {
   const ev = r.events && r.events.dividends;
   if (ev) for (const d of Object.values(ev)) { if (d && d.amount > 0) divs.push({ exISO: new Date(d.date*1000).toISOString().slice(0,10), amount: d.amount }); }
   divs.sort((a,b) => a.exISO < b.exISO ? 1 : -1);
-  return { cur, divs };
+  const m = r.meta;
+  const meta = { w52lo: m.fiftyTwoWeekLow, w52hi: m.fiftyTwoWeekHigh, dayLo: m.regularMarketDayLow, dayHi: m.regularMarketDayHigh, vol: m.regularMarketVolume, price: m.regularMarketPrice };
+  return { cur, divs, meta };
+}
+// Yahoo cookie+crumb (needed for the fundamentals/quote endpoint) — fetched once per build.
+function yahooCrumb() {
+  const cj = tmpdir() + '/sk_yahoo_cookies.txt';
+  try {
+    execFileSync('curl', ['-s','-m','20','-A',UA,'-c',cj,'https://fc.yahoo.com/','-o','/dev/null']);
+    const crumb = execFileSync('curl', ['-s','-m','20','-A',UA,'-b',cj,'-c',cj,'https://query2.finance.yahoo.com/v1/test/getcrumb']).toString().trim();
+    if (crumb && crumb.length < 40 && !/[<{]/.test(crumb)) return { crumb, cj };
+  } catch {}
+  return null;
+}
+// Batch fundamentals (market cap, P/E, P/B, EPS, 52-week) — up to 50 symbols per call.
+function fetchYahooQuotes(tickers, cr) {
+  const map = {};
+  if (!cr) return map;
+  for (let i = 0; i < tickers.length; i += 50) {
+    const syms = tickers.slice(i, i+50).map(t => encodeURIComponent(t)+'.SI').join(',');
+    let rs; try { rs = JSON.parse(execFileSync('curl', ['-s','-m','25','-A',UA,'-b',cr.cj, `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${syms}&crumb=${encodeURIComponent(cr.crumb)}`], { maxBuffer: 16*1024*1024 }).toString()).quoteResponse.result; } catch { rs = null; }
+    if (rs) for (const r of rs) { const t = (r.symbol||'').replace(/\.SI$/,''); if (t) map[t] = { mktCap:r.marketCap, pe:r.trailingPE, pb:r.priceToBook, eps:r.epsTrailingTwelveMonths, w52lo:r.fiftyTwoWeekLow, w52hi:r.fiftyTwoWeekHigh, dayLo:r.regularMarketDayLow, dayHi:r.regularMarketDayHigh, vol:r.regularMarketVolume, cur:r.currency }; }
+  }
+  return map;
 }
 const decodeEntities = (s) => (s||'').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;|&#0?39;|&#x27;/g,"'").replace(/&#([0-9]+);/g,(_,n)=>String.fromCharCode(+n)).trim();
 function fetchYahooNews(ticker) {
@@ -333,7 +358,17 @@ const STYLE = `
   .metaline{color:var(--muted);font-size:13.5px;margin-top:14px} .metaline b{color:var(--ink);font-family:'JetBrains Mono',monospace}
   .h2{font-family:'Poppins',sans-serif;font-weight:600;font-size:16px;margin:26px 0 10px}
   .faq{max-width:760px} .faq-q{font-weight:600;margin-top:16px} .faq-a{color:var(--muted);font-size:14.5px;margin-top:4px;line-height:1.7}
-  .newslist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;box-shadow:0 12px 36px -28px rgba(58,42,32,.55)}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:20px 0 0;overflow-x:auto;scrollbar-width:none} .tabs::-webkit-scrollbar{display:none}
+  .tab{background:none;border:0;border-bottom:2px solid transparent;padding:11px 16px;margin-bottom:-1px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap} .tab.on{color:var(--ink);border-bottom-color:var(--accent)} .tab:hover{color:var(--ink)}
+  .tabpane[hidden]{display:none}
+  .ovgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:16px} @media(min-width:620px){.ovgrid{grid-template-columns:repeat(3,1fr)}}
+  .ovstat{display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card)}
+  .ov-k{color:var(--muted);font-size:12px} .ov-v{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:17px;color:var(--ink)}
+  .ov-range{margin-top:22px} .ov-range-h{font-size:13px;color:var(--muted)}
+  .ov-bar{position:relative;height:6px;background:var(--line);border-radius:3px;margin:14px 0 7px}
+  .ov-mark{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%);box-shadow:0 0 0 3px var(--card)}
+  .ov-range-f{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .newslist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;box-shadow:0 12px 36px -28px rgba(58,42,32,.55);margin-top:16px}
   .newsitem{display:block;padding:14px 0;border-bottom:1px solid var(--line);color:inherit} .newsitem:last-child{border-bottom:0}
   .news-t{display:block;font-weight:500;font-size:15px;line-height:1.4} .newsitem:hover .news-t{color:var(--accent-dk)}
   .news-m{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
@@ -688,26 +723,49 @@ ${hist}
     { "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) } ] };
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
   const newsSection = (c.news && c.news.length) ? `
-  <div class="h2">Latest news</div>
   <div class="newslist">
 ${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${n.dateISO?pretty(n.dateISO)+' · ':''}Yahoo Finance ↗</span></a>`).join('\n')}
   </div>
   <p class="metaline" style="font-size:12px">Headlines via Yahoo Finance — opens in a new tab. Not an endorsement.</p>` : '';
+  // ---- Overview tab: fundamentals (Yahoo) ----
+  const f = c.fund;
+  const fcur = (f && f.cur) || c.cur || 'SGD';
+  const CSf = csym(fcur);
+  const rangePos = (f && f.w52lo!=null && f.w52hi!=null && c.price>0 && f.w52hi>f.w52lo) ? Math.max(0, Math.min(100, (c.price-f.w52lo)/(f.w52hi-f.w52lo)*100)) : null;
+  const ovStats = f ? [
+    ['Market cap', fmtCap(fcur, f.mktCap)],
+    ['P/E ratio', f.pe!=null ? f.pe.toFixed(1) : null],
+    ['P/B ratio', f.pb!=null ? f.pb.toFixed(2) : null],
+    ['EPS (ttm)', f.eps!=null ? CSf+f.eps.toFixed(2) : null],
+    ['Dividend yield', c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : null],
+    ['Volume', f.vol ? fmtVol(f.vol) : null],
+  ].filter(x => x[1]!=null) : [];
+  const overviewSection = (ovStats.length || rangePos!=null) ? `<div class="ovgrid">${ovStats.map(s => `<div class="ovstat"><span class="ov-k">${s[0]}</span><span class="ov-v">${s[1]}</span></div>`).join('')}</div>
+  ${rangePos!=null ? `<div class="ov-range"><div class="ov-range-h"><span>52-week range</span></div><div class="ov-bar"><div class="ov-mark" style="left:${rangePos.toFixed(1)}%"></div></div><div class="ov-range-f"><span>${CSf}${f.w52lo}</span><span style="color:var(--ink)">now ${CSf}${c.price}</span><span>${CSf}${f.w52hi}</span></div></div>` : ''}
+  ${(f&&f.dayLo!=null&&f.dayHi!=null) ? `<p class="metaline" style="margin-top:16px">Day range <b>${CSf}${f.dayLo} – ${CSf}${f.dayHi}</b>.</p>` : ''}
+  <p class="metaline" style="font-size:12px">Fundamentals via Yahoo Finance — indicative.</p>` : `<p class="metaline">Company fundamentals aren't available for this counter yet.</p>`;
+  // ---- tabs ----
+  const tabDefs = [];
+  if (c.divs.length) tabDefs.push(['div','Dividends',divSection]);
+  tabDefs.push(['ov','Overview',overviewSection]);
+  if (c.news && c.news.length) tabDefs.push(['news','News',newsSection]);
+  const tabsHTML = `<div class="tabs">${tabDefs.map((t,i) => `<button class="tab${i===0?' on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>
+${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden'}>${t[2]}</div>`).join('\n')}`;
   const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
     <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
     ${c.price?`<div class="quote"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
     ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
   </section>
-  ${divSection}
-  ${newsSection}
+  ${tabsHTML}
   ${faqHTML}
   ${brokerSlot()}
   ${jsonLd}`;
+  const tabScript = `<script>document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.tabpane').forEach(function(p){p.hidden=true;});var e=document.getElementById('t-'+t.dataset.tab);if(e)e.hidden=false;});});</script>`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
     `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price ${CS}${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
-    `${SITE}/stock/${c.slug}/`, body);
+    `${SITE}/stock/${c.slug}/`, body, tabScript);
 }
 
 // Allotment tracker — did the latest issue fully allot, or was it balloted?
@@ -1026,6 +1084,7 @@ let yNews = 0;
 for (const c of yTargets) {
   const y = fetchYahooDivs(c.ticker);
   await ySleep(140);                                          // gentle pacing — a bit faster than a human, no hammering
+  if (y && y.meta) c.fund = y.meta;                           // free 52-week range / day range / volume
   if (y && y.divs.length) {
     const cur = y.cur || c.cur || 'SGD';
     const past = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
@@ -1045,6 +1104,13 @@ for (const c of yTargets) {
   if (news.length) { c.news = news; yNews++; }
 }
 console.log(`Yahoo: dividends patched ${yFixed}/${yTargets.length} · news on ${yNews}`);
+
+// Fundamentals (market cap, P/E, P/B, EPS, 52-week) for ALL listed counters — batched, ~15 calls.
+const cr = yahooCrumb();
+const Q = fetchYahooQuotes(companies.filter(c => c.ticker).map(c => c.ticker), cr);
+let yFund = 0;
+for (const c of companies) { if (c.ticker && Q[c.ticker]) { c.fund = { ...(c.fund||{}), ...Q[c.ticker] }; yFund++; } }
+console.log(`Yahoo fundamentals: ${yFund} counters${cr ? '' : ' (crumb failed — 52-week only)'}`);
 
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
   .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false, divIncomplete: c?c.divIncomplete:divIncomplete(r.slug) }; });
