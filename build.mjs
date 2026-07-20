@@ -6,7 +6,7 @@
  * stock (dividend history, annual summary, next ex-date, yield), sitemap.xml
  * and robots.txt. Run daily via GitHub Action.  node build.mjs
  */
-import { writeFileSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 
@@ -364,6 +364,7 @@ const STYLE = `
   .metaline{color:var(--muted);font-size:13.5px;margin-top:14px} .metaline b{color:var(--ink);font-family:'JetBrains Mono',monospace}
   .h2{font-family:'Poppins',sans-serif;font-weight:600;font-size:16px;margin:26px 0 10px}
   .faq{max-width:760px} .faq-q{font-weight:600;margin-top:16px} .faq-a{color:var(--muted);font-size:14.5px;margin-top:4px;line-height:1.7}
+  .intro{max-width:730px;color:var(--muted);font-size:14.5px;line-height:1.75;margin:2px 0 6px} .intro b{color:var(--ink)} .intro a{color:var(--accent-dk);font-weight:600}
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:20px 0 0;overflow-x:auto;scrollbar-width:none} .tabs::-webkit-scrollbar{display:none}
   .tab{background:none;border:0;border-bottom:2px solid transparent;padding:11px 16px;margin-bottom:-1px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap} .tab.on{color:var(--ink);border-bottom-color:var(--accent)} .tab:hover{color:var(--ink)}
   .tabpane[hidden]{display:none}
@@ -475,7 +476,7 @@ const STYLE = `
 `;
 const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 
-const shell = (title, desc, canon, body, script='') => `<!DOCTYPE html>
+const shell = (title, desc, canon, body, script='', og='/og.png') => `<!DOCTYPE html>
 <html lang="en"><head>
 <script>(function(){try{var t=localStorage.getItem('theme');if(!t&&window.matchMedia)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -485,8 +486,8 @@ const shell = (title, desc, canon, body, script='') => `<!DOCTYPE html>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${canon}">
-<meta property="og:type" content="website"><meta property="og:site_name" content="StockKaki"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${canon}"><meta property="og:image" content="${SITE}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${SITE}/og.png">
+<meta property="og:type" content="website"><meta property="og:site_name" content="StockKaki"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${canon}"><meta property="og:image" content="${SITE}${og}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${SITE}${og}">
 ${FONTS}
 <style>${STYLE}</style>
 </head><body>
@@ -572,7 +573,7 @@ ${sorted.map(homeRow).join('\n')}
     </div>
   </div>
   <div id="none" class="empty" style="display:none">No stocks match.</div>
-  <p class="metaline" style="font-size:12px">Curated lists: <a href="/screener/" style="color:var(--accent-dk)">best dividend stocks</a> · <a href="/reits/" style="color:var(--accent-dk)">Singapore REITs</a> · <a href="/ssb/" style="color:var(--accent-dk)">savings bonds</a>.</p>
+  <p class="metaline" style="font-size:12px">Curated lists: <a href="/screener/" style="color:var(--accent-dk)">best dividend stocks</a> · <a href="/reits/" style="color:var(--accent-dk)">best REITs</a> · <a href="/etfs/" style="color:var(--accent-dk)">best ETFs</a> · <a href="/dividend-calendar/" style="color:var(--accent-dk)">dividend calendar</a> · <a href="/ssb/" style="color:var(--accent-dk)">savings bonds</a>.</p>
   ${brokerSlot()}`;
   const script = `<script>
 const IDX=${idxJson};
@@ -611,7 +612,7 @@ applyPill('all');
 </script>`;
   return shell('StockKaki — Singapore Stocks, Dividends, Yields & REITs',
     'Every SGX-listed stock, REIT and ETF — dividend yields, ex-dates, price, market cap and P/E in one clean board. Search any Singapore stock. Free, updated daily.',
-    SITE + '/', body, script);
+    SITE + '/', body, script, '/og/home.png');
 }
 
 // ---------- list pages (screener / reits) ----------
@@ -637,21 +638,25 @@ const companyRow = (c) => {
           <span class="lr-meta">${meta}</span>
         </a>`;
 };
-function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips }) {
+function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro, faqs, og, limit }) {
   // realistic yields (≤20%) rank first; likely one-off specials (>20%) and no-yield sink to the bottom
   const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
-  const sorted = [...list].sort((a,b) => key(b) - key(a));
+  let sorted = [...list].sort((a,b) => key(b) - key(a));
+  if (limit) sorted = sorted.slice(0, limit);
   const chips = typeChips ? `<div class="chips">
     <span class="chip on" data-f="all">All</span>
     <span class="chip" data-f="stock">Stocks</span>
     <span class="chip" data-f="reit">REITs &amp; Trusts</span>
     <span class="chip" data-f="etf">ETFs</span>
   </div>` : '';
+  const faqHTML = (faqs && faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
+  const jsonLd = (faqs && faqs.length) ? `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">${h1}</h1>
     <p class="sub" style="margin-bottom:13px">${sub}</p>
     <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
   </section>
+  ${intro ? `<div class="intro">${intro}</div>` : ''}
   ${chips}
   <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="n">A–Z</button></div>
   <div class="ltable cols-screener" style="margin-top:12px">
@@ -661,7 +666,9 @@ ${sorted.map(companyRow).join('\n')}
     </div>
   </div>
   <div id="none" class="empty" style="display:none">No match.</div>
-  <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely a one-off special dividend; <b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed).</p>`;
+  <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely a one-off special dividend; <b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed).</p>
+  ${faqHTML}
+  ${jsonLd}`;
   const script = `<script>
 const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none');
 function apply(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';let vis=0;
@@ -682,7 +689,46 @@ document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener(
 document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
 sortBy('y');
 </script>`;
-  return shell(title, desc, canon, body, script);
+  return shell(title, desc, canon, body, script, og);
+}
+
+// ---------- dividend calendar (upcoming ex-dates, chronological) ----------
+function calendarPage(upcoming) {
+  const rows = upcoming.map(r => {
+    const amt = r.divIncomplete ? 'scrip' : money(r.ccy, r.amt);
+    const tag = exTag(r.exISO);
+    return `        <a class="lrow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}">
+          <span class="lr-name"><span class="lr-co">${r.name}</span>${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span>
+          <span class="lr-exd">${pretty(r.exISO)} ${tag}</span>
+          <span class="lr-amt">${amt}</span>
+          <span class="lr-ex">${pretty(r.pay)}</span>
+          <span class="lr-meta">Ex ${prettyShort(r.exISO)}${tag?' '+tag:''}  ·  ${amt}  ·  Pay ${prettyShort(r.pay)}</span>
+        </a>`;
+  }).join('\n');
+  const faqs = [
+    { q: 'What is an ex-dividend date?', a: 'The ex-dividend (ex) date is the cut-off to qualify for a dividend — you must own the shares before the ex-date to be entitled. On the ex-date the share price typically drops by roughly the dividend amount.' },
+    { q: "What's the difference between the ex-date and the pay date?", a: 'The ex-date decides who is entitled; the pay date is when the cash is actually credited to your account — usually a few weeks after the ex-date.' },
+    { q: 'How do I use a dividend calendar?', a: 'Buy a stock before its ex-date to receive the upcoming dividend. This calendar lists the next SGX ex-dates and pay dates, updated daily.' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore dividend calendar</h1>
+    <p class="sub" style="margin-bottom:0">Upcoming SGX ex-dividend and pay dates, in order — updated daily.</p>
+  </section>
+  <div class="intro">Buy a stock <b>before its ex-date</b> to receive the upcoming dividend. Below are the next <b>${upcoming.length}</b> SGX ex-dividend dates with their amounts and pay dates, newest first. For the full picture on any counter, tap through to its page.</div>
+  <div class="ltable cols-home" style="margin-top:12px">
+    <div class="lrow lhead"><span>Company</span><span class="lr-exd">Ex-date</span><span class="lr-amt">Amount</span><span class="lr-ex">Pay date</span></div>
+    <div id="tb">
+${rows}
+    </div>
+  </div>
+  <p class="metaline" style="font-size:12px">Ex-dates &amp; amounts from SGX; <b>scrip</b> = a reinvestment-option distribution (cash amount not published in the free feed).</p>
+  ${faqHTML}
+  ${jsonLd}`;
+  return shell('Singapore Dividend Calendar 2026 — Upcoming SGX Ex-Dates & Pay Dates | StockKaki',
+    'Upcoming Singapore dividend dates — every SGX ex-dividend and pay date in order, updated daily. Never miss a payout.',
+    SITE + '/dividend-calendar/', body, '', '/og/dividend-calendar.png');
 }
 
 // ---------- announcements ----------
@@ -723,7 +769,7 @@ document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{do
 </script>`;
   return shell('SGX Corporate Actions & Announcements — Dividends, Rights, Offers | StockKaki',
     'Latest SGX corporate actions: dividends, rights issues, entitlements and offers from Singapore-listed companies. Updated daily.',
-    SITE + '/announcements/', body, script);
+    SITE + '/announcements/', body, script, '/og/announcements.png');
 }
 
 // ---------- per-stock page ----------
@@ -1086,7 +1132,7 @@ if(swOld&&SWAP_OLD.length){
 </script>`;
   return shell('Singapore Savings Bonds (SSB) Rates This Month — 1-Year & 10-Year Returns | StockKaki',
     `Latest Singapore Savings Bonds rates: ${c.y1.toFixed(2)}% first-year and ${c.y10.toFixed(2)}% 10-year average return (issue ${c.code}). Full step-up schedule, rate trend and a returns calculator. From MAS, updated each issue.`,
-    SITE + '/ssb/', body, script);
+    SITE + '/ssb/', body, script, '/og/ssb.png');
 }
 
 // ---------- disclaimer ----------
@@ -1216,6 +1262,8 @@ const out = new URL('./dist/', import.meta.url);
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
+mkdirSync(new URL('og/', out), { recursive: true });   // per-page social cards (assets/og/*.png → /og/*.png)
+try { const ogDir = new URL('assets/og/', import.meta.url); for (const f of readdirSync(ogDir)) if (f.endsWith('.png')) copyFileSync(new URL(f, ogDir), new URL(`og/${f}`, out)); } catch {}
 writeFileSync(new URL('index.html', out), homepage(listed, index));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
@@ -1232,15 +1280,44 @@ mkdirSync(new URL('screener/', out), { recursive: true });
 writeFileSync(new URL('screener/index.html', out), listPage({
   title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
   desc: 'The highest-yielding SGX dividend stocks and REITs, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.',
-  kicker: 'Screener · Rankings', h1: 'Best dividend stocks in Singapore', sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listed.length} listed stocks above.)`,
-  list: dividendStocks, canon: SITE + '/screener/', typeChips: true }));
+  h1: 'Best dividend stocks in Singapore', sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listed.length} listed stocks above.)`,
+  intro: `Singapore is one of the world's best places for dividend investors — there is <b>no tax on dividends and no capital-gains tax</b>. Below are all <b>${dividendStocks.length}</b> SGX counters currently paying a dividend, ranked by trailing 12-month yield and updated daily. Use the filters for Stocks, REITs or ETFs — and note that an unusually high yield can signal a one-off special dividend or higher risk.`,
+  faqs: [
+    { q: 'What are the best dividend stocks in Singapore?', a: 'This page ranks every SGX counter currently paying a dividend by trailing 12-month yield — the leaders are usually high-yield REITs, trusts and selected blue chips. Filter by Stocks, REITs or ETFs above; a very high yield may include a one-off special or reflect higher risk.' },
+    { q: 'What is a good dividend yield in Singapore?', a: 'Roughly 4–6% is a solid, sustainable yield for a Singapore dividend stock or REIT. Much higher — say above 10% — is worth a closer look, as it may include a special dividend or signal elevated risk.' },
+    { q: 'Are dividends taxed in Singapore?', a: 'No. Singapore uses a one-tier corporate tax system, so dividends paid to individual shareholders are tax-free, and there is no capital-gains tax.' },
+    { q: 'How do I buy dividend stocks in Singapore?', a: 'Through any SGX brokerage (DBS Vickers, moomoo, Tiger, Interactive Brokers and others) or with SRS funds. You must own the shares before the ex-dividend date to receive the next payout.' },
+  ],
+  list: dividendStocks, canon: SITE + '/screener/', typeChips: true, og: '/og/screener.png' }));
 mkdirSync(new URL('reits/', out), { recursive: true });
 const reitList = listed.filter(c => c.isReit);
 writeFileSync(new URL('reits/index.html', out), listPage({
-  title: 'Singapore REIT Dividends & Distribution Yields | StockKaki',
-  desc: 'All SGX-listed REITs and business trusts ranked by distribution yield. Live from SGX, updated daily.',
-  kicker: 'S-REITs', h1: 'Singapore REITs by yield', sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
-  list: reitList, canon: SITE + '/reits/', typeChips: false }));
+  title: 'Best REITs to Buy in Singapore 2026 — S-REIT Dividend Yields | StockKaki',
+  desc: 'All SGX-listed REITs and business trusts ranked by distribution yield — CapitaLand, Mapletree, Keppel, Frasers and more. Live, clean, updated daily.',
+  h1: 'Best REITs to buy in Singapore', sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
+  intro: `Singapore REITs (S-REITs) are among the most popular income investments here — they must distribute at least 90% of income, so yields are typically higher than ordinary stocks, and distributions are <b>tax-free</b> for individuals. Below are all <b>${reitList.length}</b> SGX-listed REITs and business trusts, ranked by trailing distribution yield and updated daily.`,
+  faqs: [
+    { q: 'What is the best REIT to buy in Singapore?', a: 'There is no single best REIT — it depends on your goals. This page ranks all SGX-listed S-REITs and business trusts by trailing distribution yield so you can compare income; also weigh the sector, gearing and track record before deciding.' },
+    { q: 'What is the average dividend yield of Singapore REITs?', a: 'S-REITs typically yield around 5–7%. They must distribute at least 90% of taxable income, which is why their yields are usually higher than ordinary shares.' },
+    { q: 'Are Singapore REITs a good investment?', a: 'S-REITs offer regular income and property diversification, and distributions are tax-free for individuals. They carry risks too — interest rates, property values and gearing — so diversify and check each REIT’s fundamentals.' },
+    { q: 'How are Singapore REIT distributions taxed?', a: 'Distributions from S-REITs are generally tax-exempt for individual investors.' },
+  ],
+  list: reitList, canon: SITE + '/reits/', typeChips: false, og: '/og/reits.png' }));
+mkdirSync(new URL('etfs/', out), { recursive: true });
+const etfList = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete));
+writeFileSync(new URL('etfs/index.html', out), listPage({
+  title: 'Best Singapore ETFs 2026 — Top SGX ETFs by Dividend Yield | StockKaki',
+  desc: 'SGX-listed ETFs ranked by distribution yield — STI, bond, REIT and dividend ETFs. Compare Singapore ETFs, clean and updated daily.',
+  h1: 'Best ETFs in Singapore', sub: `${etfList.length} SGX-listed ETFs that distribute, ranked by yield.`,
+  intro: `Exchange-traded funds (ETFs) let you own a whole basket of stocks or bonds in a single trade, and they trade on the SGX just like shares. Below are the <b>${etfList.length}</b> SGX-listed ETFs that currently distribute, ranked by trailing yield — useful for income. For growth, the underlying index matters more than the yield.`,
+  faqs: [
+    { q: 'What are the best ETFs in Singapore?', a: 'Popular SGX ETFs include the Straits Times Index (STI) ETF and a range of bond, REIT and dividend ETFs. This page ranks the distributing SGX ETFs by yield — best for income; for growth, look at the underlying index rather than the yield.' },
+    { q: 'Do Singapore ETFs pay dividends?', a: 'Many do — bond, REIT and dividend ETFs distribute regularly, while some equity ETFs accumulate instead. This list shows the distributing ones, ranked by yield.' },
+    { q: 'How do I buy ETFs in Singapore?', a: 'ETFs trade like stocks on the SGX — buy them through any brokerage, or via a regular-savings plan (RSP) to dollar-cost average over time.' },
+  ],
+  list: etfList, canon: SITE + '/etfs/', typeChips: false, og: '/og/etfs.png' }));
+mkdirSync(new URL('dividend-calendar/', out), { recursive: true });
+writeFileSync(new URL('dividend-calendar/index.html', out), calendarPage(upcoming));
 mkdirSync(new URL('announcements/', out), { recursive: true });
 writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
 mkdirSync(new URL('ssb/', out), { recursive: true });
@@ -1252,7 +1329,7 @@ writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'u
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 
-const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/ssb/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
