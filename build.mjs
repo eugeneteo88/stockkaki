@@ -227,14 +227,19 @@ const CUP = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke=
 const MOON = `<svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 const SUN = `<svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
 const BURGER = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
+const CLOSE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
   <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/ssb/">SSB</a><a href="/announcements/">Announcements</a></nav>
   <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button class="btn deskonly">Get ex-date alerts</button><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
-  <div id="mmenu" class="mmenu"><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/ssb/">SSB</a><a href="/announcements/">Announcements</a><a href="#">Alerts</a></div>
-</header>`;
+</header>
+<div id="mscrim" class="mscrim"></div>
+<aside id="mmenu" class="mmenu" aria-hidden="true">
+  <div class="mmenu-head"><a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a><button id="mclose" class="tbtn" aria-label="Close menu">${CLOSE}</button></div>
+  <a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/ssb/">SSB</a><a href="/announcements/">Announcements</a><a href="#">Alerts</a>
+</aside>`;
 const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
     <form onsubmit="return false"><input type="email" placeholder="you@email.com"><button class="btn">Get free alerts</button></form>
@@ -270,9 +275,13 @@ const STYLE = `
   html[data-theme="dark"] .moon{display:none} html:not([data-theme="dark"]) .sun{display:none}
   .deskonly{display:none} @media(min-width:820px){ .deskonly{display:inline-block} }
   .mtoggle{display:inline-flex} @media(min-width:820px){ .mtoggle{display:none} }
-  .mmenu{display:none;border-top:1px solid var(--line)} .mmenu.open{display:block}
-  .mmenu a{display:block;padding:15px 20px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:500;font-size:15.5px} .mmenu a:last-child{border-bottom:0}
-  @media(min-width:820px){ .mmenu{display:none!important} }
+  .mscrim{position:fixed;inset:0;background:rgba(20,14,10,.55);opacity:0;visibility:hidden;transition:opacity .25s ease;z-index:40}
+  .mscrim.open{opacity:1;visibility:visible}
+  .mmenu{position:fixed;top:0;right:0;height:100%;width:min(82vw,300px);background:var(--card);border-left:1px solid var(--line);box-shadow:-16px 0 44px -20px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
+  .mmenu.open{transform:translateX(0)}
+  .mmenu-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 12px 20px;border-bottom:1px solid var(--line)} .mmenu-head .brand{font-size:18px}
+  .mmenu>a{display:block;padding:15px 22px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:500;font-size:16px} .mmenu>a:hover{background:var(--row-hover);color:var(--accent-dk)}
+  @media(min-width:820px){ .mmenu,.mscrim{display:none!important} }
   @media(min-width:820px){ .nav nav{display:flex} }
   .hero{padding:30px 0 4px} .kicker{color:var(--accent-dk);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
   .hero h1{font-family:'Poppins',sans-serif;font-weight:700;font-size:32px;line-height:1.08;letter-spacing:-.01em;margin:8px 0 10px}
@@ -409,7 +418,12 @@ ${FOOTER}
 var SBFN='${SUPABASE_URL}/functions/v1',SBK='${SUPABASE_ANON}';
 (function(){
 var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};
-var mt=document.getElementById('mtoggle'),mm=document.getElementById('mmenu');if(mt&&mm)mt.onclick=function(){mm.classList.toggle('open');};
+var mt=document.getElementById('mtoggle'),mm=document.getElementById('mmenu'),ms=document.getElementById('mscrim'),mc=document.getElementById('mclose');
+function toggleMenu(o){if(!mm)return;mm.classList.toggle('open',o);if(ms)ms.classList.toggle('open',o);mm.setAttribute('aria-hidden',o?'false':'true');document.body.style.overflow=o?'hidden':'';}
+if(mt)mt.onclick=function(){toggleMenu(!mm.classList.contains('open'));};
+if(ms)ms.onclick=function(){toggleMenu(false);};
+if(mc)mc.onclick=function(){toggleMenu(false);};
+if(mm)mm.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){toggleMenu(false);});});
 document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener('submit',function(ev){ev.preventDefault();var inp=f.querySelector('input');var e=(inp.value||'').trim();if(!e)return;var btn=f.querySelector('button');btn.textContent='…';btn.disabled=true;fetch(SBFN+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SBK,apikey:SBK},body:JSON.stringify({email:e})}).then(function(r){return r.json();}).then(function(d){if(d&&d.ok){f.innerHTML='<div style="color:#fff;font-weight:600">✓ Almost there — check your inbox to confirm.</div>';}else{btn.textContent='Try again';btn.disabled=false;}}).catch(function(){btn.textContent='Try again';btn.disabled=false;});});});
 })();</script>
 </body></html>`;
