@@ -37,7 +37,27 @@ const titleCase = (s) => (s||'').toLowerCase().split(/\s+/).map(w => {
 }).join(' ');
 const slugify = (s) => (s||'').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,64);
 const NOISE = /autocall|socgen|soc gen|macq|bnpp|\bcbbc\b|call warrant|put warrant|daily leverage|-callable|\bdlc\b|structured warrant/i;
-const secNorm = (s) => (s||'').toLowerCase().replace(/&/g,' and ').replace(/\b(ltd|limited|pte|plc|corp|corporation|holdings?|group|company|co|the|berhad|bhd|reit|trust|inc|industries|international)\b/g,'').replace(/[^a-z0-9]/g,'');
+// Name normalisation for joining SGX's two feeds (price feed abbreviates: "CapLand"↔"Capitaland",
+// "Cpt Tr"↔"Centrepoint Trust", "HTrust"↔"Hospitality Trust", plus USD/SGD currency tranches).
+// KEEP "reit"/"trust" as identity tokens so a REIT never merges with its parent ("OUE REIT" ≠ "OUE Ltd").
+const ABBR = { capland:'capitaland', cpt:'centrepoint', hse:'house', log:'logistics', ind:'industrial', intcom:'integratedcommercial', tv:'television', kep:'keppel', cent:'centurion', accom:'accommodation', acro:'acrophyte', digicore:'digitalcore', mfg:'manufacturing', mgmt:'management', intl:'international', natl:'national', hldgs:'holdings', hldg:'holdings', grp:'group', svcs:'services', svc:'services', res:'resources', tech:'technology', dev:'development', comm:'commercial', hosp:'hospitality', htrust:'hospitalitytrust', tr:'trust', t:'trust' };
+const FILLER = new Set(['ltd','limited','pte','plc','corp','corporation','holdings','holding','group','company','co','the','berhad','bhd','inc','industries','international','public','us','uk']);
+// SGX's price feed uses tickers/acronyms for some blue-chips while the dividend feed uses full names.
+// Canonical names (by ticker) so the two feeds join — and so pages show the proper company name.
+const TICKER_ALIAS = {
+  O39:'Oversea-Chinese Banking Corp', U11:'United Overseas Bank', C6L:'Singapore Airlines',
+  S68:'Singapore Exchange', S63:'Singapore Tech Engineering', G13:'Genting Singapore',
+  Y92:'Thai Beverage', C07:'Jardine Cycle & Carriage', J36:'Jardine Matheson Holdings',
+  C09:'City Developments', D01:'DFI Retail Group', U96:'Sembcorp Industries', BS6:'Yangzijiang Shipbldg',
+};
+const secNorm = (s) => {
+  s = (s||'').toLowerCase().replace(/&/g,' and ')
+    .replace(/\b(usd|sgd|gbp|eur|hkd|aud|myr|rmb|cny|jpy)\b/g,' ')   // drop currency-tranche suffix
+    .replace(/(reit|trust)/g,' $1 ');                                 // split smushed names but keep the token
+  return s.split(/[^a-z0-9]+/).filter(Boolean).map(t => ABBR[t]!==undefined ? ABBR[t] : t).filter(t => t && !FILLER.has(t)).join('');
+};
+const CSYM = { SGD:'S$', USD:'US$', GBP:'£', EUR:'€', HKD:'HK$', CNY:'¥', AUD:'A$', JPY:'¥', MYR:'RM' };
+const csym = (cur) => CSYM[cur] || (cur ? cur+' ' : 'S$');
 const money = (ccy, amt) => `${ccy==='USD'?'US$':ccy==='SGD'?'S$':ccy+' '}${amt}`;
 const num = (n) => n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
 const fmtVol = (n) => (n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n));
@@ -71,6 +91,26 @@ function parseDividends(raw) {
   }
   return rows;
 }
+// Big S-REITs file distributions with a scrip/DRP leg ("N Cash Options") that carries NO
+// per-unit amount in this feed — so their trailing total is unknowable here and any yield we'd
+// compute is badly understated. Track those ex-dates per stock so we can suppress (not fake) the yield.
+let SCRIP = new Map();   // slug -> Set(exISO) of amount-less distributions
+function collectScrip(raw) {
+  const m = new Map();
+  for (const x of raw) {
+    if (x.anncType !== 'DIVIDEND') continue;
+    const ex = iso(x.exDate); if (!ex) continue;
+    if (NOISE.test(x.name || '')) continue;
+    if (/Rate:\s*([A-Z]{3})?\s*([\d.]+)/i.test(x.particulars || '')) continue;   // has an amount → fine
+    const name = titleCase(x.name || ''); if (!name) continue;
+    const slug = slugify(name); if (!slug) continue;
+    if (!m.has(slug)) m.set(slug, new Set());
+    m.get(slug).add(ex);
+  }
+  return m;
+}
+const divIncomplete = (slug) => { const s = SCRIP.get(slug); return !!(s && [...s].some(e => e>=yearAgo && e<=TODAY)); };
+
 const ANNC_TYPES = { DIVIDEND:'Dividend', RIGHTS:'Rights', ENTITLEMENT:'Entitlement', OFFER:'Offer' };
 function parseAnnouncements(raw) {
   const seen = new Set(), out = [];
@@ -87,11 +127,11 @@ function parseAnnouncements(raw) {
 }
 
 function fetchSecurities() {
-  let json; try { json = getJSON('https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc,n,type,lt,change_vs_pc_percentage,vl'); } catch { return []; }
+  let json; try { json = getJSON('https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc,n,type,lt,cur,change_vs_pc_percentage,vl'); } catch { return []; }
   const list = (json && json.data && json.data.prices) || [];
   const ok = new Set(['stocks','reits','etfs','businesstrusts']);
   const out = [];
-  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; if (NOISE.test(s.n)) continue; out.push({ ticker: s.nc, name: s.n, type: s.type, price: s.lt, chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
+  for (const s of list) { if (!ok.has(s.type) || !s.n) continue; if (NOISE.test(s.n)) continue; out.push({ ticker: s.nc, name: TICKER_ALIAS[s.nc] || s.n, type: s.type, price: s.lt, cur: s.cur || 'SGD', chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
   return out;
 }
 // ---------- Singapore Savings Bonds (MAS) ----------
@@ -125,12 +165,9 @@ function fetchSSB() {
   return { current: rows[0], recent: rows.slice(0, 12), series: rows.slice(0, 36).reverse() };
 }
 
-const matchTicker = (name, map) => {
-  const k = secNorm(name); if (!k) return null;
-  if (map.has(k)) return map.get(k);
-  for (const [sk, v] of map) { if (sk.length >= 6 && k.startsWith(sk)) return v; }
-  return null;
-};
+// Exact normalised match only. (A loose startsWith() fallback used to mis-attach e.g.
+// "Keppel Pacific Oak US REIT" → "Keppel Ltd" because both start with "keppel".)
+const matchTicker = (name, map) => { const k = secNorm(name); return k && map.has(k) ? map.get(k) : null; };
 
 const groupCompanies = (rows) => {
   const map = new Map();
@@ -144,9 +181,11 @@ const groupCompanies = (rows) => {
     const tk = c.divs.find(d => d.ticker);
     c.ticker = tk ? tk.ticker : null; c.price = tk ? tk.price : null; c.secType = tk ? tk.secType : null;
     c.chgPct = tk ? tk.chgPct : null; c.vol = tk ? tk.vol : null;
-    c.ttm = c.divs.filter(d => d.ccy==='SGD' && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((s,d)=>s+d.amtNum,0);
-    c.yieldPct = (c.price>0 && c.ttm>0) ? c.ttm/c.price*100 : null;
+    c.cur = tk ? tk.cur : (c.divs[0] ? c.divs[0].ccy : 'SGD');   // trading currency, so USD/GBP payers aren't dropped
     c.isReit = c.secType==='reits' || c.secType==='businesstrusts' || /\breit\b|\btrust\b/i.test(c.name);
+    c.divIncomplete = c.isReit && divIncomplete(c.slug);   // scrip/DRP hides the amount only for the multi-component REIT filings
+    c.ttm = c.divs.filter(d => d.ccy===c.cur && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((s,d)=>s+d.amtNum,0);
+    c.yieldPct = (c.price>0 && c.ttm>0 && !c.divIncomplete) ? c.ttm/c.price*100 : null;
   }
   return map;
 };
@@ -314,11 +353,13 @@ document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener(
 // ---------- homepage ----------
 const rowHTML = (r) => {
   const y = r.yieldPct!=null ? r.yieldPct.toFixed(2) : null;
+  const amtCell = r.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : money(r.ccy,r.amt);
+  const yldCell = y ? y+'%' : (r.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : '—');
   return `        <tr data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}" data-reit="${r.isReit?1:0}" data-week="${daysTo(r.exISO)<=7?1:0}" data-sgd="${r.ccy==='SGD'?1:0}" data-y="${r.yieldPct!=null?r.yieldPct:-1}">
           <td><a class="co" href="/stock/${r.slug}/">${r.name}</a>${r.ticker?` <span class="tick">${r.ticker}</span>`:''}</td>
           <td class="date">${pretty(r.exISO)} ${exTag(r.exISO)}</td>
-          <td class="r amt">${money(r.ccy,r.amt)}</td>
-          <td class="r yld">${y?y+'%':'—'}</td>
+          <td class="r amt">${amtCell}</td>
+          <td class="r yld">${yldCell}</td>
           <td class="r date hide-m">${pretty(r.pay)}</td>
         </tr>`;
 };
@@ -368,16 +409,19 @@ document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
 }
 
 // ---------- list pages (screener / reits) ----------
+const SCRIP_TITLE = 'Distributes via a scrip/reinvestment option — SGX’s free feed omits the cash amount, so the yield can’t be shown accurately.';
 const companyRow = (c) => {
   const y = c.yieldPct!=null ? c.yieldPct.toFixed(2) : null;
   const special = c.yieldPct!=null && c.yieldPct > 20;   // likely a one-off special dividend
-  const yldCell = y ? (special ? `<span class="yld" style="color:var(--muted)" title="Trailing yield likely inflated by a one-off special dividend">${y}%*</span>` : `<span class="yld">${y}%</span>`) : '—';
+  const yldCell = y ? (special ? `<span class="yld" style="color:var(--muted)" title="Trailing yield likely inflated by a one-off special dividend">${y}%*</span>` : `<span class="yld">${y}%</span>`)
+    : (c.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : '—');
+  const amtCell = c.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : (c.ttm>0?csym(c.cur)+num(c.ttm):'—');
   const nx = c.divs.find(d => d.exISO >= TODAY);
   const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
   return `        <tr data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
           <td><a class="co" href="/stock/${c.slug}/">${c.name}</a>${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</td>
           <td class="r">${yldCell}</td>
-          <td class="r amt">${c.ttm>0?'S$'+num(c.ttm):'—'}</td>
+          <td class="r amt">${amtCell}</td>
           <td class="r date hide-m">${nx?pretty(nx.exISO):'—'}</td>
         </tr>`;
 };
@@ -467,14 +511,17 @@ document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{do
 function stockPage(c) {
   const upcoming = c.divs.filter(d => d.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1);
   const next = upcoming[0];
-  const ttmStr = c.ttm>0 ? ('S$'+num(c.ttm)) : null;
+  const CS = csym(c.cur);
+  const inc = c.divIncomplete;               // scrip/DRP → per-unit cash amount not in the free feed
+  const ttmStr = (c.ttm>0 && !inc) ? (CS+num(c.ttm)) : null;
+  const scripNote = `<div class="metaline" style="background:var(--accent-soft);border-radius:12px;padding:12px 14px;color:var(--ink)">This counter distributes via a <b>scrip / distribution-reinvestment option</b>. SGX’s free data feed doesn’t publish the full per-unit cash amount for these, so the <b>trailing yield and annual totals are omitted</b> to avoid showing a misleading figure. Individual components below are shown exactly as filed.</div>`;
   const byYear = {};
-  for (const d of c.divs) { if (d.ccy!=='SGD') continue; const y = d.exISO.slice(0,4); byYear[y] = (byYear[y]||0) + d.amtNum; }
+  for (const d of c.divs) { if (d.ccy!==c.cur) continue; const y = d.exISO.slice(0,4); byYear[y] = (byYear[y]||0) + d.amtNum; }
   const years = Object.keys(byYear).sort().reverse();
   const nowY = TODAY.slice(0,4);
   const complete = years.filter(y => y < nowY);
   let growth = null;
-  if (complete.length >= 2 && byYear[complete[1]] > 0) growth = (byYear[complete[0]] - byYear[complete[1]]) / byYear[complete[1]] * 100;
+  if (complete.length >= 2 && byYear[complete[1]] > 0 && !inc) growth = (byYear[complete[0]] - byYear[complete[1]]) / byYear[complete[1]] * 100;
   let freq = null;
   if (complete.length) { const cnt = c.divs.filter(d => d.ccy==='SGD' && d.exISO.slice(0,4)===complete[0]).length; freq = cnt>=4?'Quarterly':cnt===3?'Thrice yearly':cnt===2?'Semi-annual':cnt===1?'Annual':null; }
   const sig = [];
@@ -482,17 +529,18 @@ function stockPage(c) {
   if (years.length) sig.push(`<b>${years.length}</b> year${years.length>1?'s':''} of dividends on record`);
   if (growth != null) sig.push(`latest full year <b>${growth>=0?'+':''}${growth.toFixed(1)}%</b> YoY`);
   const signals = sig.join(' &middot; ');
-  const annual = years.length ? `<div class="h2">Dividends by year</div>
+  const annual = (years.length && !inc) ? `<div class="h2">Dividends by year</div>
   <div class="card"><table>
     <thead><tr><th>Year</th><th class="r">Total / security</th><th class="r">Yield*</th></tr></thead>
     <tbody>
-${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${num(byYear[y])}</td><td class="r yld">${c.price>0?(byYear[y]/c.price*100).toFixed(2)+'%':'—'}</td></tr>`).join('\n')}
+${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">${CS}${num(byYear[y])}</td><td class="r yld">${c.price>0?(byYear[y]/c.price*100).toFixed(2)+'%':'—'}</td></tr>`).join('\n')}
     </tbody>
   </table></div>` : '';
   const hist = c.divs.map(d => `        <tr><td class="date">${pretty(d.exISO)}${d.exISO>=TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td><td class="r date hide-m">${pretty(d.rec)}</td><td class="r date hide-m">${pretty(d.pay)}</td><td class="r date hide-m">${pretty(d.annc)}</td></tr>`).join('\n');
   const divSection = c.divs.length ? `
-  ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
-  ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at S$${c.price} last`:''}.</p>` : ''}
+  ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${inc?'<span style="font-size:14px;color:var(--muted)">scrip</span>':money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
+  ${inc ? scripNote : ''}
+  ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at ${CS}${c.price} last`:''}.</p>` : ''}
   ${signals ? `<p class="metaline">${signals}.</p>` : ''}
   ${annual}
   <div class="h2">Full dividend history</div>
@@ -502,12 +550,12 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">S$${nu
 ${hist}
     </tbody>
   </table></div>
-  <p class="metaline" style="font-size:12px">*Yield uses the current last price (S$${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
+  <p class="metaline" style="font-size:12px">*Yield uses the current last price (${CS}${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
   const faqs = [];
-  if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at S$${c.price} on the SGX.` });
+  if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at ${CS}${c.price} on the SGX.` });
   if (c.divs.length) {
     faqs.push({ q: `Does ${c.name} pay dividends?`, a: `Yes. ${c.name} has paid dividends over the last ${years.length} year${years.length>1?'s':''}${freq?`, currently ${freq.toLowerCase()}`:''}${ttmStr?`, totalling ${ttmStr} per security in the past 12 months`:''}.` });
-    faqs.push({ q: `What is ${c.name}'s dividend yield?`, a: c.yieldPct ? `${c.name}'s indicative dividend yield is about ${c.yieldPct.toFixed(2)}%, based on trailing 12-month dividends of ${ttmStr} per security against a last price of S$${c.price}.` : `${c.name} has no trailing 12-month dividends on record, so no indicative yield.` });
+    faqs.push({ q: `What is ${c.name}'s dividend yield?`, a: c.yieldPct ? `${c.name}'s indicative dividend yield is about ${c.yieldPct.toFixed(2)}%, based on trailing 12-month dividends of ${ttmStr} per security against a last price of ${CS}${c.price}.` : (inc ? `${c.name} distributes via a scrip/reinvestment option, and SGX's free feed doesn't publish the full per-unit cash amount — so an accurate trailing yield can't be shown here.` : `${c.name} has no trailing 12-month dividends on record, so no indicative yield.`) });
     faqs.push({ q: `When is ${c.name}'s next ex-dividend date?`, a: next ? `${c.name}'s next ex-dividend date is ${pretty(next.exISO)}, paying ${money(next.ccy,next.amt)} per security (pay date ${pretty(next.pay)}). You must own the shares before the ex-date to be entitled.` : `No upcoming ex-dividend date has been announced for ${c.name}.` });
   } else {
     faqs.push({ q: `Does ${c.name} pay dividends?`, a: `${c.name} has not paid a dividend in the last ~6 years, based on SGX corporate-action filings.` });
@@ -522,7 +570,7 @@ ${hist}
   const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
     <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
-    ${c.price?`<div class="quote"><span class="q-price">S$${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
+    ${c.price?`<div class="quote"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
   </section>
   ${divSection}
   ${faqHTML}
@@ -530,7 +578,7 @@ ${hist}
   ${jsonLd}`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
-    `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price S$${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
+    `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price ${CS}${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
     `${SITE}/stock/${c.slug}/`, body);
 }
 
@@ -724,8 +772,9 @@ const secByNorm = new Map();
 for (const s of secList) { const k = secNorm(s.name); if (k && !secByNorm.has(k)) secByNorm.set(k, s); }
 const ssb = fetchSSB();           // Singapore Savings Bonds (MAS)
 const raw = await fetchRaw(50);   // ~5-6 years of history
+SCRIP = collectScrip(raw);        // stocks whose trailing distributions hide the amount (scrip/DRP)
 const rows = parseDividends(raw);
-for (const r of rows) { const m = matchTicker(r.name, secByNorm); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; r.chgPct = m.chgPct; r.vol = m.vol; } }
+for (const r of rows) { const m = matchTicker(r.name, secByNorm); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; r.chgPct = m.chgPct; r.vol = m.vol; r.cur = m.cur; } }
 const divCompanies = groupCompanies(rows);
 const anns = parseAnnouncements(raw);
 
@@ -739,17 +788,21 @@ for (const s of secList) {
   const slug = dc ? dc.slug : slugify(s.name);
   if (!slug || seenSlug.has(slug)) continue; seenSlug.add(slug);
   if (dc) usedDiv.add(dc.slug);
+  const cur = s.cur || 'SGD';
+  const divs = dc ? dc.divs : [];
+  const ttm = divs.filter(d => d.ccy===cur && d.exISO>=yearAgo && d.exISO<=TODAY).reduce((a,d)=>a+d.amtNum,0);   // yield in the counter's own currency (USD price ÷ USD dividend)
+  const isReit = s.type==='reits' || s.type==='businesstrusts' || /\breit\b|\btrust\b/i.test(s.name);
+  const incomplete = isReit && divIncomplete(slug);
   companies.push({
     name: dc ? dc.name : s.name, slug,
-    ticker: s.ticker, price: s.price, chgPct: s.chgPct, vol: s.vol, secType: s.type,
-    isReit: s.type==='reits' || s.type==='businesstrusts' || /\breit\b|\btrust\b/i.test(s.name),
-    divs: dc ? dc.divs : [], ttm: dc ? dc.ttm : 0, yieldPct: dc ? dc.yieldPct : null,
+    ticker: s.ticker, price: s.price, cur, chgPct: s.chgPct, vol: s.vol, secType: s.type, isReit,
+    divs, ttm, divIncomplete: incomplete, yieldPct: (s.price>0 && ttm>0 && !incomplete) ? ttm/s.price*100 : null,
   });
 }
 for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has(c.slug)) continue; seenSlug.add(c.slug); companies.push(c); }
 
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
-  .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false }; });
+  .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false, divIncomplete: c?c.divIncomplete:divIncomplete(r.slug) }; });
 const index = companies.map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).sort((a,b)=> a.n<b.n?-1:1);
 
 const out = new URL('./dist/', import.meta.url);
