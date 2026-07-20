@@ -153,6 +153,22 @@ function fetchYahooDivs(ticker) {
   divs.sort((a,b) => a.exISO < b.exISO ? 1 : -1);
   return { cur, divs };
 }
+const decodeEntities = (s) => (s||'').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;|&#0?39;|&#x27;/g,"'").replace(/&#([0-9]+);/g,(_,n)=>String.fromCharCode(+n)).trim();
+function fetchYahooNews(ticker) {
+  let xml; try { xml = execFileSync('curl', ['-s','-m','15','-A',UA, `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(ticker)}.SI&region=SG&lang=en-SG`], { maxBuffer: 8*1024*1024 }).toString('utf8'); } catch { return []; }
+  const out = [];
+  for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const it = m[1];
+    const title = decodeEntities((it.match(/<title>([\s\S]*?)<\/title>/)||[])[1] || '');
+    const link = ((it.match(/<link>([\s\S]*?)<\/link>/)||[])[1] || '').trim();
+    const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
+    if (!title || !link) continue;
+    let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
+    out.push({ title, link, dateISO });
+    if (out.length >= 6) break;
+  }
+  return out;
+}
 // ---------- Singapore Savings Bonds (MAS) ----------
 function getMAS(path) {
   const out = execFileSync('curl', ['-s','-m','30','-A',UA,'-H','Accept: application/json','--compressed', `${MAS}/${path}`], { maxBuffer: 16*1024*1024 });
@@ -317,6 +333,10 @@ const STYLE = `
   .metaline{color:var(--muted);font-size:13.5px;margin-top:14px} .metaline b{color:var(--ink);font-family:'JetBrains Mono',monospace}
   .h2{font-family:'Poppins',sans-serif;font-weight:600;font-size:16px;margin:26px 0 10px}
   .faq{max-width:760px} .faq-q{font-weight:600;margin-top:16px} .faq-a{color:var(--muted);font-size:14.5px;margin-top:4px;line-height:1.7}
+  .newslist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;box-shadow:0 12px 36px -28px rgba(58,42,32,.55)}
+  .newsitem{display:block;padding:14px 0;border-bottom:1px solid var(--line);color:inherit} .newsitem:last-child{border-bottom:0}
+  .news-t{display:block;font-weight:500;font-size:15px;line-height:1.4} .newsitem:hover .news-t{color:var(--accent-dk)}
+  .news-m{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 36px -28px rgba(58,42,32,.55)}
   table{width:100%;border-collapse:collapse}
   thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line)}
@@ -667,6 +687,12 @@ ${hist}
       { "@type":"ListItem", "position":2, "name":c.name, "item":`${SITE}/stock/${c.slug}/` } ] },
     { "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) } ] };
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
+  const newsSection = (c.news && c.news.length) ? `
+  <div class="h2">Latest news</div>
+  <div class="newslist">
+${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${n.dateISO?pretty(n.dateISO)+' · ':''}Yahoo Finance ↗</span></a>`).join('\n')}
+  </div>
+  <p class="metaline" style="font-size:12px">Headlines via Yahoo Finance — opens in a new tab. Not an endorsement.</p>` : '';
   const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/screener/">Stocks</a> › ${c.name}</div>
     <h1 class="serif" style="font-size:28px">${c.name}${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</h1>
@@ -674,6 +700,7 @@ ${hist}
     ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
   </section>
   ${divSection}
+  ${newsSection}
   ${faqHTML}
   ${brokerSlot()}
   ${jsonLd}`;
@@ -995,23 +1022,29 @@ for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has
 const ySleep = (ms) => new Promise(r => setTimeout(r, ms));
 const yTargets = companies.filter(c => c.ticker && (c.isReit || c.divs.length > 0));
 let yFixed = 0;
+let yNews = 0;
 for (const c of yTargets) {
   const y = fetchYahooDivs(c.ticker);
-  await ySleep(180);                                          // gentle pacing — a bit faster than a human, no hammering
-  if (!y || !y.divs.length) continue;
-  const cur = y.cur || c.cur || 'SGD';
-  const past = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
-  if (!past.length) continue;
-  const soon = c.divs.filter(d => d.exISO > TODAY);           // SGX-announced future ex-dates (Yahoo only has past)
-  c.cur = cur;
-  c.divs = [...soon, ...past].sort((a,b) => a.exISO < b.exISO ? 1 : -1);
-  c.ttm = past.filter(d => d.exISO >= yearAgo).reduce((s,d) => s + d.amtNum, 0);
-  c.yieldPct = (c.price > 0 && c.ttm > 0) ? c.ttm / c.price * 100 : null;
-  c.divIncomplete = false;
-  c.yahoo = true;
-  yFixed++;
+  await ySleep(140);                                          // gentle pacing — a bit faster than a human, no hammering
+  if (y && y.divs.length) {
+    const cur = y.cur || c.cur || 'SGD';
+    const past = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
+    if (past.length) {
+      const soon = c.divs.filter(d => d.exISO > TODAY);       // SGX-announced future ex-dates (Yahoo only has past)
+      c.cur = cur;
+      c.divs = [...soon, ...past].sort((a,b) => a.exISO < b.exISO ? 1 : -1);
+      c.ttm = past.filter(d => d.exISO >= yearAgo).reduce((s,d) => s + d.amtNum, 0);
+      c.yieldPct = (c.price > 0 && c.ttm > 0) ? c.ttm / c.price * 100 : null;
+      c.divIncomplete = false;
+      c.yahoo = true;
+      yFixed++;
+    }
+  }
+  const news = fetchYahooNews(c.ticker);                      // per-stock news feed (free Yahoo RSS)
+  await ySleep(140);
+  if (news.length) { c.news = news; yNews++; }
 }
-console.log(`Yahoo dividends: patched ${yFixed}/${yTargets.length} counters`);
+console.log(`Yahoo: dividends patched ${yFixed}/${yTargets.length} · news on ${yNews}`);
 
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
   .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false, divIncomplete: c?c.divIncomplete:divIncomplete(r.slug) }; });
