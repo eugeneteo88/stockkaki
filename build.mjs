@@ -191,7 +191,7 @@ function fetchYahooNews(ticker) {
     const link = ((it.match(/<link>([\s\S]*?)<\/link>/)||[])[1] || '').trim();
     const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
     const desc = decodeEntities((it.match(/<description>([\s\S]*?)<\/description>/)||[])[1] || '').replace(/<[^>]+>/g,'').slice(0,180);
-    if (!title || !link) continue;
+    if (!title || !link || NEWS_JUNK.test(title)) continue;
     let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
     out.push({ title, link, dateISO, desc, source: 'Yahoo Finance' });
     if (out.length >= 6) break;
@@ -199,9 +199,11 @@ function fetchYahooNews(ticker) {
   return out;
 }
 // ---------- Google News (free, no key): per-company SG financial news, aggregating BT / The Edge / Straits Times / CNA / Reuters etc. ----------
-// Quality outlets we surface (others are dropped to keep the feed to proper SG/global financial press).
-const NEWS_OK = new Set(['The Business Times','The Edge Singapore','The Straits Times','CNA','Channel NewsAsia','Reuters','Bloomberg','Yahoo Finance','StockStory','Nikkei Asia','Financial Times','Seeking Alpha','The Motley Fool Singapore','Mothership','MarketWatch','Business Insider','Singapore Business Review','The Business Times Singapore','Yahoo Finance Singapore','SGX','South China Morning Post','Forbes','Investing.com','Simply Wall St','Straits Times']);
+// Broad allowlist of financial/business media — mix everything relevant, just drop pure spam/off-topic blogs.
+const NEWS_OK = new Set(['The Business Times','The Business Times Singapore','The Edge Singapore','The Edge Malaysia','The Straits Times','Straits Times','CNA','Channel NewsAsia','Reuters','Bloomberg','Yahoo Finance','Yahoo Finance Singapore','StockStory','Nikkei Asia','Financial Times','Seeking Alpha','The Motley Fool','The Motley Fool Singapore','Mothership','MarketWatch','Business Insider','Markets Insider','Singapore Business Review','SGX','Singapore Exchange (SGX)','South China Morning Post','Forbes','Investing.com','Simply Wall St','Insider Monkey','Zacks Investment Research','Zacks','Moomoo','Tiger Brokers','Dr Wealth','The Independent Singapore','DealStreetAsia','Mingtiandi','CNBC','Barron\'s','The Business Times SG','TipRanks','GuruFocus','Benzinga']);
 const cleanCoName = (name) => (name||'').replace(/\b(Ltd|Limited|Pte|Plc|Corp|Corporation|Holdings?|Group|Berhad|Bhd|Inc|Company|Co)\b\.?/gi,'').replace(/\bCNY|USD|SGD|HKD|GBP|EUR\b/g,'').replace(/\s{2,}/g,' ').trim();
+// Auto-generated "metric" pages (TradingView/GuruFocus etc.) — not real news; drop them.
+const NEWS_JUNK = /^(price to (book|sales|earnings|cash|free cash)|enterprise value to|return on (equity|assets|capital)|peg ratio|debt to equity|(forward |trailing )?(p\/e|pe|pb|p\/b|ev\/ebitda) (ratio|forward)|net (profit )?margin|gross margin|current ratio|quick ratio)\b/i;
 // Guard against ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news): keep a headline
 // only if a significant word from the company name actually appears in the title.
 const _nameTokens = (name) => cleanCoName(name).toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length >= 3);
@@ -218,6 +220,7 @@ function fetchGoogleNews(name) {
     const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
     if (!title || !link) continue;
     title = title.replace(new RegExp('\\s*-\\s*' + source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*$'), '').trim();   // Google appends " - Source"
+    if (NEWS_JUNK.test(title)) continue;                                  // skip auto-generated metric pages
     let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
     const item = { title, link, dateISO, source, desc: '' };
     (NEWS_OK.has(source) ? good : rest).push(item);
@@ -536,11 +539,17 @@ const STYLE = `
   .cat .ct{font-family:'Poppins',sans-serif;font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:8px}
   .cat .cn{font-size:11.5px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
   .cat .cd{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5} .cat .cd b{color:var(--ink);font-family:'JetBrains Mono',monospace}
-  .trgrid{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} .trgrid::-webkit-scrollbar{display:none}
-  @media(min-width:720px){.trgrid{display:grid;grid-template-columns:repeat(4,1fr);overflow:visible}}
-  .trcard{flex:0 0 68%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px} @media(min-width:720px){.trcard{flex:none}} .trcard:hover{border-color:var(--accent)}
+  /* home trending: 2-row grid that scrolls sideways on mobile, 4-col wall on desktop */
+  .trgrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,1fr);grid-auto-columns:66%;gap:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} .trgrid::-webkit-scrollbar{display:none}
+  @media(min-width:720px){.trgrid{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);grid-template-rows:none;grid-auto-columns:auto;overflow:visible}}
+  .trwall{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(min-width:720px){.trwall{grid-template-columns:repeat(4,1fr)}}
+  .trcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px} .trcard:hover{border-color:var(--accent)}
+  .tchip .up{color:#0c9a63} .tchip .down{color:#c0392b}
   .readmore{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--accent-dk)} .readmore:hover{text-decoration:underline}
   .hubnews .nd{font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
+  .pager{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:20px 0 4px}
+  .pager .pg{font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer;min-width:38px}
+  .pager .pg:hover:not([disabled]){border-color:var(--accent);color:var(--ink)} .pager .pg.on{background:var(--accent);color:#fff;border-color:var(--accent)} .pager .pg[disabled]{opacity:.4;cursor:default}
   .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:5px}
   .trcard .tp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
   .trcard .tm{font-size:12px;margin-top:4px;font-family:'JetBrains Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:#0c9a63} .trcard .tm .down{color:#c0392b}
@@ -579,6 +588,9 @@ const shell = (title, desc, canon, body, script='', og='/og.png') => `<!DOCTYPE 
 <meta name="google-site-verification" content="GP6YGT1x9z7T6QlUkLDTXvfbGlqkocw2RSWOWmKkO1Q">
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#E07A3B">
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GQWYJ6T6DY"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-GQWYJ6T6DY');</script>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${canon}">
@@ -624,8 +636,11 @@ const trCard = (c) => {
 };
 function homepage(listed, index, hub) {
   const idxJson = JSON.stringify(index).replace(/</g,'\\u003c');
-  const trendingChips = (hub.trending||[]).slice(0,6).map(c =>
-    `<a class="tchip" href="/stock/${c.slug}/">${c.name.split(/\s|-/)[0]}${c.yieldPct!=null?` <b>${c.yieldPct.toFixed(1)}%</b>`:''}</a>`).join('');
+  const trendingChips = (hub.trending||[]).slice(0,8).map(c => {
+    const m = c.yieldPct!=null ? `<b>${c.yieldPct.toFixed(1)}%</b>`
+      : (c.chg!=null && c.chg!==0 ? `<b class="${c.chg>0?'up':'down'}">${c.chg>0?'+':''}${c.chg.toFixed(1)}%</b>` : '');
+    return `<a class="tchip" href="/stock/${c.slug}/">${c.name.split(/\s|-/)[0]}${m?' '+m:''}</a>`;
+  }).join('');
   const cards = [
     catCard('/dividends/', 'div', 'Best dividend stocks', hub.divCount, 'Every SGX payer ranked by dividend yield.'),
     catCard('/reits/', 'reit', 'Best REITs to buy', hub.reitCount, 'S-REITs &amp; trusts by distribution yield.'),
@@ -634,12 +649,11 @@ function homepage(listed, index, hub) {
     catCard('/ssb/', 'ssb', 'Savings Bonds (SSB)', null, hub.ssbLo!=null?`This month <b>${hub.ssbLo.toFixed(2)}%</b> → <b>${hub.ssbHi.toFixed(2)}%</b>. Rates, swap &amp; calculator.`:'Rates, step-up schedule, swap &amp; calculator.'),
     catCard('/dividends/', 'hy', 'Highest yield', hub.hyCount, 'Top yielders — with a risk note on the specials.'),
   ].join('\n');
-  const trending = (hub.trending||[]).slice(0,4).map(trCard).join('\n');
+  const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
   const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news <a href="/news/">Read more →</a></div>
   <div class="hubnews">
 ${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.title)}</div>${n.desc?`<div class="nd">${esc(n.desc)}</div>`:''}<div class="nm">${[esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
-  </div>
-  <a class="readmore" href="/news/">Read more Singapore market news →</a>` : '';
+  </div>` : '';
   const body = `  <section class="hub-hero">
     <span class="kicker">🎋 Huat with StockKaki</span>
     <h1>Every Singapore stock, one clean search.</h1>
@@ -651,7 +665,7 @@ ${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.tit
   <div class="catgrid">
 ${cards}
   </div>
-  <div class="hub-h">Trending stocks</div>
+  <div class="hub-h">Trending stocks <a href="/trending/">See top ${hub.trendingCount||30} →</a></div>
   <div class="trgrid">
 ${trending}
   </div>
@@ -678,19 +692,48 @@ function newsPage(items) {
   ];
   const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
+  const PER = 15;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore stock market news</h1>
     <p class="sub" style="margin-bottom:6px">The latest news on SGX-listed companies — updated daily.</p>
   </section>
-  <div class="newslist">
+  <div class="newslist" id="newswrap">
 ${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span>${n.desc?`<span class="news-d">${esc(n.desc)}</span>`:''}<span class="news-m">${[esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read full ↗</span></a>`).join('\n')}
   </div>
+  <div class="pager" id="pager"></div>
   <p class="metaline" style="font-size:12px">Headlines aggregated from Singapore &amp; global financial press; each links to the original article. For a single company, see its News tab on the stock page.</p>
   ${faqHTML}
   ${jsonLd}`;
+  const script = `<script>(function(){var PER=${PER};var items=[].slice.call(document.querySelectorAll('#newswrap .newsitem'));var total=Math.max(1,Math.ceil(items.length/PER));var pager=document.getElementById('pager');var page=1;
+function render(scroll){items.forEach(function(el,i){el.style.display=(i>=(page-1)*PER&&i<page*PER)?'':'none';});var h='<button class="pg" data-d="-1"'+(page===1?' disabled':'')+'>← Prev</button>';for(var p=1;p<=total;p++){h+='<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>';}h+='<button class="pg" data-d="1"'+(page===total?' disabled':'')+'>Next →</button>';pager.innerHTML=h;if(scroll)window.scrollTo({top:0,behavior:'smooth'});}
+pager.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
+if(total<2)pager.style.display='none';render(false);})();</script>`;
   return shell('Singapore Stock Market News — Latest SGX Company News | StockKaki',
     'The latest news on SGX-listed Singapore stocks, REITs and ETFs — from The Business Times, The Edge, Straits Times, CNA and more. Updated daily, free.',
-    SITE + '/news/', body, '', '/og/home.png');
+    SITE + '/news/', body, script, '/og/home.png');
+}
+
+// ---------- trending page (most active SGX counters by value traded) ----------
+function trendingPage(items) {
+  const faqs = [
+    { q: 'What makes a stock “trending” on StockKaki?', a: 'These are the most actively traded SGX counters by value traded (volume × last price) — where the most money is changing hands right now. The list refreshes daily.' },
+    { q: 'Does trending mean it’s a good buy?', a: 'No. Heavy trading just signals strong interest — it can be driven by results, news or momentum, in either direction. Always do your own research.' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Trending Singapore stocks</h1>
+    <p class="sub" style="margin-bottom:6px">The most actively traded SGX counters by value — refreshed daily.</p>
+  </section>
+  <div class="trwall">
+${items.map(trCard).join('\n')}
+  </div>
+  <p class="metaline" style="font-size:12px">Ranked by value traded (volume × last price). Dividend yield shown where the counter pays one.</p>
+  ${faqHTML}
+  ${jsonLd}`;
+  return shell('Trending Singapore Stocks — Most Active SGX Counters Today | StockKaki',
+    'The most actively traded stocks on the SGX today, ranked by value traded — with price, change and dividend yield. Updated daily, free.',
+    SITE + '/trending/', body, '', '/og/home.png');
 }
 
 // ---------- list pages (screener / reits) ----------
@@ -1379,10 +1422,13 @@ for (const c of yTargets) {                                                // 2)
     const ydivs = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
     if (ydivs.length) { rec.cur = cur; rec.ydivs = ydivs; yFixed++; }
   }
-  let news = fetchGoogleNews(c.name);                                      // Google News (Business Times / The Edge / ST / CNA …) primary
-  await ySleep(140);
-  if (!news.length) { news = fetchYahooNews(c.ticker); await ySleep(120); }   // Yahoo RSS fallback
-  if (news.length) { rec.news = news; yNews++; }
+  let news = fetchYahooNews(c.ticker);                                     // Yahoo RSS — title + summary + mixed financial sources
+  await ySleep(130);
+  const gnews = fetchGoogleNews(c.name);                                   // Google News — breadth (BT / Edge / ST / CNA …)
+  await ySleep(130);
+  const seenT = new Set(news.map(n => (n.title||'').toLowerCase().slice(0,55)));
+  for (const g of gnews) { const k = (g.title||'').toLowerCase().slice(0,55); if (!seenT.has(k)) { news.push(g); seenT.add(k); } }   // merge, Yahoo (summaries) first
+  if (news.length) { rec.news = news.slice(0, 8); yNews++; }
   if (Object.keys(rec).length) { applyY(c, rec); fresh[c.slug] = { ...(cache[c.slug]||{}), ...rec }; }
 }
 if (!SKIP_YAHOO) console.log(`Enrichment: dividends ${yFixed}/${yTargets.length} · news ${yNews} (Google→Yahoo)`);
@@ -1416,32 +1462,32 @@ const exWeekCount = dividendStocks.filter(c => { const nx = c.divs.find(d => d.e
 const reitCountH = listed.filter(c => c.isReit).length;
 const etfCountH = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete)).length;
 const hyCount = dividendStocks.filter(c => c.yieldPct!=null && c.yieldPct>=6 && c.yieldPct<=20).length;
-const _seenTrend = new Set();   // one card per company — drop secondary/foreign-currency lines (e.g. "Singtel 10", "YZJ Shipbldg CNY")
-// Trending = biggest dividend PAYERS with a real yield → every card/chip shows a % (Singtel yes, IHH excluded).
-const _trendPool = [...dividendStocks].filter(c => c.cur==='SGD' && c.yieldPct!=null && c.yieldPct<=20)
-  .sort((a,b) => ((b.fund&&b.fund.mktCap)||0) - ((a.fund&&a.fund.mktCap)||0) || (b.ttm||0) - (a.ttm||0));
-const trending = _trendPool
+// Trending = most actively traded SGX counters by VALUE traded (volume × price) — a real "trending" signal.
+const _turnover = (c) => (((c.fund && c.fund.vol) || c.vol || 0) * (c.price || 0));
+const _seenTrend = new Set();   // one card per company — drop secondary/foreign-currency lines (e.g. "Singtel 10")
+const trending = [...listed].filter(c => c.cur==='SGD' && _turnover(c) > 0)
+  .sort((a,b) => _turnover(b) - _turnover(a))
   .filter(c => { const k = c.name.toLowerCase().split(/[\s-]/)[0]; if (_seenTrend.has(k)) return false; _seenTrend.add(k); return true; })
-  .slice(0, 6)
-  .map(c => ({ name: c.name, ticker: c.ticker, slug: c.slug, price: c.price, cur: c.cur, yieldPct: c.yieldPct,
+  .slice(0, 30)
+  .map(c => ({ name: c.name, ticker: c.ticker, slug: c.slug, price: c.price, cur: c.cur, yieldPct: (c.yieldPct!=null && c.yieldPct<=20) ? c.yieldPct : null,
     chg: (c.chgPct!=null && c.chgPct!==0) ? c.chgPct : (c.fund && c.fund.chg!=null ? c.fund.chg : null) }));
 // Hub "Latest news": curate to the biggest, best-known counters + whitelisted outlets only — avoids obscure
 // micro-caps and ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news).
 const _newsSlugs = new Set([...listed].filter(c => c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap).slice(0, 60).map(c => c.slug));
 const hubNews = companies.filter(c => _newsSlugs.has(c.slug) && c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, desc: n.desc || '' })))
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, desc: n.desc || '' })))
   .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
   .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)   // de-dupe identical headlines across stocks
   .slice(0, 5);
 // Full aggregated feed for the /news/ page (quality outlets, newest first, de-duped).
 const newsFeed = companies.filter(c => c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, desc: n.desc || '', name: c.name, slug: c.slug })))
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, desc: n.desc || '', name: c.name, slug: c.slug })))
   .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
   .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)
   .slice(0, 60);
 const hub = { divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
   ssbLo: ssb && ssb.current ? ssb.current.y1 : null, ssbHi: ssb && ssb.current ? ssb.current.y10 : null,
-  trending, news: hubNews };
+  trending, trendingCount: trending.length, news: hubNews };
 
 const out = new URL('./dist/', import.meta.url);
 // Clear dist's CONTENTS rather than rmdir'ing dist itself — on Windows the folder handle can be
@@ -1512,6 +1558,8 @@ mkdirSync(new URL('announcements/', out), { recursive: true });
 writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
 mkdirSync(new URL('news/', out), { recursive: true });
 writeFileSync(new URL('news/index.html', out), newsPage(newsFeed));
+mkdirSync(new URL('trending/', out), { recursive: true });
+writeFileSync(new URL('trending/index.html', out), trendingPage(hub.trending));
 mkdirSync(new URL('ssb/', out), { recursive: true });
 writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb, sgs));
 mkdirSync(new URL('confirm/', out), { recursive: true });
@@ -1521,7 +1569,7 @@ writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'u
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 
-const urls = [SITE + '/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
