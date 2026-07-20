@@ -414,46 +414,33 @@ document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener(
 })();</script>
 </body></html>`;
 
-// ---------- homepage ----------
-const rowHTML = (r) => {
-  const y = r.yieldPct!=null ? r.yieldPct.toFixed(2) : null;
-  const amtTxt = r.divIncomplete ? 'scrip' : money(r.ccy,r.amt);
-  const yTxt = y ? y+'%' : (r.divIncomplete ? 'scrip' : '—');
-  const yCls = 'lr-yield' + ((!y || r.divIncomplete) ? ' mut' : '');
-  const tag = exTag(r.exISO);
-  const meta = `Ex ${prettyShort(r.exISO)}${tag?' '+tag:''}  ·  ${amtTxt}`;
-  return `        <a class="lrow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}" data-reit="${r.isReit?1:0}" data-week="${daysTo(r.exISO)<=7?1:0}" data-sgd="${r.ccy==='SGD'?1:0}" data-y="${r.yieldPct!=null?r.yieldPct:-1}">
-          <span class="lr-name"><span class="lr-co">${r.name}</span>${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span>
-          <span class="lr-exd">${pretty(r.exISO)} ${tag}</span>
-          <span class="lr-amt">${amtTxt}</span>
-          <span class="${yCls}">${yTxt}</span>
-          <span class="lr-meta">${meta}</span>
-        </a>`;
-};
-
-function homepage(upcoming, index) {
+// ---------- homepage ---------- (leads with the full ranked list of dividend payers)
+function homepage(payers, exWeekCount, index) {
   const idxJson = JSON.stringify(index).replace(/</g,'\\u003c');
-  const body = `  <section class="hero">
+  const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
+  const sorted = [...payers].sort((a,b) => key(b) - key(a));
+  const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="kicker">🦁 Huat with dividends</div>
     <h1 class="serif">Catch every payout.</h1>
-    <p class="sub">Every upcoming SGX dividend, ex-date and yield — live, clean, free.</p>
-    <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search a stock — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
-    <div><span class="live"><span class="pulse"></span> Live from SGX · ${upcoming.length} upcoming · updated ${pretty(TODAY)}</span></div>
+    <p class="sub">Every SGX dividend stock — ranked by yield, with price, payout and next ex-date. Live, clean, free.</p>
+    <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
+    <div><span class="live"><span class="pulse"></span> ${sorted.length} dividend payers · ${exWeekCount} going ex this week · updated ${pretty(TODAY)}</span></div>
   </section>
   <div class="chips">
-    <span class="chip on" data-f="all">All</span>
+    <span class="chip on" data-f="all">All payers</span>
     <span class="chip" data-f="reit">REITs &amp; Trusts</span>
     <span class="chip" data-f="week">Ex this week</span>
-    <span class="chip" data-f="sgd">SGD only</span>
-    <span class="chip" data-f="yield">Highest yield ↓</span>
+    <span class="chip" data-f="stock">Stocks only</span>
   </div>
-  <div class="ltable cols-home" style="margin-top:12px">
-    <div class="lrow lhead"><span>Company</span><span class="lr-exd">Ex-date</span><span class="lr-amt">Amount</span><span class="lr-yield">Yield</span></div>
+  <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="e">Ex-date</button><button data-sort="n">A–Z</button></div>
+  <div class="ltable cols-screener" style="margin-top:12px">
+    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
     <div id="tb">
-${upcoming.map(rowHTML).join('\n')}
+${sorted.map(companyRow).join('\n')}
     </div>
   </div>
-  <div id="none" class="empty" style="display:none">No dividends match that filter.</div>
+  <div id="none" class="empty" style="display:none">No stocks match.</div>
+  <p class="metaline" style="font-size:12px"><b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed). Also see the full <a href="/screener/" style="color:var(--accent-dk)">screener</a> and <a href="/reits/" style="color:var(--accent-dk)">REITs</a>.</p>
   ${brokerSlot()}`;
   const script = `<script>
 const IDX=${idxJson};
@@ -464,15 +451,23 @@ q.addEventListener('input',()=>{const v=q.value.trim().toLowerCase();if(!v){qr.s
   qr.style.display='block';});
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))qr.style.display='none';});
 const tb=document.getElementById('tb'),none=document.getElementById('none');
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
-  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
-  const f=c.dataset.f;let rows=[...tb.querySelectorAll('.lrow')];let vis=0;
-  rows.forEach(r=>{let show=true;if(f==='reit')show=r.dataset.reit==='1';if(f==='week')show=r.dataset.week==='1';if(f==='sgd')show=r.dataset.sgd==='1';r.style.display=show?'':'none';if(show)vis++;});
-  if(f==='yield'){rows.sort((a,b)=>parseFloat(b.dataset.y)-parseFloat(a.dataset.y)).forEach(r=>tb.appendChild(r));}
-  none.style.display=vis===0?'block':'none';}));
+function applyChip(){const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';let vis=0;
+ tb.querySelectorAll('.lrow').forEach(r=>{let ok=true;if(f==='reit')ok=r.dataset.reit==='1';else if(f==='week')ok=r.dataset.week==='1';else if(f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');r.style.display=ok?'':'none';if(ok)vis++;});
+ none.style.display=vis?'none':'block';}
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');applyChip();}));
+let sk='',sd=-1;
+function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
+ const rows=[...tb.querySelectorAll('.lrow')];
+ rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'||k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
+ rows.forEach(r=>tb.appendChild(r));
+ document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
+ document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));}
+document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
+document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
+sortBy('y');
 </script>`;
-  return shell('StockKaki — Upcoming Singapore Dividends, Ex-Dates & Yields',
-    'Search every SGX dividend, ex-date and yield in one clean board. Live from SGX, updated daily — no ads, no clutter.',
+  return shell('StockKaki — Singapore Dividend Stocks, Yields & Ex-Dates',
+    'Every SGX dividend stock ranked by yield — with price, payout and next ex-date. Search any Singapore stock. Live, clean, free — updated daily.',
     SITE + '/', body, script);
 }
 
@@ -488,8 +483,9 @@ const companyRow = (c) => {
   const divTxt = c.divIncomplete ? 'scrip' : (c.ttm>0 ? csym(c.cur)+num(c.ttm) : '—');
   const nx = c.divs.find(d => d.exISO >= TODAY);
   const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
+  const week = nx && daysTo(nx.exISO) <= 7 ? 1 : 0;
   const meta = [ c.price?priceTxt:null, c.divIncomplete?'scrip':(c.ttm>0?'Div '+csym(c.cur)+num(c.ttm):null), nx?'Ex '+prettyShort(nx.exISO):null ].filter(Boolean).join('  ·  ') || 'No dividend in 12M';
-  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
+  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-week="${week}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
           <span class="lr-name"><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
           <span class="lr-price">${priceTxt}</span>
           <span class="${yCls}"${yTitle}>${yTxt}</span>
@@ -973,12 +969,17 @@ for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
   .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false, divIncomplete: c?c.divIncomplete:divIncomplete(r.slug) }; });
 const index = companies.map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).sort((a,b)=> a.n<b.n?-1:1);
+const all = companies;
+const listed = all.filter(c => c.ticker);                                   // currently trading on SGX (has a live counter)
+// Dividend payers = listed counters paying NOW (trailing distribution or a REIT scrip payer) — every row has a real number.
+const dividendStocks = listed.filter(c => c.ttm > 0 || c.divIncomplete);
+const exWeekCount = dividendStocks.filter(c => { const nx = c.divs.find(d => d.exISO >= TODAY); return nx && daysTo(nx.exISO) <= 7; }).length;
 
 const out = new URL('./dist/', import.meta.url);
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
-writeFileSync(new URL('index.html', out), homepage(upcoming, index));
+writeFileSync(new URL('index.html', out), homepage(dividendStocks, exWeekCount, index));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
@@ -990,10 +991,6 @@ for (const c of companies) {
   writeFileSync(new URL('index.html', dir), stockPage(c));
   n++;
 }
-const all = companies;
-const listed = all.filter(c => c.ticker);                                   // currently trading on SGX (has a live counter)
-// Screener = listed counters that pay NOW (trailing-12-month distribution, or a REIT scrip payer) — so every row has a real number, no blanks.
-const dividendStocks = listed.filter(c => c.ttm > 0 || c.divIncomplete);
 mkdirSync(new URL('screener/', out), { recursive: true });
 writeFileSync(new URL('screener/index.html', out), listPage({
   title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
