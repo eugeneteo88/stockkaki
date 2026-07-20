@@ -166,10 +166,15 @@ function fetchSSB() {
       issueFmt: c.issue_date_formatted, applyFmt: c.last_day_to_apply_formatted, annFmt: c.ann_date_formatted,
       y1: returns[0], y10: returns[9], coupons, returns,
       size: +l.issue_size || null, applied: +l.amt_applied || null, cutoff: (l.cutoff_amt != null ? +l.cutoff_amt : null),
+      alloted: +l.amt_alloted || null, rndmRate: +l.rndm_alloted_rate || 0,
     };
   }).filter(r => r.issueISO && r.y1 != null).sort((a,b) => a.issueISO < b.issueISO ? 1 : -1);
   if (!rows.length) return null;
-  return { current: rows[0], recent: rows.slice(0, 12), series: rows.slice(0, 36).reverse() };
+  const held = (iso) => Math.max(0, Math.min(9, Math.floor((Date.parse(TODAY) - Date.parse(iso)) / (365.25*86400000))));
+  const issued = rows.filter(r => r.issueISO <= TODAY).map(r => ({ code: r.code, ym: monthYr(r.issueISO), held: held(r.issueISO), coupons: r.coupons }));
+  const allot = rows.find(r => r.applied > 0) || null;                        // latest issue with published results
+  let streak = 0; for (const r of rows) { if (r.applied == null) continue; if (r.rndmRate > 0) break; streak++; }   // consecutive fully-allotted issues
+  return { current: rows[0], recent: rows.slice(0, 12), series: rows.slice(0, 36).reverse(), issued, allot, streak };
 }
 // Project the NEXT (unannounced) SSB from MAS daily SGS benchmark yields.
 // MAS sets each issue's rates from the average SGS yields the month before applications open,
@@ -366,6 +371,7 @@ const STYLE = `
   .bigstat .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
   .bigstat .v{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:34px;color:var(--accent-dk);margin-top:6px;line-height:1}
   .bigstat.alt .v{color:var(--ink)} .bigstat .cap{font-size:11.5px;color:var(--muted);margin-top:7px}
+  .bigstat.win{border-color:var(--accent);background:var(--accent-soft)}
   .facts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
   .fact{font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px} .fact b{color:var(--ink)}
   .calc{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
@@ -659,6 +665,48 @@ ${hist}
     `${SITE}/stock/${c.slug}/`, body);
 }
 
+// Allotment tracker — did the latest issue fully allot, or was it balloted?
+function allotCard(ssb) {
+  const a = ssb.allot; if (!a || !a.size || a.applied == null) return '';
+  const balloted = a.rndmRate > 0;
+  const subPct = a.applied / a.size * 100;
+  const guar = a.cutoff != null ? Math.round(a.cutoff * 1e6) : null;
+  return `  <div class="h2">Latest allotment result</div>
+  <div class="ssb-card" style="border-left-color:#3E8FB0">
+    <span class="ssb-status ${balloted?'closed':'open'}">${balloted?'Balloted · oversubscribed':'Fully allotted'}</span>
+    <div class="ssb-stats">
+      <div class="bigstat"><div class="k">Applications</div><div class="v" style="font-size:26px">S$${a.applied.toFixed(0)}m</div><div class="cap">of S$${a.size.toFixed(0)}m offered · ${subPct.toFixed(0)}% subscribed</div></div>
+      ${balloted && guar!=null
+        ? `<div class="bigstat"><div class="k">Filled in full up to</div><div class="v" style="font-size:26px">S$${guar.toLocaleString('en-SG')}</div><div class="cap">above that, ${a.rndmRate.toFixed(1)}% won the next S$500 by ballot</div></div>`
+        : `<div class="bigstat alt"><div class="k">Outcome</div><div class="v" style="font-size:19px;margin-top:11px">Everyone got their full amount</div><div class="cap">no balloting</div></div>`}
+    </div>
+    <p class="ssb-meta">Issue ${a.code} · ${monthYr(a.issueISO)}.${(!balloted && ssb.streak>1)?` The last <b>${ssb.streak}</b> issues were all fully allotted — recently, a full application has been getting filled in full.`:''}</p>
+  </div>
+`;
+}
+
+// Swap calculator — should you redeem your current SSB and buy the new (higher?) issue?
+function swapCard(ssb) {
+  if (!ssb.issued || ssb.issued.length < 2) return '';
+  const c = ssb.current;
+  return `  <div class="h2">Should you switch to the new issue?</div>
+  <div class="ssb-card" style="border-left-color:var(--line)">
+    <p class="ssb-meta" style="margin-top:0">You can redeem an SSB any month with no penalty — so if a new issue pays more than your current bond will <i>going forward</i>, it can pay to switch. But your bond has already "stepped up", so newer isn't always better. Compare:</p>
+    <div class="calc">
+      <div class="f"><label for="swAmt">You hold (S$)</label><input id="swAmt" type="number" min="500" step="500" value="10000"></div>
+      <div class="f"><label for="swOld">Your current bond</label><select id="swOld"></select></div>
+      <div class="f"><label for="swYrs">Keep for</label><select id="swYrs"></select></div>
+    </div>
+    <div class="calc-out">
+      <div class="bigstat" id="swKeepBox"><div class="k">Keep your bond</div><div class="v" id="swKeep">—</div><div class="cap" id="swKeepAvg"></div></div>
+      <div class="bigstat" id="swNewBox"><div class="k">Switch to ${c.code}</div><div class="v" id="swNew">—</div><div class="cap" id="swNewAvg"></div></div>
+    </div>
+    <p class="ssb-meta" id="swVerdict" style="font-weight:600;color:var(--ink)"></p>
+    <p class="ssb-meta" style="font-size:12px">Compares interest earned over the period (SSB coupons are paid out, not compounded). Ignores the ~S$2 transaction fee. Your holding so far is estimated from each issue's date.</p>
+  </div>
+`;
+}
+
 // Projected next-issue card from SGS benchmark yields.
 function projCard(ssb, sgs) {
   if (!sgs || !ssb) return '';
@@ -786,7 +834,7 @@ ${projCard(ssb, sgs)}
     </div>
     <p class="ssb-meta">Based on the current issue (${c.code}). Interest is paid out every 6 months; figures assume you hold the whole period and don't reinvest the coupons.</p>
   </div>
-
+${swapCard(ssb)}
   <div class="h2">Interest rate step-up — issue ${c.code}</div>
   <div class="card"><table class="stepup">
     <thead><tr><th>If you hold…</th><th class="r">Interest that year</th><th class="r">Average return / year</th></tr></thead>
@@ -807,6 +855,7 @@ ${stepRows}
     <div class="lrow lhead"><span>Issue</span><span class="lr-div">1-yr</span><span class="lr-yield">10-yr avg</span><span class="lr-amt">Applied / offered</span><span class="lr-price">Cut-off</span></div>
 ${recentRows}
   </div>
+${allotCard(ssb)}
   <p class="metaline" style="font-size:12px">Data from the Monetary Authority of Singapore (MAS), updated each issue. Not financial advice — see <a href="/disclaimer/" style="color:var(--accent-dk)">disclaimer</a>.</p>
 
   ${faqHTML}
@@ -823,6 +872,26 @@ function calc(){let p=parseFloat(amt.value)||0,y=parseInt(yrs.value,10);
  document.getElementById('oRate').textContent=RET[y-1].toFixed(2)+'%';
  document.getElementById('oPaid').textContent='over '+y+' year'+(y>1?'s':'');}
 amt.addEventListener('input',calc);yrs.addEventListener('change',calc);calc();
+var SWAP_NEW=${JSON.stringify(c.coupons)},SWAP_OLD=${JSON.stringify(ssb.issued||[])};
+var swOld=document.getElementById('swOld'),swYrs=document.getElementById('swYrs'),swAmt=document.getElementById('swAmt');
+if(swOld&&SWAP_OLD.length){
+ SWAP_OLD.forEach(function(b,i){var o=document.createElement('option');o.value=i;o.textContent=b.ym+' · '+b.code;swOld.appendChild(o);});
+ function fillYrs(){var b=SWAP_OLD[swOld.value];var rem=10-b.held;swYrs.innerHTML='';for(var n=1;n<=rem;n++){var o=document.createElement('option');o.value=n;o.textContent=n+' more year'+(n>1?'s':'');swYrs.appendChild(o);}swYrs.value=Math.min(3,rem);}
+ function swCalc(){var b=SWAP_OLD[swOld.value];var p=parseFloat(swAmt.value)||0;var n=parseInt(swYrs.value,10);
+  var keepSum=0,newSum=0;for(var i=0;i<n;i++){keepSum+=b.coupons[b.held+i];newSum+=SWAP_NEW[i];}
+  var keep=p*keepSum/100,sw=p*newSum/100;
+  document.getElementById('swKeep').textContent='S$'+fmt(keep);
+  document.getElementById('swNew').textContent='S$'+fmt(sw);
+  document.getElementById('swKeepAvg').textContent='avg '+(keepSum/n).toFixed(2)+'%/yr';
+  document.getElementById('swNewAvg').textContent='avg '+(newSum/n).toFixed(2)+'%/yr';
+  var kb=document.getElementById('swKeepBox'),nb=document.getElementById('swNewBox'),V=document.getElementById('swVerdict');
+  kb.classList.remove('win');nb.classList.remove('win');var diff=Math.round(Math.abs(sw-keep));
+  if(sw>keep+0.5){nb.classList.add('win');V.textContent='✅ Switching to ${c.code} earns about S$'+fmt(diff)+' more over '+n+' year'+(n>1?'s':'')+'.';}
+  else if(keep>sw+0.5){kb.classList.add('win');V.textContent='👍 Keep your bond — it pays about S$'+fmt(diff)+' more over '+n+' year'+(n>1?'s':'')+' (it has already stepped up).';}
+  else{V.textContent='≈ About the same either way over '+n+' year'+(n>1?'s':'')+'.';}}
+ swOld.addEventListener('change',function(){fillYrs();swCalc();});swYrs.addEventListener('change',swCalc);swAmt.addEventListener('input',swCalc);
+ fillYrs();swCalc();
+}
 </script>`;
   return shell('Singapore Savings Bonds (SSB) Rates This Month — 1-Year & 10-Year Returns | StockKaki',
     `Latest Singapore Savings Bonds rates: ${c.y1.toFixed(2)}% first-year and ${c.y10.toFixed(2)}% 10-year average return (issue ${c.code}). Full step-up schedule, rate trend and a returns calculator. From MAS, updated each issue.`,
