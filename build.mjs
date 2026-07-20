@@ -315,7 +315,8 @@ const brokerSlot = () => `<aside class="brokers">
 ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="sponsored noopener"><b>${b.n}</b><span>${b.d}</span></a>`).join('\n')}
     </div>
   </aside>`;
-const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data compiled from public sources, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer &amp; sources</a></p></footer>`;
+// TODO(Eugene): make "Hey Edda" clickable — wrap in <a href="https://…">Hey Edda</a> once the URL is confirmed.
+const FOOTER = `<footer><p class="disc">© 2026 StockKaki · brand by Hey Edda · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
@@ -596,8 +597,8 @@ function applyPill(f){const stk=(f==='stock');
  let vis=0;
  tb.querySelectorAll('.lrow').forEach(r=>{let ok;
   if(f==='all')ok=r.dataset.pay==='1';
-  else if(f==='reit')ok=r.dataset.reit==='1';
-  else if(f==='etf')ok=r.dataset.etf==='1';
+  else if(f==='reit')ok=r.dataset.pay==='1'&&r.dataset.reit==='1';
+  else if(f==='etf')ok=r.dataset.pay==='1'&&r.dataset.etf==='1';
   else if(f==='week')ok=r.dataset.week==='1';
   else ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
   r.style.display=ok?'':'none';if(ok)vis++;});
@@ -1167,7 +1168,7 @@ for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has
 
 // ---- Accurate dividends from Yahoo Finance: fixes scrip REITs + gives real DPU. SGX keeps upcoming ex-dates. ----
 const ySleep = (ms) => new Promise(r => setTimeout(r, ms));
-const yTargets = companies.filter(c => c.ticker && (c.isReit || c.divs.length > 0));
+const yTargets = companies.filter(c => c.ticker && (c.isReit || c.secType==='etfs' || c.divs.length > 0));   // incl. ETFs so their distributions load
 let yFixed = 0;
 let yNews = 0;
 for (const c of yTargets) {
