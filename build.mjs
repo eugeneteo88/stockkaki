@@ -70,6 +70,9 @@ const money = (ccy, amt) => `${ccy==='USD'?'US$':ccy==='SGD'?'S$':ccy+' '}${amt}
 const num = (n) => n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
 const fmtVol = (n) => (n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n));
 const fmtCap = (cur, n) => { if (!n) return null; const s = csym(cur); return n>=1e9 ? s+(n/1e9).toFixed(2)+'B' : n>=1e6 ? s+(n/1e6).toFixed(0)+'M' : s+n.toFixed(0); };
+// Rough FX → SGD, so market caps in different currencies rank correctly (approximate; ranking only, not display).
+const FXSGD = { SGD:1, USD:1.35, HKD:0.173, CNY:0.187, GBP:1.72, EUR:1.46, MYR:0.30, AUD:0.88, JPY:0.0086, IDR:0.000083, THB:0.037, KRW:0.00098, TWD:0.042, INR:0.016 };
+const capSGD = (cur, n) => (n||0) * (FXSGD[cur] || 1);
 const esc = (s) => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
 const TODAY = new Date().toISOString().slice(0,10);
@@ -176,8 +179,11 @@ function fetchYahooQuotes(tickers, cr) {
   if (!cr) return map;
   for (let i = 0; i < tickers.length; i += 50) {
     const syms = tickers.slice(i, i+50).map(t => encodeURIComponent(t)+'.SI').join(',');
-    let rs; try { rs = JSON.parse(execFileSync('curl', ['-s','-m','25','-A',UA,'-b',cr.cj, `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${syms}&crumb=${encodeURIComponent(cr.crumb)}`], { maxBuffer: 16*1024*1024 }).toString()).quoteResponse.result; } catch { rs = null; }
-    if (rs) for (const r of rs) { const t = (r.symbol||'').replace(/\.SI$/,''); if (t) map[t] = { mktCap:r.marketCap, pe:r.trailingPE, pb:r.priceToBook, eps:r.epsTrailingTwelveMonths, w52lo:r.fiftyTwoWeekLow, w52hi:r.fiftyTwoWeekHigh, dayLo:r.regularMarketDayLow, dayHi:r.regularMarketDayHigh, vol:r.regularMarketVolume, chg:r.regularMarketChangePercent, cur:r.currency }; }
+    const fields = 'marketCap,sharesOutstanding,regularMarketPrice,trailingPE,priceToBook,epsTrailingTwelveMonths,fiftyTwoWeekLow,fiftyTwoWeekHigh,regularMarketDayLow,regularMarketDayHigh,regularMarketVolume,regularMarketChangePercent,currency';
+    let rs; try { rs = JSON.parse(execFileSync('curl', ['-s','-m','25','-A',UA,'-b',cr.cj, `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${syms}&fields=${fields}&crumb=${encodeURIComponent(cr.crumb)}`], { maxBuffer: 16*1024*1024 }).toString()).quoteResponse.result; } catch { rs = null; }
+    if (rs) for (const r of rs) { const t = (r.symbol||'').replace(/\.SI$/,''); if (!t) continue;
+      const mc = r.marketCap || ((r.sharesOutstanding && r.regularMarketPrice) ? r.sharesOutstanding * r.regularMarketPrice : undefined);   // Yahoo sometimes omits marketCap → derive from shares × price
+      map[t] = { mktCap:mc, pe:r.trailingPE, pb:r.priceToBook, eps:r.epsTrailingTwelveMonths, w52lo:r.fiftyTwoWeekLow, w52hi:r.fiftyTwoWeekHigh, dayLo:r.regularMarketDayLow, dayHi:r.regularMarketDayHigh, vol:r.regularMarketVolume, chg:r.regularMarketChangePercent, cur:r.currency }; }
   }
   return map;
 }
@@ -318,7 +324,7 @@ const CLOSE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" strok
 const WA = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.8 1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5s-.5-1.3-.7-1.8-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3A3 3 0 0 0 6.3 10a5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c2 .8 2 .6 2.4.5a2.6 2.6 0 0 0 1.7-1.2 2 2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>`;
 // TODO(Eugene): paste your WhatsApp channel/community invite link here to activate the "Join channel" button.
 const WHATSAPP_URL = 'https://whatsapp.com/channel/';
-const NAVLINKS = `<a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/news/">News</a>`;
+const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/news/">News</a>`;
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
@@ -467,6 +473,7 @@ const STYLE = `
   .cols-annc .lr-co{max-width:100%}
   .cols-ssbr .lrow{grid-template-columns:minmax(0,1fr) 78px 86px 116px 74px}
   .cols-trend .lrow{grid-template-columns:minmax(0,1fr) 92px 92px 74px}
+  .cols-stocks .lrow{grid-template-columns:minmax(0,1fr) 88px 82px 100px 56px}
   .cols-trend .lr-name{align-items:center}
   .lr-rank{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:6px;background:var(--accent-soft);color:var(--accent-dk);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px}
   /* home dashboard: adaptive dividend vs stock columns */
@@ -476,12 +483,12 @@ const STYLE = `
   .cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) 86px 120px 58px 84px}
   .lsort{display:none} .lsort[hidden]{display:none}
   @media(max-width:560px){
-    .cols-screener .lrow,.cols-home .lrow,.cols-annc .lrow,.cols-ssbr .lrow,.cols-trend .lrow,.cols-home2.m-div .lrow,.cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
+    .cols-screener .lrow,.cols-home .lrow,.cols-annc .lrow,.cols-ssbr .lrow,.cols-trend .lrow,.cols-stocks .lrow,.cols-home2.m-div .lrow,.cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
     .lhead{display:none}
     .lr-price,.lr-div,.lr-ex,.lr-amt,.lr-exd,.lr-sub,.lr-mc,.lr-pe{display:none}
     .lr-name{grid-column:1;grid-row:1} .lr-name .tick{display:inline}
     .lr-yield{grid-column:2;grid-row:1;font-size:16px}
-    .cols-home2.m-stk .lr-chg,.cols-trend .lr-chg{grid-column:2;grid-row:1;font-size:16px}
+    .cols-home2.m-stk .lr-chg,.cols-trend .lr-chg,.cols-stocks .lr-chg{grid-column:2;grid-row:1;font-size:16px}
     .cols-trend .lr-yield{display:none}
     .cols-annc .lr-type{grid-column:2;grid-row:1;text-align:right}
     .lr-meta{display:block;grid-column:1/-1;grid-row:2;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted)}
@@ -630,6 +637,7 @@ const CAT_IC = {
   cal:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
   ssb:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>`,
   hy:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>`,
+  stk:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M19 9l2 2-2 2M19 15l2 2-2 2" opacity="0"/><circle cx="20" cy="6" r="1.6"/><circle cx="20" cy="12" r="1.6"/></svg>`,
 };
 const catCard = (href, ic, title, count, desc) => `    <a class="cat" href="${href}"><span class="ci">${CAT_IC[ic]}</span><span style="min-width:0"><span class="ct">${title}${count!=null?`<span class="cn">${count}</span>`:''}</span><span class="cd">${desc}</span></span></a>`;
 const trCard = (c) => {
@@ -647,6 +655,7 @@ function homepage(listed, index, hub) {
     return `<a class="tchip" href="/stock/${c.slug}/">${c.name.split(/\s|-/)[0]}${m?' '+m:''}</a>`;
   }).join('');
   const cards = [
+    catCard('/stocks/', 'stk', 'All Singapore stocks', hub.stockCount, 'Every SGX counter — price, market cap &amp; P/E.'),
     catCard('/dividends/', 'div', 'Best dividend stocks', hub.divCount, 'Every SGX payer ranked by dividend yield.'),
     catCard('/reits/', 'reit', 'Best REITs to buy', hub.reitCount, 'S-REITs &amp; trusts by distribution yield.'),
     catCard('/etfs/', 'etf', 'Best ETFs', hub.etfCount, 'SGX ETFs ranked by distribution yield.'),
@@ -870,6 +879,107 @@ document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('clic
 sortBy('y');
 </script>`;
   return shell(title, desc, canon, body, script, og);
+}
+
+// ---------- all Singapore stocks (full SGX universe) — same concept as the dividend page, ranked by market cap ----------
+const stockRow = (c) => {
+  const f = c.fund || {};
+  const priceTxt = c.price ? csym(c.cur)+c.price : '—';
+  const mc = fmtCap(f.cur||c.cur, f.mktCap) || '—';
+  const pe = f.pe!=null ? f.pe.toFixed(1) : '—';
+  const chg = (c.chgPct!=null && c.chgPct!==0) ? c.chgPct : (f.chg!=null ? f.chg : null);
+  const chgTxt = (chg!=null && chg!==0) ? (chg>0?'+':'')+chg.toFixed(2)+'%' : '—';
+  const chgCls = 'lr-chg' + (chg>0?' up':chg<0?' down':'');
+  const type = c.secType==='etfs' ? 'ETF' : c.isReit ? 'REIT' : 'Stock';
+  const meta = [priceTxt, chgTxt!=='—'?chgTxt:null, f.mktCap?'Cap '+mc:null, f.pe!=null?'P/E '+pe:null].filter(Boolean).join('  ·  ') || type;
+  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-mc="${Math.round(capSGD(f.cur||c.cur, f.mktCap))}" data-pe="${f.pe||0}" data-chg="${chg!=null?chg:-999}">
+          <span class="lr-name"><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
+          <span class="lr-price">${priceTxt}</span>
+          <span class="${chgCls}">${chgTxt}</span>
+          <span class="lr-mc">${mc}</span>
+          <span class="lr-pe">${pe}</span>
+          <span class="lr-meta">${meta}</span>
+        </a>`;
+};
+function stocksPage(list) {
+  // de-dupe renamed/duplicate counters (e.g. "Keppel Ltd" + "Keppel Corporation Ltd" share the same price & mkt cap)
+  const seenSig = new Set();
+  const uniq = list.filter(c => { const cap=(c.fund&&c.fund.mktCap)||0; if(!(cap>0&&c.price)) return true; const sig=c.name.toLowerCase().split(/[\s-]/)[0]+'|'+c.price+'|'+cap; if(seenSig.has(sig)) return false; seenSig.add(sig); return true; });
+  const sorted = [...uniq].sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);   // A–Z default (reliable; market-cap data can be patchy)
+  const nStock = uniq.filter(c => !c.isReit && c.secType!=='etfs').length;
+  const nReit = uniq.filter(c => c.isReit).length;
+  const nEtf = uniq.filter(c => c.secType==='etfs').length;
+  const chips = `<div class="chips">
+    <span class="chip on" data-f="all">All <span class="pill-n">${uniq.length}</span></span>
+    <span class="chip" data-f="stock">Stocks <span class="pill-n">${nStock}</span></span>
+    <span class="chip" data-f="reit">REITs &amp; Trusts <span class="pill-n">${nReit}</span></span>
+    <span class="chip" data-f="etf">ETFs <span class="pill-n">${nEtf}</span></span>
+  </div>`;
+  const faqs = [
+    { q: 'How many stocks are listed on the SGX?', a: `There are around ${uniq.length} counters listed on the Singapore Exchange (SGX), including ordinary shares, REITs, business trusts and ETFs. This page lists them all — search, filter and sort.` },
+    { q: 'What are the biggest companies on the SGX?', a: 'By market capitalisation, the largest SGX-listed companies are the three local banks — DBS, OCBC and UOB — followed by names like Singtel and Singapore Exchange. Sort this list by market cap to see them ranked.' },
+    { q: 'How do I buy Singapore stocks?', a: 'Open an account with any SGX brokerage (DBS Vickers, moomoo, Tiger, Interactive Brokers and others), or use SRS funds. You buy and sell SGX-listed shares in board lots during trading hours.' },
+    { q: 'Which Singapore stocks pay dividends?', a: 'Many do — Singapore has no tax on dividends, so income investing is popular. See the dedicated best dividend stocks and best REITs pages for counters ranked by yield.' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 4px">All Singapore stocks</h1>
+    <p class="sub" style="margin-bottom:2px">Every SGX-listed counter — price, day change, market cap and P/E. Search, filter and sort.</p>
+  </section>
+  <div class="search" id="alltop" style="margin-top:16px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker…"></div>
+  ${chips}
+  <div class="lsort"><button data-sort="n" class="on">A–Z</button><button data-sort="mc">Market cap</button><button data-sort="chg">% change</button></div>
+  <div class="ltable cols-stocks" style="margin-top:12px">
+    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-chg" data-sort="chg">Change</span><span class="lr-mc" data-sort="mc">Market cap</span><span class="lr-pe" data-sort="pe">P/E</span></div>
+    <div id="tb">
+${sorted.map(stockRow).join('\n')}
+    </div>
+  </div>
+  <div id="none" class="empty" style="display:none">No match.</div>
+  <div class="pager" id="lpager"></div>
+  <p class="metaline" style="font-size:12px">Market cap, P/E and day change from live market data; last price from the SGX. Updated daily.</p>
+  <div class="intro" style="margin-top:18px">The Singapore Exchange (SGX) is home to around <b>${uniq.length}</b> listed counters — from the big local banks and blue chips to REITs, business trusts and ETFs. Above is every one of them with live price, day change, market cap and P/E. Use the filters for Stocks, REITs or ETFs, sort by name / market cap / day change, or search any name or ticker. Tap any counter for its full page — price, dividends, ex-dates, fundamentals and news.</div>
+  ${faqHTML}
+  ${jsonLd}`;
+  const script = `<script>
+const PER=15;
+const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
+let matches=[],page=1;
+function collect(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';
+ matches=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
+  if(ok&&f==='reit')ok=r.dataset.reit==='1'; if(ok&&f==='etf')ok=r.dataset.etf==='1'; if(ok&&f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
+  return ok;});}
+function pageBtns(total){var out=[],add=function(p){out.push('<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>');};
+ add(1); if(page>3)out.push('<span class="pg-dots">…</span>');
+ for(var p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++)add(p);
+ if(page<total-2)out.push('<span class="pg-dots">…</span>');
+ if(total>1)add(total); return out.join('');}
+function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if(page>total)page=total;if(page<1)page=1;
+ tb.querySelectorAll('.lrow').forEach(r=>r.style.display='none');
+ matches.slice((page-1)*PER,page*PER).forEach(r=>r.style.display='');
+ none.style.display=matches.length?'none':'block';
+ if(total<2){pager.innerHTML='';}else{pager.innerHTML='<button class="pg" data-d="-1"'+(page===1?' disabled':'')+'>←</button>'+pageBtns(total)+'<button class="pg" data-d="1"'+(page===total?' disabled':'')+'>→</button>';}
+ if(scroll&&alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});}
+function apply(){collect();page=1;render(false);}
+q.addEventListener('input',apply);
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');apply();}));
+pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
+let sk='',sd=-1;
+function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n')?1:-1;}
+ const rows=[...tb.querySelectorAll('.lrow')];
+ rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
+ rows.forEach(r=>tb.appendChild(r));
+ document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
+ document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));
+ apply();}
+document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
+document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
+sortBy('n');
+</script>`;
+  return shell('All Singapore Stocks — Every SGX-Listed Company | StockKaki',
+    `Browse all ~${list.length} SGX-listed Singapore stocks, REITs and ETFs — with live price, day change, market cap and P/E. Search, filter and sort. Free, updated daily.`,
+    SITE + '/stocks/', body, script, '/og/screener.png');
 }
 
 // ---------- dividend calendar (upcoming ex-dates, chronological) ----------
@@ -1525,7 +1635,7 @@ const newsFeed = companies.filter(c => c.news && c.news.length)
   .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
   .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)
   .slice(0, 60);
-const hub = { divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
+const hub = { stockCount: listed.length, divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
   ssbLo: ssb && ssb.current ? ssb.current.y1 : null, ssbHi: ssb && ssb.current ? ssb.current.y10 : null,
   trending, trendingCount: trending.length, news: hubNews };
 
@@ -1549,6 +1659,8 @@ for (const c of companies) {
   writeFileSync(new URL('index.html', dir), stockPage(c));
   n++;
 }
+mkdirSync(new URL('stocks/', out), { recursive: true });
+writeFileSync(new URL('stocks/index.html', out), stocksPage(listed));
 mkdirSync(new URL('dividends/', out), { recursive: true });
 writeFileSync(new URL('dividends/index.html', out), listPage({
   title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
@@ -1609,7 +1721,7 @@ writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'u
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 
-const urls = [SITE + '/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/stocks/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
