@@ -376,6 +376,10 @@ const STYLE = `
   .ov-mark{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%);box-shadow:0 0 0 3px var(--card)}
   .ov-range-f{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
   .newslist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;box-shadow:0 12px 36px -28px rgba(58,42,32,.55);margin-top:16px}
+  .annlist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;box-shadow:0 12px 36px -28px rgba(58,42,32,.55);margin-top:16px}
+  .annrow{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);align-items:flex-start} .annrow:last-child{border-bottom:0}
+  .ann-type{flex:0 0 auto;padding-top:1px} .ann-body{min-width:0}
+  .ann-p{font-size:14.5px;line-height:1.45} .ann-m{font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
   .newsitem{display:block;padding:14px 0;border-bottom:1px solid var(--line);color:inherit} .newsitem:last-child{border-bottom:0}
   .news-t{display:block;font-weight:600;font-size:15px;line-height:1.4} .newsitem:hover .news-t{color:var(--accent-dk)}
   .news-d{display:block;font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
@@ -880,11 +884,18 @@ ${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank"
   const overviewSection = (ovStats.length || rangePos!=null || pchart) ? `${pchart ? `<div class="ov-chart-h"><span>Price</span><span>${CSf}${c.price!=null?c.price:'—'}</span></div>${pchart}` : ''}<div class="ovgrid"${pchart?' style="margin-top:18px"':''}>${ovStats.map(s => `<div class="ovstat"><span class="ov-k">${s[0]}</span><span class="ov-v">${s[1]}</span></div>`).join('')}</div>
   ${rangePos!=null ? `<div class="ov-range"><div class="ov-range-h"><span>52-week range</span></div><div class="ov-bar"><div class="ov-mark" style="left:${rangePos.toFixed(1)}%"></div></div><div class="ov-range-f"><span>${CSf}${f.w52lo}</span><span style="color:var(--ink)">now ${CSf}${c.price}</span><span>${CSf}${f.w52hi}</span></div></div>` : ''}
   ${(f&&f.dayLo!=null&&f.dayHi!=null) ? `<p class="metaline" style="margin-top:16px">Day range <b>${CSf}${f.dayLo} – ${CSf}${f.dayHi}</b>.</p>` : ''}` : `<p class="metaline">Company fundamentals aren't available for this counter yet.</p>`;
+  // ---- Announcements tab: this stock's SGX corporate actions ----
+  const annSection = (c.anns && c.anns.length) ? `
+  <div class="annlist">
+${c.anns.map(a => `    <div class="annrow"><span class="ann-type"><span class="tag">${a.type}</span></span><div class="ann-body"><div class="ann-p">${esc(a.particulars) || a.type}</div><div class="ann-m">Announced ${pretty(a.annc)}${a.ex?` &middot; ex-date ${pretty(a.ex)}`:''}</div></div></div>`).join('\n')}
+  </div>
+  <p class="metaline" style="font-size:12px">Corporate actions filed with SGX — dividends, rights, entitlements and offers.</p>` : '';
   // ---- tabs ----
   const tabDefs = [];
   if (c.divs.length) tabDefs.push(['div','Dividends',divSection]);
   tabDefs.push(['ov','Overview',overviewSection]);
   if (c.news && c.news.length) tabDefs.push(['news','News',newsSection]);
+  if (c.anns && c.anns.length) tabDefs.push(['ann','Announcements',annSection]);
   const tabsHTML = `<div class="tabs">${tabDefs.map((t,i) => `<button class="tab${i===0?' on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>
 ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden'}>${t[2]}</div>`).join('\n')}`;
   const body = `  <section class="hero" style="padding-bottom:4px">
@@ -1188,6 +1199,8 @@ const rows = parseDividends(raw);
 for (const r of rows) { const m = matchTicker(r.name, secByNorm); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; r.chgPct = m.chgPct; r.vol = m.vol; r.cur = m.cur; } }
 const divCompanies = groupCompanies(rows);
 const anns = parseAnnouncements(raw);
+const annBySlug = {};
+for (const a of anns) (annBySlug[a.slug] = annBySlug[a.slug] || []).push(a);   // per-stock corporate actions
 
 // MASTER list = every SGX security, with dividend data merged where names match.
 const divByNorm = new Map();
@@ -1211,6 +1224,7 @@ for (const s of secList) {
   });
 }
 for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has(c.slug)) continue; seenSlug.add(c.slug); companies.push(c); }
+for (const c of companies) c.anns = (annBySlug[c.slug] || []).slice(0, 12);   // this stock's recent SGX filings
 
 // ---- Accurate dividends from Yahoo Finance: fixes scrip REITs + gives real DPU. SGX keeps upcoming ex-dates. ----
 const ySleep = (ms) => new Promise(r => setTimeout(r, ms));
