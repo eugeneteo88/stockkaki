@@ -202,6 +202,10 @@ function fetchYahooNews(ticker) {
 // Quality outlets we surface (others are dropped to keep the feed to proper SG/global financial press).
 const NEWS_OK = new Set(['The Business Times','The Edge Singapore','The Straits Times','CNA','Channel NewsAsia','Reuters','Bloomberg','Yahoo Finance','StockStory','Nikkei Asia','Financial Times','Seeking Alpha','The Motley Fool Singapore','Mothership','MarketWatch','Business Insider','Singapore Business Review','The Business Times Singapore','Yahoo Finance Singapore','SGX','South China Morning Post','Forbes','Investing.com','Simply Wall St','Straits Times']);
 const cleanCoName = (name) => (name||'').replace(/\b(Ltd|Limited|Pte|Plc|Corp|Corporation|Holdings?|Group|Berhad|Bhd|Inc|Company|Co)\b\.?/gi,'').replace(/\bCNY|USD|SGD|HKD|GBP|EUR\b/g,'').replace(/\s{2,}/g,' ').trim();
+// Guard against ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news): keep a headline
+// only if a significant word from the company name actually appears in the title.
+const _nameTokens = (name) => cleanCoName(name).toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length >= 3);
+const titleHasCo = (title, name) => { const toks = _nameTokens(name); if (!toks.length) return true; const t = ' ' + (title||'').toLowerCase() + ' '; return toks.some(tok => new RegExp('\\b' + tok.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b').test(t)); };
 function fetchGoogleNews(name) {
   const q = encodeURIComponent(`"${cleanCoName(name)}" (SGX OR Singapore OR dividend)`);
   let xml; try { xml = execFileSync('curl', ['-s','-m','15','-A',UA, `https://news.google.com/rss/search?q=${q}&hl=en-SG&gl=SG&ceid=SG:en`], { maxBuffer: 12*1024*1024 }).toString('utf8'); } catch { return []; }
@@ -311,7 +315,7 @@ const CLOSE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" strok
 const WA = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.8 1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5s-.5-1.3-.7-1.8-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3A3 3 0 0 0 6.3 10a5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c2 .8 2 .6 2.4.5a2.6 2.6 0 0 0 1.7-1.2 2 2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>`;
 // TODO(Eugene): paste your WhatsApp channel/community invite link here to activate the "Join channel" button.
 const WHATSAPP_URL = 'https://whatsapp.com/channel/';
-const NAVLINKS = `<a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/announcements/">News</a>`;
+const NAVLINKS = `<a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/news/">News</a>`;
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
@@ -336,13 +340,15 @@ const BROKERS = [
   { n: 'Tiger Brokers',       u: 'https://www.tigerbrokers.com.sg',      d: 'Popular with SG investors' },
   { n: 'Interactive Brokers', u: 'https://www.interactivebrokers.com',   d: 'Global markets, low cost' },
 ];
-const brokerSlot = () => `<aside class="brokers">
+// Affiliate/broker slot hidden until real partners are set up (Eugene, 2026-07). Re-enable by restoring the markup below.
+const brokerSlot = () => '';
+/* const brokerSlot = () => `<aside class="brokers">
     <div class="bk-h"><span class="bk-t">Start collecting dividends</span><span class="bk-ad">Affiliate</span></div>
     <p class="bk-sub">Open a brokerage account to buy SGX dividend stocks — compare popular options:</p>
     <div class="bk-list">
 ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="sponsored noopener"><b>${b.n}</b><span>${b.d}</span></a>`).join('\n')}
     </div>
-  </aside>`;
+  </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
 const FOOTER = `<footer><p class="disc">© 2026 StockKaki · brand by HeyAda · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
 
@@ -530,8 +536,11 @@ const STYLE = `
   .cat .ct{font-family:'Poppins',sans-serif;font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:8px}
   .cat .cn{font-size:11.5px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
   .cat .cd{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5} .cat .cd b{color:var(--ink);font-family:'JetBrains Mono',monospace}
-  .trgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(min-width:720px){.trgrid{grid-template-columns:repeat(4,1fr)}}
-  .trcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px} .trcard:hover{border-color:var(--accent)}
+  .trgrid{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} .trgrid::-webkit-scrollbar{display:none}
+  @media(min-width:720px){.trgrid{display:grid;grid-template-columns:repeat(4,1fr);overflow:visible}}
+  .trcard{flex:0 0 68%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px} @media(min-width:720px){.trcard{flex:none}} .trcard:hover{border-color:var(--accent)}
+  .readmore{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--accent-dk)} .readmore:hover{text-decoration:underline}
+  .hubnews .nd{font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
   .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:5px}
   .trcard .tp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
   .trcard .tm{font-size:12px;margin-top:4px;font-family:'JetBrains Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:#0c9a63} .trcard .tm .down{color:#c0392b}
@@ -626,10 +635,11 @@ function homepage(listed, index, hub) {
     catCard('/dividends/', 'hy', 'Highest yield', hub.hyCount, 'Top yielders — with a risk note on the specials.'),
   ].join('\n');
   const trending = (hub.trending||[]).slice(0,4).map(trCard).join('\n');
-  const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news</div>
+  const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news <a href="/news/">Read more →</a></div>
   <div class="hubnews">
-${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
-  </div>` : '';
+${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.title)}</div>${n.desc?`<div class="nd">${esc(n.desc)}</div>`:''}<div class="nm">${[esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
+  </div>
+  <a class="readmore" href="/news/">Read more Singapore market news →</a>` : '';
   const body = `  <section class="hub-hero">
     <span class="kicker">🎋 Huat with StockKaki</span>
     <h1>Every Singapore stock, one clean search.</h1>
@@ -641,12 +651,11 @@ ${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.tit
   <div class="catgrid">
 ${cards}
   </div>
-  <div class="hub-h">Trending stocks <a href="/dividends/">See all ${hub.divCount} →</a></div>
+  <div class="hub-h">Trending stocks</div>
   <div class="trgrid">
 ${trending}
   </div>
-${newsHTML}
-  ${brokerSlot()}`;
+${newsHTML}`;
   const script = `<script>
 const IDX=${idxJson};
 const q=document.getElementById('q'),qr=document.getElementById('qres');
@@ -659,6 +668,29 @@ document.addEventListener('click',e=>{if(!e.target.closest('.hub-search'))qr.sty
   return shell('StockKaki — Singapore Dividends, Stocks, REITs, ETFs & Savings Bonds',
     'The clean way to track Singapore dividends. Search any SGX stock, browse the best dividend stocks, REITs, ETFs, the dividend calendar and Savings Bonds — free, updated daily.',
     SITE + '/', body, script, '/og/home.png');
+}
+
+// ---------- news page (aggregated latest SGX company news) ----------
+function newsPage(items) {
+  const faqs = [
+    { q: 'Where does StockKaki get its news?', a: 'Headlines are aggregated from Singapore and global financial press — The Business Times, The Edge Singapore, The Straits Times, CNA, Reuters and others — and each links to the original article.' },
+    { q: 'How often is the news updated?', a: 'Daily. Each SGX-listed company page also has its own News tab with the latest coverage of that specific stock.' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore stock market news</h1>
+    <p class="sub" style="margin-bottom:6px">The latest news on SGX-listed companies — updated daily.</p>
+  </section>
+  <div class="newslist">
+${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span>${n.desc?`<span class="news-d">${esc(n.desc)}</span>`:''}<span class="news-m">${[esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read full ↗</span></a>`).join('\n')}
+  </div>
+  <p class="metaline" style="font-size:12px">Headlines aggregated from Singapore &amp; global financial press; each links to the original article. For a single company, see its News tab on the stock page.</p>
+  ${faqHTML}
+  ${jsonLd}`;
+  return shell('Singapore Stock Market News — Latest SGX Company News | StockKaki',
+    'The latest news on SGX-listed Singapore stocks, REITs and ETFs — from The Business Times, The Edge, Straits Times, CNA and more. Updated daily, free.',
+    SITE + '/news/', body, '', '/og/home.png');
 }
 
 // ---------- list pages (screener / reits) ----------
@@ -1385,10 +1417,9 @@ const reitCountH = listed.filter(c => c.isReit).length;
 const etfCountH = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete)).length;
 const hyCount = dividendStocks.filter(c => c.yieldPct!=null && c.yieldPct>=6 && c.yieldPct<=20).length;
 const _seenTrend = new Set();   // one card per company — drop secondary/foreign-currency lines (e.g. "Singtel 10", "YZJ Shipbldg CNY")
-const _haveCap = listed.some(c => c.fund && c.fund.mktCap);
-const _trendPool = _haveCap
-  ? [...listed].filter(c => c.cur==='SGD' && c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap)
-  : [...dividendStocks].filter(c => c.cur==='SGD').sort((a,b) => (b.ttm||0) - (a.ttm||0));   // fallback (no Yahoo): biggest dividend payers
+// Trending = biggest dividend PAYERS with a real yield → every card/chip shows a % (Singtel yes, IHH excluded).
+const _trendPool = [...dividendStocks].filter(c => c.cur==='SGD' && c.yieldPct!=null && c.yieldPct<=20)
+  .sort((a,b) => ((b.fund&&b.fund.mktCap)||0) - ((a.fund&&a.fund.mktCap)||0) || (b.ttm||0) - (a.ttm||0));
 const trending = _trendPool
   .filter(c => { const k = c.name.toLowerCase().split(/[\s-]/)[0]; if (_seenTrend.has(k)) return false; _seenTrend.add(k); return true; })
   .slice(0, 6)
@@ -1398,10 +1429,16 @@ const trending = _trendPool
 // micro-caps and ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news).
 const _newsSlugs = new Set([...listed].filter(c => c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap).slice(0, 60).map(c => c.slug));
 const hubNews = companies.filter(c => _newsSlugs.has(c.slug) && c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, source: n.source || '' })))
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, desc: n.desc || '' })))
   .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
   .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)   // de-dupe identical headlines across stocks
   .slice(0, 5);
+// Full aggregated feed for the /news/ page (quality outlets, newest first, de-duped).
+const newsFeed = companies.filter(c => c.news && c.news.length)
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, desc: n.desc || '', name: c.name, slug: c.slug })))
+  .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
+  .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)
+  .slice(0, 60);
 const hub = { divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
   ssbLo: ssb && ssb.current ? ssb.current.y1 : null, ssbHi: ssb && ssb.current ? ssb.current.y10 : null,
   trending, news: hubNews };
@@ -1473,6 +1510,8 @@ mkdirSync(new URL('dividend-calendar/', out), { recursive: true });
 writeFileSync(new URL('dividend-calendar/index.html', out), calendarPage(upcoming));
 mkdirSync(new URL('announcements/', out), { recursive: true });
 writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
+mkdirSync(new URL('news/', out), { recursive: true });
+writeFileSync(new URL('news/index.html', out), newsPage(newsFeed));
 mkdirSync(new URL('ssb/', out), { recursive: true });
 writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb, sgs));
 mkdirSync(new URL('confirm/', out), { recursive: true });
@@ -1482,7 +1521,7 @@ writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'u
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 
-const urls = [SITE + '/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
