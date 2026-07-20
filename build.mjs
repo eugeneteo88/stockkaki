@@ -141,6 +141,18 @@ function fetchSecurities() {
   for (const s of list) { if (!ok.has(s.type) || !s.n) continue; if (NOISE.test(s.n)) continue; out.push({ ticker: s.nc, name: TICKER_ALIAS[s.nc] || s.n, type: s.type, price: s.lt, cur: s.cur || 'SGD', chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
   return out;
 }
+// ---------- Yahoo Finance dividends (.SI) — accurate DPU incl. scrip REITs (free) ----------
+function fetchYahooDivs(ticker) {
+  let j; try { j = JSON.parse(execFileSync('curl', ['-s','-m','20','-A',UA,'--compressed', `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}.SI?range=10y&interval=1mo&events=div`], { maxBuffer: 16*1024*1024 }).toString('utf8')); } catch { return null; }
+  const r = j && j.chart && j.chart.result && j.chart.result[0];
+  if (!r || !r.meta) return null;
+  const cur = r.meta.currency || 'SGD';
+  const divs = [];
+  const ev = r.events && r.events.dividends;
+  if (ev) for (const d of Object.values(ev)) { if (d && d.amount > 0) divs.push({ exISO: new Date(d.date*1000).toISOString().slice(0,10), amount: d.amount }); }
+  divs.sort((a,b) => a.exISO < b.exISO ? 1 : -1);
+  return { cur, divs };
+}
 // ---------- Singapore Savings Bonds (MAS) ----------
 function getMAS(path) {
   const out = execFileSync('curl', ['-s','-m','30','-A',UA,'-H','Accept: application/json','--compressed', `${MAS}/${path}`], { maxBuffer: 16*1024*1024 });
@@ -258,7 +270,7 @@ const brokerSlot = () => `<aside class="brokers">
 ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="sponsored noopener"><b>${b.n}</b><span>${b.d}</span></a>`).join('\n')}
     </div>
   </aside>`;
-const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data from SGX &amp; MAS, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
+const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data from SGX, MAS &amp; Yahoo Finance, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
@@ -624,7 +636,7 @@ function stockPage(c) {
 ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">${CS}${num(byYear[y])}</td><td class="r yld">${c.price>0?(byYear[y]/c.price*100).toFixed(2)+'%':'—'}</td></tr>`).join('\n')}
     </tbody>
   </table></div>` : '';
-  const hist = c.divs.map(d => `        <tr><td class="date">${pretty(d.exISO)}${d.exISO>=TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td><td class="r date hide-m">${pretty(d.rec)}</td><td class="r date hide-m">${pretty(d.pay)}</td><td class="r date hide-m">${pretty(d.annc)}</td></tr>`).join('\n');
+  const hist = c.divs.map(d => `        <tr><td class="date">${pretty(d.exISO)}${d.exISO>TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td></tr>`).join('\n');
   const divSection = c.divs.length ? `
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${inc?'<span style="font-size:14px;color:var(--muted)">scrip</span>':money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
   ${inc ? scripNote : ''}
@@ -633,12 +645,12 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">${CS}$
   ${annual}
   <div class="h2">Full dividend history</div>
   <div class="card"><table>
-    <thead><tr><th>Ex-date</th><th class="r">Amount</th><th class="r hide-m">Record date</th><th class="r hide-m">Pay date</th><th class="r hide-m">Announced</th></tr></thead>
+    <thead><tr><th>Ex-date</th><th class="r">Amount / security</th></tr></thead>
     <tbody>
 ${hist}
     </tbody>
   </table></div>
-  <p class="metaline" style="font-size:12px">*Yield uses the current last price (${CS}${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
+  <p class="metaline" style="font-size:12px">*Yield uses the current last price (${CS}${c.price||'—'}) against each year's total — indicative only.${c.yahoo?' Dividend amounts via Yahoo Finance; upcoming ex-dates from SGX.':''}</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
   const faqs = [];
   if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at ${CS}${c.price} on the SGX.` });
   if (c.divs.length) {
@@ -978,6 +990,28 @@ for (const s of secList) {
   });
 }
 for (const c of divCompanies.values()) { if (usedDiv.has(c.slug) || seenSlug.has(c.slug)) continue; seenSlug.add(c.slug); companies.push(c); }
+
+// ---- Accurate dividends from Yahoo Finance: fixes scrip REITs + gives real DPU. SGX keeps upcoming ex-dates. ----
+const ySleep = (ms) => new Promise(r => setTimeout(r, ms));
+const yTargets = companies.filter(c => c.ticker && (c.isReit || c.divs.length > 0));
+let yFixed = 0;
+for (const c of yTargets) {
+  const y = fetchYahooDivs(c.ticker);
+  await ySleep(180);                                          // gentle pacing — a bit faster than a human, no hammering
+  if (!y || !y.divs.length) continue;
+  const cur = y.cur || c.cur || 'SGD';
+  const past = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
+  if (!past.length) continue;
+  const soon = c.divs.filter(d => d.exISO > TODAY);           // SGX-announced future ex-dates (Yahoo only has past)
+  c.cur = cur;
+  c.divs = [...soon, ...past].sort((a,b) => a.exISO < b.exISO ? 1 : -1);
+  c.ttm = past.filter(d => d.exISO >= yearAgo).reduce((s,d) => s + d.amtNum, 0);
+  c.yieldPct = (c.price > 0 && c.ttm > 0) ? c.ttm / c.price * 100 : null;
+  c.divIncomplete = false;
+  c.yahoo = true;
+  yFixed++;
+}
+console.log(`Yahoo dividends: patched ${yFixed}/${yTargets.length} counters`);
 
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
   .map(r => { const c = divCompanies.get(r.slug); return { ...r, yieldPct: c?c.yieldPct:null, isReit: c?c.isReit:false, divIncomplete: c?c.divIncomplete:divIncomplete(r.slug) }; });
