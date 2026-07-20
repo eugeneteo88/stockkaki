@@ -705,7 +705,6 @@ function newsPage(items) {
 ${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</span></a>`).join('\n')}
   </div>
   <div class="pager" id="pager"></div>
-  <p class="metaline" style="font-size:12px">Headlines aggregated from Singapore &amp; global financial press; each links to the original article. For a single company, see its News tab on the stock page.</p>
   ${faqHTML}
   ${jsonLd}`;
   const script = `<script>(function(){var PER=${PER};var items=[].slice.call(document.querySelectorAll('#newswrap .newsitem'));var total=Math.max(1,Math.ceil(items.length/PER));var pager=document.getElementById('pager');var page=1;
