@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 const API = 'https://api.sgx.com/corporateactions/v1.0';
+const MAS = 'https://eservices.mas.gov.sg/statistics/api/v1/bondsandbills/m';   // Singapore Savings Bonds (public, no auth)
 const SITE = 'https://stockkaki.com';
 // Supabase — public values (safe to embed in the static site; RLS + service key guard the data)
 const SUPABASE_URL = 'https://limizehmxnaaqndacynm.supabase.co';
@@ -25,6 +26,7 @@ function getJSON(url) {
 const iso = (ms) => (ms ? new Date(ms).toISOString().slice(0,10) : null);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const pretty = (s) => { if (!s) return '—'; const [y,m,d] = s.split('-').map(Number); return `${d} ${MONTHS[m-1]} ${y}`; };
+const monthYr = (s) => { if (!s) return '—'; const [y,m] = s.split('-').map(Number); return `${MONTHS[m-1]} ${y}`; };
 const ACR = new Set(['SIA','CSOP','UOB','OCBC','DBS','GP','SATS','REIT','ETF','PLC','HPL','SPH','ST','FJ','FE','SGX','II','III','IV','NTUC','ABF','USD','SGD','HKD']);
 const FIXWORD = { Iedge:'iEdge', Sreit:'S-REIT', Reits:'REITs', Limited:'Ltd', Limit:'Ltd' };
 const titleCase = (s) => (s||'').toLowerCase().split(/\s+/).map(w => {
@@ -92,6 +94,37 @@ function fetchSecurities() {
   for (const s of list) { if (!ok.has(s.type) || !s.n) continue; if (NOISE.test(s.n)) continue; out.push({ ticker: s.nc, name: s.n, type: s.type, price: s.lt, chgPct: s.change_vs_pc_percentage, vol: s.vl }); }
   return out;
 }
+// ---------- Singapore Savings Bonds (MAS) ----------
+function getMAS(path) {
+  const out = execFileSync('curl', ['-s','-m','30','-A',UA,'-H','Accept: application/json','--compressed', `${MAS}/${path}`], { maxBuffer: 16*1024*1024 });
+  return JSON.parse(out.toString('utf8'));
+}
+function fetchSSB() {
+  let I, C, L;
+  try {
+    I = getMAS('savingbondsinterest?rows=400').result.records;          // per-issue step-up coupons + average returns
+    C = getMAS('savingbondsissuancecalendar?rows=400').result.records;  // application windows + issue/maturity dates
+    L = getMAS('listsavingbonds?rows=400').result.records;              // issue size, amount applied, cut-off
+  } catch { return null; }
+  if (!I || !I.length) return null;
+  const cBy = Object.fromEntries((C||[]).map(r => [r.issue_code, r]));
+  const lBy = Object.fromEntries((L||[]).map(r => [r.issue_code, r]));
+  const rows = I.map(i => {
+    const c = cBy[i.issue_code] || {}, l = lBy[i.issue_code] || {};
+    const coupons = [], returns = [];
+    for (let y = 1; y <= 10; y++) { coupons.push(+i[`year${y}_coupon`]); returns.push(+i[`year${y}_return`]); }
+    return {
+      code: i.issue_code,
+      issueISO: c.issue_date, applyISO: c.last_day_to_apply, annISO: c.ann_date, matISO: c.maturity_date,
+      issueFmt: c.issue_date_formatted, applyFmt: c.last_day_to_apply_formatted, annFmt: c.ann_date_formatted,
+      y1: returns[0], y10: returns[9], coupons, returns,
+      size: +l.issue_size || null, applied: +l.amt_applied || null, cutoff: (l.cutoff_amt != null ? +l.cutoff_amt : null),
+    };
+  }).filter(r => r.issueISO && r.y1 != null).sort((a,b) => a.issueISO < b.issueISO ? 1 : -1);
+  if (!rows.length) return null;
+  return { current: rows[0], recent: rows.slice(0, 12), series: rows.slice(0, 36).reverse() };
+}
+
 const matchTicker = (name, map) => {
   const k = secNorm(name); if (!k) return null;
   if (map.has(k)) return map.get(k);
@@ -128,10 +161,10 @@ const BURGER = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stro
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
-  <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/announcements/">Announcements</a></nav>
+  <nav><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/ssb/">SSB</a><a href="/announcements/">Announcements</a></nav>
   <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button class="btn deskonly">Get ex-date alerts</button><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
-  <div id="mmenu" class="mmenu"><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/announcements/">Announcements</a><a href="#">Alerts</a></div>
+  <div id="mmenu" class="mmenu"><a href="/">Dividends</a><a href="/screener/">Screener</a><a href="/reits/">REITs</a><a href="/ssb/">SSB</a><a href="/announcements/">Announcements</a><a href="#">Alerts</a></div>
 </header>`;
 const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
@@ -151,7 +184,7 @@ const brokerSlot = () => `<aside class="brokers">
 ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="sponsored noopener"><b>${b.n}</b><span>${b.d}</span></a>`).join('\n')}
     </div>
   </aside>`;
-const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data from SGX, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
+const FOOTER = `<footer><p class="disc">© 2026 StockKaki · Data from SGX &amp; MAS, updated daily · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
@@ -225,6 +258,27 @@ const STYLE = `
   .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
   .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
   footer{margin:36px 0 40px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px}
+  .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:18px;padding:22px}
+  .ssb-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:6px 13px;border-radius:999px}
+  .ssb-status .pulse{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .ssb-status.open{background:#dcf3e7;color:#0c7a4e} html[data-theme="dark"] .ssb-status.open{background:#123726;color:#5fd39e}
+  .ssb-status.closed{background:var(--accent-soft);color:var(--accent-dk)}
+  .ssb-meta{color:var(--muted);font-size:13px;margin-top:11px} .ssb-meta b{color:var(--ink);font-family:'JetBrains Mono',monospace}
+  .ssb-stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px}
+  .bigstat{flex:1;min-width:150px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:15px 18px}
+  .bigstat .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .bigstat .v{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:34px;color:var(--accent-dk);margin-top:6px;line-height:1}
+  .bigstat.alt .v{color:var(--ink)} .bigstat .cap{font-size:11.5px;color:var(--muted);margin-top:7px}
+  .facts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .fact{font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px} .fact b{color:var(--ink)}
+  .calc{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .calc .f{flex:1;min-width:130px} .calc label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px}
+  .calc input,.calc select{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:11px 13px;font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--ink)}
+  .calc input:focus,.calc select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .calc-out{margin-top:16px;display:flex;gap:14px;flex-wrap:wrap} .calc-out .bigstat{min-width:140px}
+  .chartwrap{margin-top:6px} .leg{display:flex;gap:18px;font-size:12px;color:var(--muted);margin:2px 0 10px}
+  .leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+  .stepup tr.hl td{background:var(--accent-soft)} .stepup tr.hl td:first-child{font-weight:700}
 `;
 const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 
@@ -480,6 +534,154 @@ ${hist}
     `${SITE}/stock/${c.slug}/`, body);
 }
 
+// ---------- Singapore Savings Bonds ----------
+function ssbPage(ssb) {
+  if (!ssb) {
+    const body = `  <section class="hero"><div class="kicker">🇸🇬 Singapore Savings Bonds</div><h1 class="serif" style="font-size:30px">SSB rates</h1>
+    <p class="sub">Live SSB rates from MAS are temporarily unavailable — please check back shortly.</p></section>`;
+    return shell('Singapore Savings Bonds (SSB) Rates | StockKaki', 'Latest Singapore Savings Bonds interest rates.', SITE + '/ssb/', body);
+  }
+  const c = ssb.current;
+  const open = daysTo(c.applyISO) >= 0;
+  const dLeft = daysTo(c.applyISO);
+  const statusHTML = open
+    ? `<span class="ssb-status open"><span class="pulse"></span>Applications open · ${dLeft===0?'closes today 9pm':'closes in '+dLeft+' day'+(dLeft>1?'s':'')}</span>`
+    : (daysTo(c.issueISO) >= 0
+        ? `<span class="ssb-status closed">Applications closed · issues ${c.issueFmt||pretty(c.issueISO)}</span>`
+        : `<span class="ssb-status closed">Latest issue · ${c.issueFmt||pretty(c.issueISO)}</span>`);
+
+  // step-up schedule
+  const stepRows = c.coupons.map((cp,i) => {
+    const y = i+1, hl = (y===1||y===10) ? ' class="hl"' : '';
+    return `        <tr${hl}><td class="date">Year ${y}</td><td class="r amt">${cp.toFixed(2)}%</td><td class="r yld">${c.returns[i].toFixed(2)}%</td></tr>`;
+  }).join('\n');
+
+  // recent issues
+  const recentRows = ssb.recent.map(r => `        <tr>
+          <td><b>${monthYr(r.issueISO)}</b> <span class="tick">${r.code}</span></td>
+          <td class="r amt">${r.y1.toFixed(2)}%</td>
+          <td class="r yld">${r.y10.toFixed(2)}%</td>
+          <td class="r amt hide-m">${r.applied&&r.size?'S$'+r.applied.toFixed(0)+'m / '+r.size.toFixed(0)+'m':'—'}</td>
+          <td class="r date hide-m">${r.cutoff!=null?'S$'+r.cutoff.toFixed(2):'—'}</td>
+        </tr>`).join('\n');
+
+  // trend chart (inline SVG, no libs) — 1-yr rate vs 10-yr average return
+  const S = ssb.series, n = S.length;
+  const vals = S.flatMap(p => [p.y1, p.y10]);
+  const lo = Math.floor(Math.min(...vals)*10)/10, hi = Math.ceil(Math.max(...vals)*10)/10, span = (hi-lo)||1;
+  const W=640,H=210,PL=6,PR=46,PT=14,PB=26;
+  const X = i => (PL+(W-PL-PR)*(n>1?i/(n-1):0));
+  const Y = v => (PT+(H-PT-PB)*(1-(v-lo)/span));
+  const poly = (k,col) => `<polyline fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" points="${S.map((p,i)=>X(i).toFixed(1)+','+Y(p[k]).toFixed(1)).join(' ')}"/>`;
+  const last = S[n-1];
+  const chart = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="SSB 1-year and 10-year average return trend">
+    <line x1="${PL}" y1="${Y(hi).toFixed(1)}" x2="${W-PR}" y2="${Y(hi).toFixed(1)}" stroke="var(--line)"/>
+    <line x1="${PL}" y1="${Y(lo).toFixed(1)}" x2="${W-PR}" y2="${Y(lo).toFixed(1)}" stroke="var(--line)"/>
+    <text x="${W-PR+6}" y="${(Y(hi)+4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${hi.toFixed(1)}%</text>
+    <text x="${W-PR+6}" y="${(Y(lo)+4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${lo.toFixed(1)}%</text>
+    ${poly('y1','#3E8FB0')}
+    ${poly('y10','var(--accent)')}
+    <circle cx="${X(n-1).toFixed(1)}" cy="${Y(last.y10).toFixed(1)}" r="3.5" fill="var(--accent)"/>
+    <circle cx="${X(n-1).toFixed(1)}" cy="${Y(last.y1).toFixed(1)}" r="3.5" fill="#3E8FB0"/>
+    <text x="${PL}" y="${H-8}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${monthYr(S[0].issueISO)}</text>
+    <text x="${(W-PR).toFixed(1)}" y="${H-8}" fill="var(--muted)" font-size="11" text-anchor="end" font-family="'JetBrains Mono',monospace">${monthYr(last.issueISO)}</text>
+  </svg>`;
+
+  const faqs = [
+    { q: 'What is the Singapore Savings Bond interest rate this month?', a: `The current issue (${c.code}, issued ${c.issueFmt||pretty(c.issueISO)}) pays ${c.y1.toFixed(2)}% in the first year and a ${c.y10.toFixed(2)}% average return per year if held for the full 10 years.` },
+    { q: 'How does the SSB step-up interest work?', a: `SSB interest "steps up" the longer you hold. This issue starts at ${c.coupons[0].toFixed(2)}% in year 1 and rises to ${c.coupons[9].toFixed(2)}% in year 10, so your average return grows from ${c.returns[0].toFixed(2)}% to ${c.returns[9].toFixed(2)}% per year over the 10 years.` },
+    { q: 'How do I buy Singapore Savings Bonds?', a: 'Apply through DBS/POSB, OCBC or UOB internet banking or ATM, or with your SRS funds. Minimum S$500, in multiples of S$500, up to S$200,000 held in total. Applications usually close on the 4th-last business day of the month.' },
+    { q: 'Can I withdraw my Savings Bond early?', a: 'Yes. You can redeem in any month with no penalty and get your full principal back plus any accrued interest — one reason SSBs are considered very low risk. They are fully backed by the Singapore Government.' },
+    { q: 'How is SSB interest paid?', a: 'Interest is paid every 6 months into your bank account, starting six months from the issue date.' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f=>`<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const ld = { "@context":"https://schema.org","@graph":[
+    { "@type":"BreadcrumbList","itemListElement":[
+      { "@type":"ListItem","position":1,"name":"StockKaki","item":`${SITE}/` },
+      { "@type":"ListItem","position":2,"name":"Singapore Savings Bonds","item":`${SITE}/ssb/` } ] },
+    { "@type":"FAQPage","mainEntity":faqs.map(f=>({ "@type":"Question","name":f.q,"acceptedAnswer":{ "@type":"Answer","text":f.a } })) } ] };
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
+
+  const body = `  <section class="hero" style="padding-bottom:2px">
+    <div class="crumb"><a href="/">StockKaki</a> › Singapore Savings Bonds</div>
+    <div class="kicker">🇸🇬 Singapore Savings Bonds</div>
+    <h1 class="serif" style="font-size:30px">Singapore Savings Bonds (SSB)</h1>
+    <p class="sub">This month's SSB rate, the full 10-year step-up, and how much you'd earn — straight from MAS, updated every issue.</p>
+  </section>
+  <div class="ssb-card">
+    ${statusHTML}
+    <div class="ssb-stats">
+      <div class="bigstat"><div class="k">1st-year interest</div><div class="v">${c.y1.toFixed(2)}%</div><div class="cap">if you hold for 1 year</div></div>
+      <div class="bigstat"><div class="k">10-year average return</div><div class="v">${c.y10.toFixed(2)}%</div><div class="cap">per year, held to maturity</div></div>
+      <div class="bigstat alt"><div class="k">Issue</div><div class="v" style="font-size:20px;margin-top:10px">${c.code}</div><div class="cap">issued ${c.issueFmt||pretty(c.issueISO)}${open?` · apply by ${c.applyFmt||pretty(c.applyISO)}`:''}</div></div>
+    </div>
+    <div class="facts">
+      <span class="fact">Min <b>S$500</b></span>
+      <span class="fact">Max <b>S$200,000</b></span>
+      <span class="fact"><b>Redeem anytime</b>, no penalty</span>
+      <span class="fact"><b>SG-Government</b> backed</span>
+      <span class="fact">Interest paid <b>every 6 months</b></span>
+    </div>
+    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds. Rates are the same at every bank — they're set by MAS.</p>
+  </div>
+
+  <div class="h2">How much you'd earn</div>
+  <div class="ssb-card" style="border-left-color:var(--line)">
+    <div class="calc">
+      <div class="f"><label for="amt">You invest (S$)</label><input id="amt" type="number" min="500" step="500" value="10000"></div>
+      <div class="f"><label for="yrs">You hold for</label><select id="yrs">${Array.from({length:10},(_,i)=>`<option value="${i+1}"${i===9?' selected':''}>${i+1} year${i?'s':''}</option>`).join('')}</select></div>
+    </div>
+    <div class="calc-out">
+      <div class="bigstat"><div class="k">Total interest</div><div class="v" id="oInt">—</div><div class="cap" id="oPaid"></div></div>
+      <div class="bigstat alt"><div class="k">Average return</div><div class="v" id="oRate">—</div><div class="cap">per year over the period</div></div>
+    </div>
+    <p class="ssb-meta">Based on the current issue (${c.code}). Interest is paid out every 6 months; figures assume you hold the whole period and don't reinvest the coupons.</p>
+  </div>
+
+  <div class="h2">Interest rate step-up — issue ${c.code}</div>
+  <div class="card"><table class="stepup">
+    <thead><tr><th>If you hold…</th><th class="r">Interest that year</th><th class="r">Average return / year</th></tr></thead>
+    <tbody>
+${stepRows}
+    </tbody>
+  </table></div>
+  <p class="metaline" style="font-size:12px">The longer you hold, the higher the rate — that's the SSB "step-up". Average return is what you'd earn per year if you redeem at the end of that year.</p>
+
+  <div class="h2">SSB rate trend</div>
+  <div class="chartwrap">
+    <div class="leg"><span><i style="background:var(--accent)"></i>10-year average return</span><span><i style="background:#3E8FB0"></i>1st-year interest</span></div>
+    ${chart}
+  </div>
+
+  <div class="h2">Recent issues</div>
+  <div class="card"><table>
+    <thead><tr><th>Issue</th><th class="r">1-yr</th><th class="r">10-yr avg</th><th class="r hide-m">Applied / offered</th><th class="r hide-m">Cut-off</th></tr></thead>
+    <tbody>
+${recentRows}
+    </tbody>
+  </table></div>
+  <p class="metaline" style="font-size:12px">Data from the Monetary Authority of Singapore (MAS), updated each issue. Not financial advice — see <a href="/disclaimer/" style="color:var(--accent-dk)">disclaimer</a>.</p>
+
+  ${faqHTML}
+  ${jsonLd}`;
+
+  const script = `<script>
+const CPN=${JSON.stringify(c.coupons)},RET=${JSON.stringify(c.returns)};
+const amt=document.getElementById('amt'),yrs=document.getElementById('yrs');
+function fmt(n){return n.toLocaleString('en-SG',{maximumFractionDigits:0});}
+function calc(){let p=parseFloat(amt.value)||0,y=parseInt(yrs.value,10);
+ let sum=0;for(let i=0;i<y;i++)sum+=CPN[i];
+ let interest=p*sum/100;
+ document.getElementById('oInt').textContent='S$'+fmt(interest);
+ document.getElementById('oRate').textContent=RET[y-1].toFixed(2)+'%';
+ document.getElementById('oPaid').textContent='over '+y+' year'+(y>1?'s':'');}
+amt.addEventListener('input',calc);yrs.addEventListener('change',calc);calc();
+</script>`;
+  return shell('Singapore Savings Bonds (SSB) Rates This Month — 1-Year & 10-Year Returns | StockKaki',
+    `Latest Singapore Savings Bonds rates: ${c.y1.toFixed(2)}% first-year and ${c.y10.toFixed(2)}% 10-year average return (issue ${c.code}). Full step-up schedule, rate trend and a returns calculator. From MAS, updated each issue.`,
+    SITE + '/ssb/', body, script);
+}
+
 // ---------- disclaimer ----------
 function disclaimerPage() {
   const body = `  <section class="hero" style="padding-bottom:4px">
@@ -520,6 +722,7 @@ else{const{data,error}=await sb.rpc('${rpc}',{p_token:t});
 const secList = fetchSecurities();
 const secByNorm = new Map();
 for (const s of secList) { const k = secNorm(s.name); if (k && !secByNorm.has(k)) secByNorm.set(k, s); }
+const ssb = fetchSSB();           // Singapore Savings Bonds (MAS)
 const raw = await fetchRaw(50);   // ~5-6 years of history
 const rows = parseDividends(raw);
 for (const r of rows) { const m = matchTicker(r.name, secByNorm); if (m) { r.ticker = m.ticker; r.price = m.price; r.secType = m.type; r.chgPct = m.chgPct; r.vol = m.vol; } }
@@ -581,6 +784,8 @@ writeFileSync(new URL('reits/index.html', out), listPage({
   list: all.filter(c => c.isReit), canon: SITE + '/reits/', typeChips: false }));
 mkdirSync(new URL('announcements/', out), { recursive: true });
 writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
+mkdirSync(new URL('ssb/', out), { recursive: true });
+writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb));
 mkdirSync(new URL('confirm/', out), { recursive: true });
 writeFileSync(new URL('confirm/index.html', out), utilPage('Confirm your alerts', 'confirm_subscriber', "You're in! 🦁", "You'll get StockKaki dividend & ex-date alerts.", 'Already confirmed (or the link expired).'));
 mkdirSync(new URL('unsubscribe/', out), { recursive: true });
@@ -588,7 +793,7 @@ writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'u
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 
-const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/screener/', SITE + '/reits/', SITE + '/ssb/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
@@ -600,6 +805,7 @@ writeFileSync(new URL('llms.txt', out), `# StockKaki — Singapore dividend & st
 - Upcoming SGX dividends & ex-dates: ${SITE}/
 - Best dividend stocks (screener, ranked by yield): ${SITE}/screener/
 - Singapore REITs by distribution yield: ${SITE}/reits/
+- Singapore Savings Bonds (SSB) rates, step-up schedule & returns calculator: ${SITE}/ssb/
 - SGX corporate actions / announcements: ${SITE}/announcements/
 - Per-stock pages (price, dividend history, yield, ex-dates) for all ${all.length} SGX counters: ${SITE}/stock/<slug>/ — full list in ${SITE}/sitemap.xml
 
