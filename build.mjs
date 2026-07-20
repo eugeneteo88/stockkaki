@@ -814,13 +814,12 @@ ${top10.map(t10Card).join('\n')}
   const faqHTML = (faqs && faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
   const jsonLd = (faqs && faqs.length) ? `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 5px">${h1}</h1>
-    <p class="sub" style="margin-bottom:13px">${sub}</p>
-    <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
+    <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
+    <p class="sub" style="margin-bottom:2px">${sub}</p>
   </section>
-  ${intro ? `<div class="intro">${intro}</div>` : ''}
-  ${chips}
   ${topBlock}
+  <div class="search" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
+  ${chips}
   <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="n">A–Z</button></div>
   <div class="ltable cols-screener" style="margin-top:12px">
     <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
@@ -830,6 +829,7 @@ ${sorted.map(companyRow).join('\n')}
   </div>
   <div id="none" class="empty" style="display:none">No match.</div>
   <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely a one-off special dividend; <b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed).</p>
+  ${intro ? `<div class="intro" style="margin-top:18px">${intro}</div>` : ''}
   ${faqHTML}
   ${jsonLd}`;
   const script = `<script>
