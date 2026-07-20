@@ -27,6 +27,7 @@ const iso = (ms) => (ms ? new Date(ms).toISOString().slice(0,10) : null);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const pretty = (s) => { if (!s) return '—'; const [y,m,d] = s.split('-').map(Number); return `${d} ${MONTHS[m-1]} ${y}`; };
 const monthYr = (s) => { if (!s) return '—'; const [y,m] = s.split('-').map(Number); return `${MONTHS[m-1]} ${y}`; };
+const prettyShort = (s) => { if (!s) return '—'; const [y,m,d] = s.split('-').map(Number); return `${d} ${MONTHS[m-1]}`; };   // "12 Aug" — compact for mobile
 const ACR = new Set(['SIA','CSOP','UOB','OCBC','DBS','GP','SATS','REIT','ETF','PLC','HPL','SPH','ST','FJ','FE','SGX','II','III','IV','NTUC','ABF','USD','SGD','HKD']);
 const FIXWORD = { Iedge:'iEdge', Sreit:'S-REIT', Reits:'REITs', Limited:'Ltd', Limit:'Ltd' };
 const titleCase = (s) => (s||'').toLowerCase().split(/\s+/).map(w => {
@@ -308,6 +309,32 @@ const STYLE = `
   .empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:14px}
   .hide-m{display:none} @media(min-width:720px){ .hide-m{display:table-cell} }
   @media(max-width:560px){ thead th,tbody td{padding:12px 10px;font-size:13px} .tick{display:none} .amt,.yld{font-size:13px} }
+  /* ---- responsive data list (screener / reits / homepage): aligned columns on desktop, 2-line cards on mobile ---- */
+  .ltable{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 36px -28px rgba(58,42,32,.55)}
+  .lrow{display:grid;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);color:inherit}
+  .lrow:last-child{border-bottom:0} .lrow:not(.lhead):hover{background:var(--row-hover)}
+  .lhead{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:transparent}
+  .lhead>span[data-sort]{cursor:pointer;user-select:none} .lhead>span[data-sort]:hover{color:var(--ink)}
+  .lr-name{min-width:0;display:flex;align-items:baseline;gap:7px} .lr-name .tick{flex:0 0 auto}
+  .lr-co{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .lr-price,.lr-yield,.lr-div,.lr-ex,.lr-amt,.lr-exd{text-align:right;font-family:'JetBrains Mono',monospace;font-size:13.5px;white-space:nowrap}
+  .lr-yield{color:var(--accent-dk);font-weight:600} .lr-yield.mut{color:var(--muted);font-weight:500}
+  .lr-ex,.lr-exd{color:#6E5E50;font-size:12.5px} html[data-theme="dark"] .lr-ex,html[data-theme="dark"] .lr-exd{color:var(--muted)}
+  .lr-meta{display:none} .lr-tag{margin-left:6px}
+  .cols-screener .lrow{grid-template-columns:minmax(0,1fr) 92px 82px 104px 108px}
+  .cols-home .lrow{grid-template-columns:minmax(0,1fr) 122px 92px 84px}
+  .lsort{display:none}
+  @media(max-width:560px){
+    .cols-screener .lrow,.cols-home .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
+    .lhead{display:none}
+    .lr-price,.lr-div,.lr-ex,.lr-amt,.lr-exd{display:none}
+    .lr-name{grid-column:1;grid-row:1} .lr-name .tick{display:inline}
+    .lr-yield{grid-column:2;grid-row:1;font-size:16px}
+    .lr-meta{display:block;grid-column:1/-1;grid-row:2;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted)}
+    .lsort{display:flex;gap:8px;margin:14px 0 -2px;overflow-x:auto;scrollbar-width:none} .lsort::-webkit-scrollbar{display:none}
+    .lsort button{white-space:nowrap;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 13px;border-radius:999px;cursor:pointer}
+    .lsort button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  }
   .alert{margin:26px 0 8px;background:var(--accent);color:#fff;border-radius:18px;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
   .alert h3{font-family:'Poppins',sans-serif;font-weight:700;font-size:21px} .alert p{color:#FFE7D6;font-size:14px;max-width:520px}
   .alert form{display:flex;gap:8px;flex-wrap:wrap} .alert input{flex:1;min-width:200px;border:0;border-radius:999px;padding:12px 16px;font-size:14px;font-family:inherit} .alert .btn{background:#20160E;color:#fff}
@@ -377,15 +404,18 @@ document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener(
 // ---------- homepage ----------
 const rowHTML = (r) => {
   const y = r.yieldPct!=null ? r.yieldPct.toFixed(2) : null;
-  const amtCell = r.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : money(r.ccy,r.amt);
-  const yldCell = y ? y+'%' : (r.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : '—');
-  return `        <tr data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}" data-reit="${r.isReit?1:0}" data-week="${daysTo(r.exISO)<=7?1:0}" data-sgd="${r.ccy==='SGD'?1:0}" data-y="${r.yieldPct!=null?r.yieldPct:-1}">
-          <td><a class="co" href="/stock/${r.slug}/">${r.name}</a>${r.ticker?` <span class="tick">${r.ticker}</span>`:''}</td>
-          <td class="date">${pretty(r.exISO)} ${exTag(r.exISO)}</td>
-          <td class="r amt">${amtCell}</td>
-          <td class="r yld">${yldCell}</td>
-          <td class="r date hide-m">${pretty(r.pay)}</td>
-        </tr>`;
+  const amtTxt = r.divIncomplete ? 'scrip' : money(r.ccy,r.amt);
+  const yTxt = y ? y+'%' : (r.divIncomplete ? 'scrip' : '—');
+  const yCls = 'lr-yield' + ((!y || r.divIncomplete) ? ' mut' : '');
+  const tag = exTag(r.exISO);
+  const meta = `Ex ${prettyShort(r.exISO)}${tag?' '+tag:''}  ·  ${amtTxt}`;
+  return `        <a class="lrow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}" data-reit="${r.isReit?1:0}" data-week="${daysTo(r.exISO)<=7?1:0}" data-sgd="${r.ccy==='SGD'?1:0}" data-y="${r.yieldPct!=null?r.yieldPct:-1}">
+          <span class="lr-name"><span class="lr-co">${r.name}</span>${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span>
+          <span class="lr-exd">${pretty(r.exISO)} ${tag}</span>
+          <span class="lr-amt">${amtTxt}</span>
+          <span class="${yCls}">${yTxt}</span>
+          <span class="lr-meta">${meta}</span>
+        </a>`;
 };
 
 function homepage(upcoming, index) {
@@ -404,12 +434,13 @@ function homepage(upcoming, index) {
     <span class="chip" data-f="sgd">SGD only</span>
     <span class="chip" data-f="yield">Highest yield ↓</span>
   </div>
-  <div class="card" style="margin-top:12px"><table>
-    <thead><tr><th>Company</th><th>Ex-date</th><th class="r">Amount</th><th class="r">Yield</th><th class="r hide-m">Pay date</th></tr></thead>
-    <tbody id="tb">
+  <div class="ltable cols-home" style="margin-top:12px">
+    <div class="lrow lhead"><span>Company</span><span class="lr-exd">Ex-date</span><span class="lr-amt">Amount</span><span class="lr-yield">Yield</span></div>
+    <div id="tb">
 ${upcoming.map(rowHTML).join('\n')}
-    </tbody>
-  </table><div id="none" class="empty" style="display:none">No dividends match that filter.</div></div>
+    </div>
+  </div>
+  <div id="none" class="empty" style="display:none">No dividends match that filter.</div>
   ${brokerSlot()}`;
   const script = `<script>
 const IDX=${idxJson};
@@ -422,7 +453,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.search'))qr.style.d
 const tb=document.getElementById('tb'),none=document.getElementById('none');
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
   document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
-  const f=c.dataset.f;let rows=[...tb.querySelectorAll('tr')];let vis=0;
+  const f=c.dataset.f;let rows=[...tb.querySelectorAll('.lrow')];let vis=0;
   rows.forEach(r=>{let show=true;if(f==='reit')show=r.dataset.reit==='1';if(f==='week')show=r.dataset.week==='1';if(f==='sgd')show=r.dataset.sgd==='1';r.style.display=show?'':'none';if(show)vis++;});
   if(f==='yield'){rows.sort((a,b)=>parseFloat(b.dataset.y)-parseFloat(a.dataset.y)).forEach(r=>tb.appendChild(r));}
   none.style.display=vis===0?'block':'none';}));
@@ -437,17 +468,22 @@ const SCRIP_TITLE = 'Distributes via a scrip/reinvestment option — SGX’s fre
 const companyRow = (c) => {
   const y = c.yieldPct!=null ? c.yieldPct.toFixed(2) : null;
   const special = c.yieldPct!=null && c.yieldPct > 20;   // likely a one-off special dividend
-  const yldCell = y ? (special ? `<span class="yld" style="color:var(--muted)" title="Trailing yield likely inflated by a one-off special dividend">${y}%*</span>` : `<span class="yld">${y}%</span>`)
-    : (c.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : '—');
-  const amtCell = c.divIncomplete ? `<span class="tick" title="${esc(SCRIP_TITLE)}">scrip</span>` : (c.ttm>0?csym(c.cur)+num(c.ttm):'—');
+  const yTitle = special ? ' title="Trailing yield likely inflated by a one-off special dividend"' : (c.divIncomplete ? ` title="${esc(SCRIP_TITLE)}"` : '');
+  const yTxt = y ? (special ? `${y}%*` : `${y}%`) : (c.divIncomplete ? 'scrip' : '—');
+  const yCls = 'lr-yield' + ((!y || special || c.divIncomplete) ? ' mut' : '');
+  const priceTxt = c.price ? csym(c.cur)+c.price : '—';
+  const divTxt = c.divIncomplete ? 'scrip' : (c.ttm>0 ? csym(c.cur)+num(c.ttm) : '—');
   const nx = c.divs.find(d => d.exISO >= TODAY);
   const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
-  return `        <tr data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
-          <td><a class="co" href="/stock/${c.slug}/">${c.name}</a>${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</td>
-          <td class="r">${yldCell}</td>
-          <td class="r amt">${amtCell}</td>
-          <td class="r date hide-m">${nx?pretty(nx.exISO):'—'}</td>
-        </tr>`;
+  const meta = [ c.price?priceTxt:null, c.divIncomplete?'scrip':(c.ttm>0?'Div '+csym(c.cur)+num(c.ttm):null), nx?'Ex '+prettyShort(nx.exISO):null ].filter(Boolean).join('  ·  ') || 'No dividend in 12M';
+  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
+          <span class="lr-name"><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
+          <span class="lr-price">${priceTxt}</span>
+          <span class="${yCls}"${yTitle}>${yTxt}</span>
+          <span class="lr-div">${divTxt}</span>
+          <span class="lr-ex">${nx?prettyShort(nx.exISO):'—'}</span>
+          <span class="lr-meta">${meta}</span>
+        </a>`;
 };
 function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips }) {
   // realistic yields (≤20%) rank first; likely one-off specials (>20%) and no-yield sink to the bottom
@@ -466,17 +502,19 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips }) {
     <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
   </section>
   ${chips}
-  <div class="card" style="margin-top:12px"><table>
-    <thead><tr><th data-sort="n">Company</th><th class="r" data-sort="y">Yield</th><th class="r" data-sort="d">12-mo div</th><th class="r hide-m" data-sort="e">Next ex-date</th></tr></thead>
-    <tbody id="tb">
+  <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="n">A–Z</button></div>
+  <div class="ltable cols-screener" style="margin-top:12px">
+    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
+    <div id="tb">
 ${sorted.map(companyRow).join('\n')}
-    </tbody>
-  </table><div id="none" class="empty" style="display:none">No match.</div></div>
-  <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely includes a one-off special dividend.</p>`;
+    </div>
+  </div>
+  <div id="none" class="empty" style="display:none">No match.</div>
+  <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely a one-off special dividend; <b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed).</p>`;
   const script = `<script>
 const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none');
 function apply(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';let vis=0;
- tb.querySelectorAll('tr').forEach(r=>{let ok=(!v||r.dataset.s.includes(v));
+ tb.querySelectorAll('.lrow').forEach(r=>{let ok=(!v||r.dataset.s.includes(v));
   if(ok&&f==='reit')ok=r.dataset.reit==='1'; if(ok&&f==='etf')ok=r.dataset.etf==='1'; if(ok&&f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
   r.style.display=ok?'':'none'; if(ok)vis++;});
  none.style.display=vis?'none':'block';}
@@ -484,11 +522,13 @@ q.addEventListener('input',apply);
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');apply();}));
 let sk='',sd=-1;
 function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
- const rows=[...tb.querySelectorAll('tr')];
+ const rows=[...tb.querySelectorAll('.lrow')];
  rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'||k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
  rows.forEach(r=>tb.appendChild(r));
- document.querySelectorAll('th[data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});}
-document.querySelectorAll('th[data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
+ document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
+ document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));}
+document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
+document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
 sortBy('y');
 </script>`;
   return shell(title, desc, canon, body, script);
