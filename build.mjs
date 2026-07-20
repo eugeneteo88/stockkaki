@@ -554,6 +554,7 @@ const STYLE = `
   .pager{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:20px 0 4px}
   .pager .pg{font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer;min-width:38px}
   .pager .pg:hover:not([disabled]){border-color:var(--accent);color:var(--ink)} .pager .pg.on{background:var(--accent);color:#fff;border-color:var(--accent)} .pager .pg[disabled]{opacity:.4;cursor:default}
+  .pager .pg-dots{color:var(--muted);align-self:center;padding:0 2px}
   .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:5px}
   .trcard .tp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
   .trcard .tm{font-size:12px;margin-top:4px;font-family:'JetBrains Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:#0c9a63} .trcard .tm .down{color:#c0392b}
@@ -818,7 +819,7 @@ ${top10.map(t10Card).join('\n')}
     <p class="sub" style="margin-bottom:2px">${sub}</p>
   </section>
   ${topBlock}
-  <div class="search" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
+  <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
   ${chips}
   <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="n">A–Z</button></div>
   <div class="ltable cols-screener" style="margin-top:12px">
@@ -828,26 +829,42 @@ ${sorted.map(companyRow).join('\n')}
     </div>
   </div>
   <div id="none" class="empty" style="display:none">No match.</div>
+  <div class="pager" id="lpager"></div>
   <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely a one-off special dividend; <b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed).</p>
   ${intro ? `<div class="intro" style="margin-top:18px">${intro}</div>` : ''}
   ${faqHTML}
   ${jsonLd}`;
   const script = `<script>
-const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none');
-function apply(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';let vis=0;
- tb.querySelectorAll('.lrow').forEach(r=>{let ok=(!v||r.dataset.s.includes(v));
+const PER=15;
+const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
+let matches=[],page=1;
+function collect(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';
+ matches=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
   if(ok&&f==='reit')ok=r.dataset.reit==='1'; if(ok&&f==='etf')ok=r.dataset.etf==='1'; if(ok&&f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
-  r.style.display=ok?'':'none'; if(ok)vis++;});
- none.style.display=vis?'none':'block';}
+  return ok;});}
+function pageBtns(total){var out=[],add=function(p){out.push('<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>');};
+ add(1); if(page>3)out.push('<span class="pg-dots">…</span>');
+ for(var p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++)add(p);
+ if(page<total-2)out.push('<span class="pg-dots">…</span>');
+ if(total>1)add(total); return out.join('');}
+function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if(page>total)page=total;if(page<1)page=1;
+ tb.querySelectorAll('.lrow').forEach(r=>r.style.display='none');
+ matches.slice((page-1)*PER,page*PER).forEach(r=>r.style.display='');
+ none.style.display=matches.length?'none':'block';
+ if(total<2){pager.innerHTML='';}else{pager.innerHTML='<button class="pg" data-d="-1"'+(page===1?' disabled':'')+'>←</button>'+pageBtns(total)+'<button class="pg" data-d="1"'+(page===total?' disabled':'')+'>→</button>';}
+ if(scroll&&alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});}
+function apply(){collect();page=1;render(false);}
 q.addEventListener('input',apply);
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');apply();}));
+pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
 let sk='',sd=-1;
 function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
  const rows=[...tb.querySelectorAll('.lrow')];
  rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'||k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
  rows.forEach(r=>tb.appendChild(r));
  document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
- document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));}
+ document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));
+ apply();}
 document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
 document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
 sortBy('y');
