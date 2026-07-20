@@ -177,7 +177,7 @@ function fetchYahooQuotes(tickers, cr) {
   for (let i = 0; i < tickers.length; i += 50) {
     const syms = tickers.slice(i, i+50).map(t => encodeURIComponent(t)+'.SI').join(',');
     let rs; try { rs = JSON.parse(execFileSync('curl', ['-s','-m','25','-A',UA,'-b',cr.cj, `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${syms}&crumb=${encodeURIComponent(cr.crumb)}`], { maxBuffer: 16*1024*1024 }).toString()).quoteResponse.result; } catch { rs = null; }
-    if (rs) for (const r of rs) { const t = (r.symbol||'').replace(/\.SI$/,''); if (t) map[t] = { mktCap:r.marketCap, pe:r.trailingPE, pb:r.priceToBook, eps:r.epsTrailingTwelveMonths, w52lo:r.fiftyTwoWeekLow, w52hi:r.fiftyTwoWeekHigh, dayLo:r.regularMarketDayLow, dayHi:r.regularMarketDayHigh, vol:r.regularMarketVolume, cur:r.currency }; }
+    if (rs) for (const r of rs) { const t = (r.symbol||'').replace(/\.SI$/,''); if (t) map[t] = { mktCap:r.marketCap, pe:r.trailingPE, pb:r.priceToBook, eps:r.epsTrailingTwelveMonths, w52lo:r.fiftyTwoWeekLow, w52hi:r.fiftyTwoWeekHigh, dayLo:r.regularMarketDayLow, dayHi:r.regularMarketDayHigh, vol:r.regularMarketVolume, chg:r.regularMarketChangePercent, cur:r.currency }; }
   }
   return map;
 }
@@ -353,6 +353,7 @@ const STYLE = `
   #qres a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line);font-size:14px} #qres a:last-child{border-bottom:0} #qres a:hover{background:var(--accent-soft)}
   #qres .noqr{padding:13px 16px;color:var(--muted);font-size:13px}
   .live{display:inline-flex;align-items:center;gap:7px;margin-top:14px;background:var(--accent-soft);color:var(--accent-dk);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;font-family:'JetBrains Mono',monospace}
+  .hint{margin-top:12px;font-size:12.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
   .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent)}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:18px 0 6px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
   .chip{white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 14px;border-radius:999px;cursor:pointer;user-select:none}
@@ -416,16 +417,22 @@ const STYLE = `
   .cols-annc .lr-name{flex-direction:column;align-items:flex-start;gap:1px}
   .cols-annc .lr-co{max-width:100%}
   .cols-ssbr .lrow{grid-template-columns:minmax(0,1fr) 78px 86px 116px 74px}
-  .lsort{display:none}
+  /* home dashboard: adaptive dividend vs stock columns */
+  .cols-home2.m-div .c-stk{display:none} .cols-home2.m-stk .c-div{display:none}
+  .lr-mc,.lr-pe,.lr-chg{text-align:right;font-family:'JetBrains Mono',monospace;font-size:13.5px;white-space:nowrap} .lr-chg.up{color:#0c9a63} .lr-chg.down{color:#c0392b}
+  .cols-home2.m-div .lrow{grid-template-columns:minmax(0,1fr) 86px 80px 98px 104px}
+  .cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) 86px 120px 58px 84px}
+  .lsort{display:none} .lsort[hidden]{display:none}
   @media(max-width:560px){
-    .cols-screener .lrow,.cols-home .lrow,.cols-annc .lrow,.cols-ssbr .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
+    .cols-screener .lrow,.cols-home .lrow,.cols-annc .lrow,.cols-ssbr .lrow,.cols-home2.m-div .lrow,.cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
     .lhead{display:none}
-    .lr-price,.lr-div,.lr-ex,.lr-amt,.lr-exd,.lr-sub{display:none}
+    .lr-price,.lr-div,.lr-ex,.lr-amt,.lr-exd,.lr-sub,.lr-mc,.lr-pe{display:none}
     .lr-name{grid-column:1;grid-row:1} .lr-name .tick{display:inline}
     .lr-yield{grid-column:2;grid-row:1;font-size:16px}
+    .cols-home2.m-stk .lr-chg{grid-column:2;grid-row:1;font-size:16px}
     .cols-annc .lr-type{grid-column:2;grid-row:1;text-align:right}
     .lr-meta{display:block;grid-column:1/-1;grid-row:2;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted)}
-    .lsort{display:flex;gap:8px;margin:14px 0 -2px;overflow-x:auto;scrollbar-width:none} .lsort::-webkit-scrollbar{display:none}
+    .lsort:not([hidden]){display:flex;gap:8px;margin:14px 0 -2px;overflow-x:auto;scrollbar-width:none} .lsort::-webkit-scrollbar{display:none}
     .lsort button{white-space:nowrap;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 13px;border-radius:999px;cursor:pointer}
     .lsort button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   }
@@ -501,31 +508,70 @@ document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener(
 })();</script>
 </body></html>`;
 
-// ---------- homepage ---------- (leads with the full ranked list of dividend payers)
-function homepage(payers, exWeekCount, index) {
+// ---------- homepage ---------- (SG stock-market dashboard: adaptive dividend vs stock views)
+const homeRow = (c) => {
+  const y = c.yieldPct!=null ? c.yieldPct.toFixed(2) : null;
+  const special = c.yieldPct!=null && c.yieldPct > 20;
+  const yTitle = special ? ' title="Trailing yield likely inflated by a one-off special dividend"' : (c.divIncomplete ? ` title="${esc(SCRIP_TITLE)}"` : '');
+  const yTxt = y ? (special ? y+'%*' : y+'%') : (c.divIncomplete ? 'scrip' : '—');
+  const yCls = 'lr-yield c-div' + ((!y || special || c.divIncomplete) ? ' mut' : '');
+  const priceTxt = c.price ? csym(c.cur)+c.price : '—';
+  const divTxt = c.divIncomplete ? 'scrip' : (c.ttm>0 ? csym(c.cur)+num(c.ttm) : '—');
+  const nx = c.divs.find(d => d.exISO >= TODAY);
+  const f = c.fund || {};
+  const mc = fmtCap(f.cur||c.cur, f.mktCap) || '—';
+  const pe = f.pe!=null ? f.pe.toFixed(1) : '—';
+  const chg = (c.chgPct!=null && c.chgPct!==0) ? c.chgPct : (f.chg!=null ? f.chg : null);
+  const chgTxt = (chg!=null && chg!==0) ? (chg>0?'+':'')+chg.toFixed(2)+'%' : '—';
+  const chgCls = 'lr-chg c-stk' + (chg>0?' up':chg<0?' down':'');
+  const pay = (c.ttm>0 || c.divIncomplete) ? 1 : 0;
+  const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
+  const week = nx && daysTo(nx.exISO) <= 7 ? 1 : 0;
+  const divMeta = [ c.price?priceTxt:null, c.divIncomplete?'scrip':(c.ttm>0?'Div '+csym(c.cur)+num(c.ttm):null), nx?'Ex '+prettyShort(nx.exISO):null ].filter(Boolean).join('  ·  ') || '—';
+  const stkMeta = [ c.price?priceTxt:null, f.mktCap?mc:null, f.pe!=null?'P/E '+pe:null ].filter(Boolean).join('  ·  ') || '—';
+  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-pay="${pay}" data-week="${week}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}" data-mc="${f.mktCap||0}" data-pe="${f.pe||0}" data-chg="${chg!=null?chg:0}">
+          <span class="lr-name"><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
+          <span class="lr-price">${priceTxt}</span>
+          <span class="${yCls}"${yTitle}>${yTxt}</span>
+          <span class="lr-div c-div">${divTxt}</span>
+          <span class="lr-ex c-div">${nx?prettyShort(nx.exISO):'—'}</span>
+          <span class="lr-mc c-stk">${mc}</span>
+          <span class="lr-pe c-stk">${pe}</span>
+          <span class="${chgCls}">${chgTxt}</span>
+          <span class="lr-meta c-div">${divMeta}</span>
+          <span class="lr-meta c-stk">${stkMeta}</span>
+        </a>`;
+};
+function homepage(listed, index) {
   const idxJson = JSON.stringify(index).replace(/</g,'\\u003c');
   const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
-  const sorted = [...payers].sort((a,b) => key(b) - key(a));
+  const sorted = [...listed].sort((a,b) => key(b) - key(a));   // dividend-forward default (payers on top)
   const body = `  <section class="hero" style="padding:22px 0 4px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 13px">Dividends</h1>
+    <h1 class="serif" style="font-size:27px;margin:0 0 12px">Singapore stocks</h1>
     <div class="search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
-    <div><span class="live"><span class="pulse"></span> ${sorted.length} dividend payers · ${exWeekCount} going ex this week · updated ${pretty(TODAY)}</span></div>
+    <div class="hint">${listed.length} SGX-listed counters · updated ${pretty(TODAY)}</div>
   </section>
   <div class="chips">
-    <span class="chip on" data-f="all">All payers</span>
+    <span class="chip on" data-f="all">Dividends</span>
     <span class="chip" data-f="reit">REITs &amp; Trusts</span>
+    <span class="chip" data-f="etf">ETFs</span>
     <span class="chip" data-f="week">Ex this week</span>
-    <span class="chip" data-f="stock">Stocks only</span>
+    <span class="chip" data-f="stock">Stocks</span>
   </div>
-  <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="e">Ex-date</button><button data-sort="n">A–Z</button></div>
-  <div class="ltable cols-screener" style="margin-top:12px">
-    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
+  <div class="lsort sort-div"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="e">Ex-date</button><button data-sort="n">A–Z</button></div>
+  <div class="lsort sort-stk" hidden><button data-sort="mc" class="on">Market cap</button><button data-sort="pe">P/E</button><button data-sort="chg">% change</button><button data-sort="n">A–Z</button></div>
+  <div class="ltable cols-home2 m-div" style="margin-top:12px" id="lt">
+    <div class="lrow lhead">
+      <span data-sort="n">Company</span><span class="lr-price">Price</span>
+      <span class="lr-yield c-div" data-sort="y">Yield</span><span class="lr-div c-div" data-sort="d">12-mo div</span><span class="lr-ex c-div" data-sort="e">Next ex-date</span>
+      <span class="lr-mc c-stk" data-sort="mc">Market cap</span><span class="lr-pe c-stk" data-sort="pe">P/E</span><span class="lr-chg c-stk" data-sort="chg">Change</span>
+    </div>
     <div id="tb">
-${sorted.map(companyRow).join('\n')}
+${sorted.map(homeRow).join('\n')}
     </div>
   </div>
   <div id="none" class="empty" style="display:none">No stocks match.</div>
-  <p class="metaline" style="font-size:12px"><b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed). Also see the full <a href="/screener/" style="color:var(--accent-dk)">screener</a> and <a href="/reits/" style="color:var(--accent-dk)">REITs</a>.</p>
+  <p class="metaline" style="font-size:12px">Curated lists: <a href="/screener/" style="color:var(--accent-dk)">best dividend stocks</a> · <a href="/reits/" style="color:var(--accent-dk)">Singapore REITs</a> · <a href="/ssb/" style="color:var(--accent-dk)">savings bonds</a>.</p>
   ${brokerSlot()}`;
   const script = `<script>
 const IDX=${idxJson};
@@ -535,24 +581,35 @@ q.addEventListener('input',()=>{const v=q.value.trim().toLowerCase();if(!v){qr.s
   qr.innerHTML=h.length?h.map(x=>'<a href="/stock/'+x.s+'/"><span>'+x.n+'</span><span class="tick" style="margin:0">'+(x.t||'')+'</span></a>').join(''):'<div class="noqr">No match — try a ticker like Z74</div>';
   qr.style.display='block';});
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))qr.style.display='none';});
-const tb=document.getElementById('tb'),none=document.getElementById('none');
-function applyChip(){const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';let vis=0;
- tb.querySelectorAll('.lrow').forEach(r=>{let ok=true;if(f==='reit')ok=r.dataset.reit==='1';else if(f==='week')ok=r.dataset.week==='1';else if(f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');r.style.display=ok?'':'none';if(ok)vis++;});
- none.style.display=vis?'none':'block';}
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');applyChip();}));
+const lt=document.getElementById('lt'),tb=document.getElementById('tb'),none=document.getElementById('none');
+const sortDiv=document.querySelector('.sort-div'),sortStk=document.querySelector('.sort-stk');
 let sk='',sd=-1;
-function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
+function sortBy(k,reset){if(reset)sk='';if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
  const rows=[...tb.querySelectorAll('.lrow')];
  rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'||k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
  rows.forEach(r=>tb.appendChild(r));
  document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
- document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));}
+ document.querySelectorAll('.lsort:not([hidden]) button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));}
+function applyPill(f){const stk=(f==='stock');
+ lt.classList.toggle('m-stk',stk);lt.classList.toggle('m-div',!stk);
+ sortDiv.hidden=stk;sortStk.hidden=!stk;
+ let vis=0;
+ tb.querySelectorAll('.lrow').forEach(r=>{let ok;
+  if(f==='all')ok=r.dataset.pay==='1';
+  else if(f==='reit')ok=r.dataset.reit==='1';
+  else if(f==='etf')ok=r.dataset.etf==='1';
+  else if(f==='week')ok=r.dataset.week==='1';
+  else ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
+  r.style.display=ok?'':'none';if(ok)vis++;});
+ none.style.display=vis?'none':'block';
+ sortBy(stk?'mc':(f==='week'?'e':'y'),true);}
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');applyPill(c.dataset.f);}));
 document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
 document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
-sortBy('y');
+applyPill('all');
 </script>`;
-  return shell('StockKaki — Singapore Dividend Stocks, Yields & Ex-Dates',
-    'Every SGX dividend stock ranked by yield — with price, payout and next ex-date. Search any Singapore stock. Live, clean, free — updated daily.',
+  return shell('StockKaki — Singapore Stocks, Dividends, Yields & REITs',
+    'Every SGX-listed stock, REIT and ETF — dividend yields, ex-dates, price, market cap and P/E in one clean board. Search any Singapore stock. Free, updated daily.',
     SITE + '/', body, script);
 }
 
@@ -1158,7 +1215,7 @@ const out = new URL('./dist/', import.meta.url);
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
-writeFileSync(new URL('index.html', out), homepage(dividendStocks, exWeekCount, index));
+writeFileSync(new URL('index.html', out), homepage(listed, index));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
