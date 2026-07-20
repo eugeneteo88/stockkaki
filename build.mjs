@@ -656,7 +656,7 @@ function homepage(listed, index, hub) {
   const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
   const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news <a href="/news/">Read more →</a></div>
   <div class="hubnews">
-${hub.news.map(n => `    <a href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
+${hub.news.map(n => `    <a href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</div></a>`).join('\n')}
   </div>` : '';
   const body = `  <section class="hub-hero">
     <span class="kicker">🎋 Huat with StockKaki</span>
@@ -702,7 +702,7 @@ function newsPage(items) {
     <p class="sub" style="margin-bottom:6px">The latest news on SGX-listed companies — updated daily.</p>
   </section>
   <div class="newslist" id="newswrap">
-${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${[n.source?esc(n.source):null, esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</span></a>`).join('\n')}
+${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</span></a>`).join('\n')}
   </div>
   <div class="pager" id="pager"></div>
   <p class="metaline" style="font-size:12px">Headlines aggregated from Singapore &amp; global financial press; each links to the original article. For a single company, see its News tab on the stock page.</p>
