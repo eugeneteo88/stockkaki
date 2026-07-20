@@ -466,6 +466,9 @@ const STYLE = `
   .cols-annc .lr-name{flex-direction:column;align-items:flex-start;gap:1px}
   .cols-annc .lr-co{max-width:100%}
   .cols-ssbr .lrow{grid-template-columns:minmax(0,1fr) 78px 86px 116px 74px}
+  .cols-trend .lrow{grid-template-columns:minmax(0,1fr) 92px 92px 74px}
+  .cols-trend .lr-name{align-items:center}
+  .lr-rank{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:6px;background:var(--accent-soft);color:var(--accent-dk);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px}
   /* home dashboard: adaptive dividend vs stock columns */
   .cols-home2.m-div .c-stk{display:none} .cols-home2.m-stk .c-div{display:none}
   .lr-mc,.lr-pe,.lr-chg{text-align:right;font-family:'JetBrains Mono',monospace;font-size:13.5px;white-space:nowrap} .lr-chg.up{color:#0c9a63} .lr-chg.down{color:#c0392b}
@@ -473,12 +476,13 @@ const STYLE = `
   .cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) 86px 120px 58px 84px}
   .lsort{display:none} .lsort[hidden]{display:none}
   @media(max-width:560px){
-    .cols-screener .lrow,.cols-home .lrow,.cols-annc .lrow,.cols-ssbr .lrow,.cols-home2.m-div .lrow,.cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
+    .cols-screener .lrow,.cols-home .lrow,.cols-annc .lrow,.cols-ssbr .lrow,.cols-trend .lrow,.cols-home2.m-div .lrow,.cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px;padding:12px 14px}
     .lhead{display:none}
     .lr-price,.lr-div,.lr-ex,.lr-amt,.lr-exd,.lr-sub,.lr-mc,.lr-pe{display:none}
     .lr-name{grid-column:1;grid-row:1} .lr-name .tick{display:inline}
     .lr-yield{grid-column:2;grid-row:1;font-size:16px}
-    .cols-home2.m-stk .lr-chg{grid-column:2;grid-row:1;font-size:16px}
+    .cols-home2.m-stk .lr-chg,.cols-trend .lr-chg{grid-column:2;grid-row:1;font-size:16px}
+    .cols-trend .lr-yield{display:none}
     .cols-annc .lr-type{grid-column:2;grid-row:1;text-align:right}
     .lr-meta{display:block;grid-column:1/-1;grid-row:2;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted)}
     .lsort:not([hidden]){display:flex;gap:8px;margin:14px 0 -2px;overflow-x:auto;scrollbar-width:none} .lsort::-webkit-scrollbar{display:none}
@@ -714,6 +718,23 @@ if(total<2)pager.style.display='none';render(false);})();</script>`;
 }
 
 // ---------- trending page (most active SGX counters by value traded) ----------
+const trendingRow = (c, i) => {
+  const CS = csym(c.cur);
+  const chg = c.chg;
+  const chgTxt = (chg!=null && chg!==0) ? `${chg>0?'▲':'▼'} ${Math.abs(chg).toFixed(1)}%` : '—';
+  const chgCls = 'lr-chg' + (chg>0?' up':chg<0?' down':'');
+  const yTxt = c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : '—';
+  const yCls = 'lr-yield' + (c.yieldPct==null?' mut':'');
+  const priceTxt = c.price ? CS+c.price : '—';
+  const meta = [priceTxt, chgTxt!=='—'?chgTxt:null, c.yieldPct!=null?yTxt+' yield':null].filter(Boolean).join('  ·  ');
+  return `        <a class="lrow" href="/stock/${c.slug}/">
+          <span class="lr-name"><span class="lr-rank">${i+1}</span><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
+          <span class="lr-price">${priceTxt}</span>
+          <span class="${chgCls}">${chgTxt}</span>
+          <span class="${yCls}">${yTxt}</span>
+          <span class="lr-meta">${meta}</span>
+        </a>`;
+};
 function trendingPage(items) {
   const faqs = [
     { q: 'What makes a stock “trending” on StockKaki?', a: 'These are the most actively traded SGX counters by value traded (volume × last price) — where the most money is changing hands right now. The list refreshes daily.' },
@@ -725,8 +746,11 @@ function trendingPage(items) {
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Trending Singapore stocks</h1>
     <p class="sub" style="margin-bottom:6px">The most actively traded SGX counters by value — refreshed daily.</p>
   </section>
-  <div class="trwall">
-${items.map(trCard).join('\n')}
+  <div class="ltable cols-trend" style="margin-top:14px">
+    <div class="lrow lhead"><span>#&nbsp;&nbsp;Company</span><span class="lr-price">Price</span><span class="lr-chg">Change</span><span class="lr-yield">Yield</span></div>
+    <div>
+${items.map(trendingRow).join('\n')}
+    </div>
   </div>
   <p class="metaline" style="font-size:12px">Ranked by value traded (volume × last price). Dividend yield shown where the counter pays one.</p>
   ${faqHTML}
