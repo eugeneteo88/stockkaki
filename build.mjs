@@ -198,6 +198,7 @@ const STYLE = `
   table{width:100%;border-collapse:collapse}
   thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line)}
   thead th.r,tbody td.r{text-align:right}
+  thead th[data-sort]{cursor:pointer;user-select:none} thead th[data-sort]:hover{color:var(--ink)} .ar{color:var(--accent-dk);font-size:11px}
   tbody td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:14.5px} tbody tr:last-child td{border-bottom:0} tbody tr:hover{background:var(--row-hover)}
   .co{font-weight:600;color:inherit} a.co:hover{color:var(--accent-dk)}
   .tick{color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;margin-left:7px}
@@ -318,7 +319,8 @@ const companyRow = (c) => {
   const special = c.yieldPct!=null && c.yieldPct > 20;   // likely a one-off special dividend
   const yldCell = y ? (special ? `<span class="yld" style="color:var(--muted)" title="Trailing yield likely inflated by a one-off special dividend">${y}%*</span>` : `<span class="yld">${y}%</span>`) : '—';
   const nx = c.divs.find(d => d.exISO >= TODAY);
-  return `        <tr data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-y="${c.yieldPct!=null?c.yieldPct:-1}">
+  const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
+  return `        <tr data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
           <td><a class="co" href="/stock/${c.slug}/">${c.name}</a>${c.ticker?` <span class="tick">${c.ticker}</span>`:''}</td>
           <td class="r">${yldCell}</td>
           <td class="r amt">${c.ttm>0?'S$'+num(c.ttm):'—'}</td>
@@ -343,7 +345,7 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips }) {
   </section>
   ${chips}
   <div class="card" style="margin-top:12px"><table>
-    <thead><tr><th>Company</th><th class="r">Yield ↓</th><th class="r">12-mo div</th><th class="r hide-m">Next ex-date</th></tr></thead>
+    <thead><tr><th data-sort="n">Company</th><th class="r" data-sort="y">Yield</th><th class="r" data-sort="d">12-mo div</th><th class="r hide-m" data-sort="e">Next ex-date</th></tr></thead>
     <tbody id="tb">
 ${sorted.map(companyRow).join('\n')}
     </tbody>
@@ -358,6 +360,14 @@ function apply(){const v=q.value.trim().toLowerCase();const on=document.querySel
  none.style.display=vis?'none':'block';}
 q.addEventListener('input',apply);
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');apply();}));
+let sk='',sd=-1;
+function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
+ const rows=[...tb.querySelectorAll('tr')];
+ rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'||k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
+ rows.forEach(r=>tb.appendChild(r));
+ document.querySelectorAll('th[data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});}
+document.querySelectorAll('th[data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
+sortBy('y');
 </script>`;
   return shell(title, desc, canon, body, script);
 }
