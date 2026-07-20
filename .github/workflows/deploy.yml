@@ -1,11 +1,14 @@
 name: Build & deploy StockKaki
 
-# Rebuilds the site from live SGX data and deploys — on push, daily, or manually.
+# Two kinds of runs:
+#  - push / manual  → FAST build: fresh SGX prices, but reuse the cached Yahoo news+fundamentals (SKIP_YAHOO=1). ~2 min.
+#  - scheduled      → FULL data refresh (Yahoo dividends/news/fundamentals) + re-commit the cache.
 on:
   push:
     branches: [main]
   schedule:
-    - cron: '10 22 * * *'   # 22:10 UTC = 06:10 Singapore, daily
+    - cron: '30 0 * * *'     # 00:30 UTC = 08:30 SGT, daily     — morning news/fundamentals refresh (incl. weekends)
+    - cron: '30 10 * * 1-5'  # 10:30 UTC = 18:30 SGT, Mon–Fri   — after SGX close: capture the day's closing prices
   workflow_dispatch:
 
 permissions:
@@ -19,9 +22,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Build (fetch SGX + generate site)
+      - name: Build site
+        # push = fast build from cache (SGX prices still fetched fresh); schedule/manual = full Yahoo fetch.
+        env:
+          SKIP_YAHOO: ${{ github.event_name == 'push' && '1' || '0' }}
         run: node build.mjs
       - name: Persist last-good data cache (news + dividends + fundamentals)
+        if: github.event_name != 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -29,8 +36,10 @@ jobs:
           git commit -m "chore: update last-good data cache [skip ci]" || echo "no cache change"
           git push || echo "push skipped"
       - name: Keyword radar (Google Autocomplete → /keywords/)
+        if: github.event_name != 'push'
         run: node keywords.mjs || true
       - name: Send weekly dividend alerts (Mondays)
+        if: github.event_name != 'push'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
