@@ -199,8 +199,8 @@ function fetchYahooNews(ticker) {
   return out;
 }
 // ---------- Google News (free, no key): per-company SG financial news, aggregating BT / The Edge / Straits Times / CNA / Reuters etc. ----------
-// Broad allowlist of financial/business media — mix everything relevant, just drop pure spam/off-topic blogs.
-const NEWS_OK = new Set(['The Business Times','The Business Times Singapore','The Edge Singapore','The Edge Malaysia','The Straits Times','Straits Times','CNA','Channel NewsAsia','Reuters','Bloomberg','Yahoo Finance','Yahoo Finance Singapore','StockStory','Nikkei Asia','Financial Times','Seeking Alpha','The Motley Fool','The Motley Fool Singapore','Mothership','MarketWatch','Business Insider','Markets Insider','Singapore Business Review','SGX','Singapore Exchange (SGX)','South China Morning Post','Forbes','Investing.com','Simply Wall St','Insider Monkey','Zacks Investment Research','Zacks','Moomoo','Tiger Brokers','Dr Wealth','The Independent Singapore','DealStreetAsia','Mingtiandi','CNBC','Barron\'s','The Business Times SG','TipRanks','GuruFocus','Benzinga']);
+// Reliable financial/business press ONLY — established outlets, no auto-generated/aggregator/broker blogs.
+const NEWS_OK = new Set(['The Business Times','The Business Times Singapore','The Edge Singapore','The Edge Malaysia','The Straits Times','Straits Times','CNA','Channel NewsAsia','Reuters','Bloomberg','Yahoo Finance','Yahoo Finance Singapore','Nikkei Asia','Financial Times','CNBC','South China Morning Post','MarketWatch','Business Insider','Forbes','Singapore Business Review','DealStreetAsia','Barron\'s','The Motley Fool Singapore','Singapore Exchange (SGX)','SGX']);
 const cleanCoName = (name) => (name||'').replace(/\b(Ltd|Limited|Pte|Plc|Corp|Corporation|Holdings?|Group|Berhad|Bhd|Inc|Company|Co)\b\.?/gi,'').replace(/\bCNY|USD|SGD|HKD|GBP|EUR\b/g,'').replace(/\s{2,}/g,' ').trim();
 // Auto-generated "metric" pages (TradingView/GuruFocus etc.) — not real news; drop them.
 const NEWS_JUNK = /^(price to (book|sales|earnings|cash|free cash)|enterprise value to|return on (equity|assets|capital)|peg ratio|debt to equity|(forward |trailing )?(p\/e|pe|pb|p\/b|ev\/ebitda) (ratio|forward)|net (profit )?margin|gross margin|current ratio|quick ratio)\b/i;
@@ -652,7 +652,7 @@ function homepage(listed, index, hub) {
   const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
   const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news <a href="/news/">Read more →</a></div>
   <div class="hubnews">
-${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.title)}</div>${n.desc?`<div class="nd">${esc(n.desc)}</div>`:''}<div class="nm">${[esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
+${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
   </div>` : '';
   const body = `  <section class="hub-hero">
     <span class="kicker">🎋 Huat with StockKaki</span>
@@ -698,7 +698,7 @@ function newsPage(items) {
     <p class="sub" style="margin-bottom:6px">The latest news on SGX-listed companies — updated daily.</p>
   </section>
   <div class="newslist" id="newswrap">
-${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span>${n.desc?`<span class="news-d">${esc(n.desc)}</span>`:''}<span class="news-m">${[esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read full ↗</span></a>`).join('\n')}
+${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${[n.source?esc(n.source):null, esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</span></a>`).join('\n')}
   </div>
   <div class="pager" id="pager"></div>
   <p class="metaline" style="font-size:12px">Headlines aggregated from Singapore &amp; global financial press; each links to the original article. For a single company, see its News tab on the stock page.</p>
@@ -1001,7 +1001,7 @@ ${hist}
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
   const newsSection = (c.news && c.news.length) ? `
   <div class="newslist">
-${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span>${n.desc?`<span class="news-d">${esc(n.desc)}</span>`:''}<span class="news-m">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}${(n.source||n.dateISO)?' · ':''}read full ↗</span></a>`).join('\n')}
+${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}${(n.source||n.dateISO)?' · ':''}read ↗</span></a>`).join('\n')}
   </div>` : '';
   // ---- Overview tab: fundamentals (Yahoo) ----
   const f = c.fund;
@@ -1475,13 +1475,13 @@ const trending = [...listed].filter(c => c.cur==='SGD' && _turnover(c) > 0)
 // micro-caps and ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news).
 const _newsSlugs = new Set([...listed].filter(c => c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap).slice(0, 60).map(c => c.slug));
 const hubNews = companies.filter(c => _newsSlugs.has(c.slug) && c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, desc: n.desc || '' })))
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, source: n.source || '' })))
   .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
   .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)   // de-dupe identical headlines across stocks
   .slice(0, 5);
 // Full aggregated feed for the /news/ page (quality outlets, newest first, de-duped).
 const newsFeed = companies.filter(c => c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, desc: n.desc || '', name: c.name, slug: c.slug })))
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, source: n.source || '', name: c.name, slug: c.slug })))
   .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
   .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)
   .slice(0, 60);
