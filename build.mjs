@@ -656,7 +656,7 @@ function homepage(listed, index, hub) {
   const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
   const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news <a href="/news/">Read more →</a></div>
   <div class="hubnews">
-${hub.news.map(n => `    <a href="/stock/${n.slug}/"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, esc(n.name), n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
+${hub.news.map(n => `    <a href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')}</div></a>`).join('\n')}
   </div>` : '';
   const body = `  <section class="hub-hero">
     <span class="kicker">🎋 Huat with StockKaki</span>
@@ -1499,7 +1499,7 @@ const trending = [...listed].filter(c => c.cur==='SGD' && _turnover(c) > 0)
 // micro-caps and ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news).
 const _newsSlugs = new Set([...listed].filter(c => c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap).slice(0, 60).map(c => c.slug));
 const hubNews = companies.filter(c => _newsSlugs.has(c.slug) && c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, dateISO: n.dateISO, slug: c.slug, name: c.name, source: n.source || '' })))
+  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, slug: c.slug, name: c.name, source: n.source || '' })))
   .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
   .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)   // de-dupe identical headlines across stocks
   .slice(0, 5);
