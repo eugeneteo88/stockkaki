@@ -315,8 +315,8 @@ const brokerSlot = () => `<aside class="brokers">
 ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="sponsored noopener"><b>${b.n}</b><span>${b.d}</span></a>`).join('\n')}
     </div>
   </aside>`;
-// TODO(Eugene): make "Hey Edda" clickable — wrap in <a href="https://…">Hey Edda</a> once the URL is confirmed.
-const FOOTER = `<footer><p class="disc">© 2026 StockKaki · brand by Hey Edda · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
+// TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
+const FOOTER = `<footer><p class="disc">© 2026 StockKaki · brand by HeyAda · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }

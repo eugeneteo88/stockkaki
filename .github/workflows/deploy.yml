@@ -21,6 +21,8 @@ jobs:
           node-version: 22
       - name: Build (fetch SGX + generate site)
         run: node build.mjs
+      - name: Keyword radar (Google Autocomplete → /keywords/)
+        run: node keywords.mjs || true
       - name: Send weekly dividend alerts (Mondays)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
