@@ -35,14 +35,6 @@ jobs:
         env:
           SKIP_YAHOO: ${{ github.event_name == 'push' && '1' || '0' }}
         run: node build.mjs
-      - name: Persist last-good data cache (news + dividends + fundamentals)
-        if: github.event_name != 'push'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f data/yahoo-cache.json 2>/dev/null || true
-          git commit -m "chore: update last-good data cache [skip ci]" || echo "no cache change"
-          git push || echo "push skipped"
       - name: Keyword radar (Google Autocomplete → /keywords/)
         if: github.event_name != 'push'
         run: node keywords.mjs || true
@@ -55,6 +47,14 @@ jobs:
           ALERTS_TEST: ${{ github.event.inputs.alerts_test }}
           DRY_RUN: ${{ github.event_name == 'schedule' && '0' || (github.event.inputs.alerts_dry == 'false' && '0' || '1') }}
         run: node send-alerts.mjs
+      - name: Persist data (last-good cache + alert snapshot)
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f data/ 2>/dev/null || true
+          git commit -m "chore: update data snapshot [skip ci]" || echo "no data change"
+          git push || echo "push skipped"
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
