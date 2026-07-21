@@ -28,6 +28,8 @@ const iso = (ms) => (ms ? new Date(ms).toISOString().slice(0,10) : null);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const pretty = (s) => { if (!s) return '—'; const [y,m,d] = s.split('-').map(Number); return `${d} ${MONTHS[m-1]} ${y}`; };
 const monthYr = (s) => { if (!s) return '—'; const [y,m] = s.split('-').map(Number); return `${MONTHS[m-1]} ${y}`; };
+const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const fullMonthYr = (s) => { if (!s) return ''; const [y,m] = s.split('-').map(Number); return `${MONTHS_FULL[m-1]} ${y}`; };   // "August 2026" — matches how people search SSB rates
 const prettyShort = (s) => { if (!s) return '—'; const [y,m,d] = s.split('-').map(Number); return `${d} ${MONTHS[m-1]}`; };   // "12 Aug" — compact for mobile
 const ACR = new Set(['SIA','CSOP','UOB','OCBC','DBS','GP','SATS','REIT','ETF','PLC','HPL','SPH','ST','FJ','FE','SGX','II','III','IV','NTUC','ABF','USD','SGD','HKD']);
 const FIXWORD = { Iedge:'iEdge', Sreit:'S-REIT', Reits:'REITs', Limited:'Ltd', Limit:'Ltd' };
@@ -1380,6 +1382,7 @@ function ssbPage(ssb, sgs) {
     return shell('Singapore Savings Bonds (SSB) Rates | StockKaki', 'Latest Singapore Savings Bonds interest rates.', SITE + '/ssb/', body);
   }
   const c = ssb.current;
+  const tm = fullMonthYr(c.issueISO);   // e.g. "August 2026" — the current tranche's month; drives the SEO title/H1 so the page auto-targets "SSB <month> <year>" searches each build
   const open = daysTo(c.applyISO) >= 0;
   const dLeft = daysTo(c.applyISO);
   const statusHTML = open
@@ -1431,7 +1434,7 @@ function ssbPage(ssb, sgs) {
   </svg>`;
 
   const faqs = [
-    { q: 'What is the Singapore Savings Bond interest rate this month?', a: `The current issue (${c.code}, issued ${c.issueFmt||pretty(c.issueISO)}) pays ${c.y1.toFixed(2)}% in the first year and a ${c.y10.toFixed(2)}% average return per year if held for the full 10 years.` },
+    { q: `What is the Singapore Savings Bond interest rate for ${tm}?`, a: `The ${tm} issue (${c.code}, issued ${c.issueFmt||pretty(c.issueISO)}) pays ${c.y1.toFixed(2)}% in the first year and a ${c.y10.toFixed(2)}% average return per year if held for the full 10 years.` },
     { q: 'How does the SSB step-up interest work?', a: `SSB interest "steps up" the longer you hold. This issue starts at ${c.coupons[0].toFixed(2)}% in year 1 and rises to ${c.coupons[9].toFixed(2)}% in year 10, so your average return grows from ${c.returns[0].toFixed(2)}% to ${c.returns[9].toFixed(2)}% per year over the 10 years.` },
     { q: 'How do I buy Singapore Savings Bonds?', a: 'Apply through DBS/POSB, OCBC or UOB internet banking or ATM, or with your SRS funds. Minimum S$500, in multiples of S$500, up to S$200,000 held in total. Applications usually close on the 4th-last business day of the month.' },
     { q: 'Can I withdraw my Savings Bond early?', a: 'Yes. You can redeem in any month with no penalty and get your full principal back plus any accrued interest — one reason SSBs are considered very low risk. They are fully backed by the Singapore Government.' },
@@ -1446,8 +1449,8 @@ function ssbPage(ssb, sgs) {
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
 
   const body = `  <section class="hero" style="padding:22px 0 2px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Savings Bonds</h1>
-    <p class="sub" style="margin-bottom:0">This month's SSB rates, the 10-year step-up, returns & swap calculators, and allotment — from MAS, updated every issue.</p>
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Savings Bonds — ${tm}</h1>
+    <p class="sub" style="margin-bottom:0">The latest Singapore Savings Bond for <b>${tm}</b> (issue ${c.code}) pays <b>${c.y1.toFixed(2)}%</b> in year one and a <b>${c.y10.toFixed(2)}%</b> average return over 10 years. Full step-up schedule, returns & swap calculators and rate history below — from MAS, updated every issue.</p>
   </section>
   <div class="ssb-card">
     ${statusHTML}
@@ -1537,8 +1540,8 @@ if(swOld&&SWAP_OLD.length){
  fillYrs();swCalc();
 }
 </script>`;
-  return shell('Singapore Savings Bonds (SSB) Rates This Month — 1-Year & 10-Year Returns | StockKaki',
-    `Latest Singapore Savings Bonds rates: ${c.y1.toFixed(2)}% first-year and ${c.y10.toFixed(2)}% 10-year average return (issue ${c.code}). Full step-up schedule, rate trend and a returns calculator. From MAS, updated each issue.`,
+  return shell(`Singapore Savings Bonds (SSB) ${tm}: ${c.y1.toFixed(2)}%–${c.y10.toFixed(2)}% Rates | StockKaki`,
+    `Singapore Savings Bonds (SSB) for ${tm}: ${c.y1.toFixed(2)}% first-year and ${c.y10.toFixed(2)}% 10-year average return (issue ${c.code}). Step-up schedule, rate trend and a returns calculator. From MAS, updated each issue.`,
     SITE + '/ssb/', body, script, '/og/ssb.png');
 }
 
