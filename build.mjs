@@ -324,6 +324,7 @@ const SUN = `<svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="n
 const BURGER = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
 const CLOSE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
 const WA = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.8 1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5s-.5-1.3-.7-1.8-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3A3 3 0 0 0 6.3 10a5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c2 .8 2 .6 2.4.5a2.6 2.6 0 0 0 1.7-1.2 2 2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>`;
+const ACCT_IC = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 // TODO(Eugene): paste your WhatsApp channel/community invite link here to activate the "Join channel" button.
 const WHATSAPP_URL = 'https://whatsapp.com/channel/';
 const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/news/">News</a>`;
@@ -331,13 +332,13 @@ const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
   <nav>${NAVLINKS}</nav>
-  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="btn wa deskonly" href="${WHATSAPP_URL}" target="_blank" rel="noopener">${WA} Join channel</a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="tbtn" href="/account/" aria-label="Account" title="Your account">${ACCT_IC}</a><a class="btn wa deskonly" href="${WHATSAPP_URL}" target="_blank" rel="noopener">${WA} Join channel</a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
 </header>
 <div id="mscrim" class="mscrim"></div>
 <aside id="mmenu" class="mmenu" aria-hidden="true">
   <div class="mmenu-head"><a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a><button id="mclose" class="tbtn" aria-label="Close menu">${CLOSE}</button></div>
-  <nav class="mmenu-links">${NAVLINKS}</nav>
+  <nav class="mmenu-links">${NAVLINKS}<a href="/account/">Account</a></nav>
   <div class="mmenu-cta"><a class="btn wa" href="${WHATSAPP_URL}" target="_blank" rel="noopener">${WA} Join channel</a></div>
 </aside>`;
 const ALERT = `<section class="alert">
@@ -592,6 +593,28 @@ const STYLE = `
   .kbox .kl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
   .kbox .kv{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;margin-top:3px} .kbox .kv.acc{color:var(--accent-dk)}
   .st-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);font-size:13px;font-weight:500;padding:11px 18px;border-radius:999px;box-shadow:0 12px 30px -12px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.25s ease;z-index:60} .st-toast.on{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  .st-save.on{background:var(--accent);color:#fff}
+  /* ---- account / login ---- */
+  .ac-note{color:var(--muted);padding:20px 2px}
+  .ac-authwrap{max-width:420px;margin:6px auto 0}
+  .ac-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .ac-authcard{text-align:center}
+  .ac-lede{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:18px}
+  .ac-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit} .ac-google:hover{background:var(--row-hover);border-color:var(--muted)}
+  .ac-or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:16px 0} .ac-or:before,.ac-or:after{content:"";flex:1;height:1px;background:var(--line)}
+  .ac-emailform{display:flex;flex-direction:column;gap:10px} .ac-emailform input{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;color:var(--ink);text-align:center} .ac-emailform input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .ac-msg{font-size:13px;margin-top:12px;line-height:1.5} .ac-msg.ok{color:#0c7a4e} html[data-theme="dark"] .ac-msg.ok{color:#5fd39e} .ac-msg.err{color:#c0442e}
+  .ac-fine{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+  .ac-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .ac-who{display:flex;align-items:center;gap:13px;min-width:0}
+  .ac-avatar{width:44px;height:44px;flex:0 0 auto;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;font-family:'Poppins',sans-serif}
+  .ac-nm{font-weight:700;font-size:16px;display:block} .ac-em{color:var(--muted);font-size:13px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:200px}
+  .ac-signout{font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;flex:0 0 auto} .ac-signout:hover{color:var(--ink);border-color:var(--muted)}
+  .ac-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0}
+  .ac-wl{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)} .ac-wl:last-child{border-bottom:0}
+  .ac-wlinfo{flex:1;min-width:0;display:block} .ac-wlnm{font-weight:600;font-size:14.5px} .ac-wlsub{display:block;color:var(--muted);font-size:12px;margin-top:2px;font-family:'JetBrains Mono',monospace}
+  .ac-x{color:var(--muted);background:none;border:0;cursor:pointer;font-size:15px;padding:6px 9px;border-radius:8px;flex:0 0 auto} .ac-x:hover{color:#c0442e;background:var(--row-hover)}
+  .acct-ic{position:relative}
 `;
 const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 
@@ -1205,7 +1228,7 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
         <h1 class="serif" style="font-size:26px;line-height:1.2">${c.name}</h1>
         <div class="st-tags"><span class="st-tag mono">SGX: ${c.ticker||'—'}</span><span class="st-tag">${typeLabel}</span>${c.cur&&c.cur!=='SGD'?`<span class="st-tag">${c.cur}</span>`:''}</div>
       </div>
-      ${c.ticker?`<div class="st-acts"><button class="st-save" id="stSave">${STAR} Save</button><button class="st-bell" id="stBell" aria-label="Alerts">${BELL}</button></div>`:''}
+      ${c.ticker?`<div class="st-acts"><button class="st-save" id="stSave">${STAR} <span class="lbl">Save</span></button><button class="st-bell" id="stBell" aria-label="Alerts">${BELL}</button></div>`:''}
     </div>
     ${c.price?`<div class="quote" style="margin-top:14px"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
     ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
@@ -1214,10 +1237,33 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
   ${tabsHTML}
   ${faqHTML}
   ${brokerSlot()}
-  <div class="st-toast" id="stToast">Accounts are coming soon — you'll be able to save stocks &amp; get ex-date alerts by email.</div>
+  <div class="st-toast" id="stToast"></div>
   ${jsonLd}`;
   const tabScript = `<script>document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.tabpane').forEach(function(p){p.hidden=true;});var e=document.getElementById('t-'+t.dataset.tab);if(e)e.hidden=false;});});
-(function(){var to=document.getElementById('stToast');function t(){if(!to)return;to.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){to.classList.remove('on');},3400);}['stSave','stBell'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',t);});})();</script>`;
+(function(){
+var to=document.getElementById('stToast');
+function toast(m){if(!to)return;to.textContent=m;to.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){to.classList.remove('on');},3400);}
+var saveBtn=document.getElementById('stSave'),bell=document.getElementById('stBell');
+if(bell)bell.addEventListener('click',function(){toast('Ex-date & dividend alerts are coming soon — save the stock and we\\'ll wire them up.');});
+if(!saveBtn)return;
+var SLUG=${JSON.stringify(c.slug)};
+function lbl(x){var s=saveBtn.querySelector('.lbl');if(s)s.textContent=x;}
+function toLogin(){location.href='/account/?next='+encodeURIComponent(location.pathname);}
+var hasToken=false;try{for(var i=0;i<localStorage.length;i++){if(/^sb-.*-auth-token$/.test(localStorage.key(i))){hasToken=true;break;}}}catch(e){}
+if(!hasToken){saveBtn.addEventListener('click',toLogin);return;}
+import('https://esm.sh/@supabase/supabase-js@2').then(async function(m){
+ var sb=m.createClient(${JSON.stringify(SUPABASE_URL)},${JSON.stringify(SUPABASE_ANON)});
+ var s=(await sb.auth.getSession()).data.session;
+ if(!s){saveBtn.addEventListener('click',toLogin);return;}
+ var saved=false,busy=false;
+ function paint(){saveBtn.classList.toggle('on',saved);lbl(saved?'Saved':'Save');}
+ var r=await sb.from('watchlist').select('slug').eq('slug',SLUG).maybeSingle();saved=!!(r&&r.data);paint();
+ saveBtn.addEventListener('click',async function(){if(busy)return;busy=true;
+  if(saved){await sb.from('watchlist').delete().eq('slug',SLUG);saved=false;toast('Removed from watchlist');}
+  else{await sb.from('watchlist').insert({slug:SLUG,user_id:s.user.id});saved=true;toast('★ Saved to your watchlist');}
+  paint();busy=false;});
+});
+})();</script>`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
     `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price ${CS}${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
@@ -1470,6 +1516,67 @@ function disclaimerPage() {
   return shell('Disclaimer | StockKaki', 'StockKaki disclaimer — information only, not financial advice. Data sourced from SGX; verify against official announcements.', SITE + '/disclaimer/', body);
 }
 
+// ---------- account (login when logged-out, watchlist when logged-in) ----------
+const GOOGLE_G = `<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
+function accountPage() {
+  const body = `  <section class="hero" style="padding:24px 0 4px"><h1 class="serif" style="font-size:26px" id="acTitle">Your account</h1></section>
+  <div id="acLoading" class="ac-note">Loading…</div>
+  <div id="acAuth" hidden class="ac-authwrap">
+    <div class="ac-card ac-authcard">
+      <p class="ac-lede">Sign in to save stocks to your watchlist and — soon — get ex-date &amp; dividend alerts by email. No password.</p>
+      <button id="googleBtn" class="ac-google">${GOOGLE_G} Continue with Google</button>
+      <div class="ac-or"><span>or</span></div>
+      <form id="emailForm" class="ac-emailform">
+        <input id="acEmail" type="email" autocomplete="email" placeholder="you@email.com" required>
+        <button class="btn" type="submit" style="width:100%;padding:12px;border-radius:12px">Email me a sign-in link</button>
+      </form>
+      <p id="acMsg" class="ac-msg"></p>
+      <p class="ac-fine">We'll only ever email you sign-in links and the alerts you choose — never spam.</p>
+    </div>
+  </div>
+  <div id="acView" hidden>
+    <div class="ac-card ac-head">
+      <div class="ac-who"><span class="ac-avatar" id="acAvatar">?</span><span style="min-width:0;display:block"><span class="ac-nm" id="acName">You</span><span class="ac-em" id="acEm"></span></span></div>
+      <button id="signOut" class="ac-signout">Sign out</button>
+    </div>
+    <div class="hub-h">Your watchlist <span id="acWlCount" style="font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;font-size:13px"></span></div>
+    <div id="acWl" class="ac-card" style="padding:4px 18px">
+      <p class="ac-empty">Loading your watchlist…</p>
+    </div>
+    <p class="ac-fine" style="margin-top:14px">Email alerts (ex-date reminders, dividend changes, new SSB) are coming next — you'll pick what you want here.</p>
+  </div>`;
+  const script = `<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const sb=createClient('${SUPABASE_URL}','${SUPABASE_ANON}');
+const $=function(id){return document.getElementById(id);};
+const nextUrl=new URLSearchParams(location.search).get('next');
+function show(v){['acLoading','acAuth','acView'].forEach(function(x){$(x).hidden=(x!==v);});}
+$('googleBtn').onclick=function(){sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/account/'}});};
+$('emailForm').addEventListener('submit',async function(e){e.preventDefault();var email=$('acEmail').value.trim();if(!email)return;var btn=e.target.querySelector('button');btn.textContent='Sending…';btn.disabled=true;var r=await sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:location.origin+'/account/'}});$('acMsg').className='ac-msg '+(r.error?'err':'ok');$('acMsg').textContent=r.error?('Could not send — '+r.error.message):('✓ Check your inbox — sign-in link sent to '+email);btn.textContent='Email me a sign-in link';btn.disabled=false;});
+$('signOut').onclick=async function(){await sb.auth.signOut();location.href='/';};
+async function loadWatchlist(){
+  var res=await sb.from('watchlist').select('slug,created_at').order('created_at',{ascending:false});
+  var rows=res.data||[];var wl=$('acWl');
+  $('acWlCount').textContent=rows.length?(rows.length+' stock'+(rows.length>1?'s':'')):'';
+  if(!rows.length){wl.innerHTML='<p class="ac-empty">No saved stocks yet. Tap <b>★ Save</b> on any stock page to add it here.</p>';return;}
+  var idx={};try{idx=await(await fetch('/api/stocks.json')).json();}catch(e){}
+  wl.innerHTML=rows.map(function(r){var d=idx[r.slug]||[r.slug];var name=d[0]||r.slug,tk=d[1]||'',price=d[2],cur=d[3]||'SGD',y=d[4];
+    return '<div class="ac-wl"><a class="ac-wlinfo" href="/stock/'+r.slug+'/"><span class="ac-wlnm">'+name+(tk?' <span class="tick">'+tk+'</span>':'')+'</span>'+(price?'<span class="ac-wlsub">'+cur+price+(y!=null?' · '+(+y).toFixed(2)+'% yield':'')+'</span>':'')+'</a><button class="ac-x" data-slug="'+r.slug+'" aria-label="Remove">✕</button></div>';}).join('');
+  wl.querySelectorAll('.ac-x').forEach(function(b){b.onclick=async function(){await sb.from('watchlist').delete().eq('slug',b.dataset.slug);loadWatchlist();};});
+}
+async function render(){var s=(await sb.auth.getSession()).data.session;
+  if(!s){show('acAuth');return;}
+  var u=s.user;var em=u.email||'';var meta=u.user_metadata||{};var nm=meta.name||meta.full_name||em.split('@')[0]||'You';
+  $('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();
+  show('acView');loadWatchlist();
+  if(nextUrl&&/^\\/stock\\//.test(nextUrl)){history.replaceState({},'',location.pathname);}
+}
+sb.auth.onAuthStateChange(function(){render();});
+render();
+</script>`;
+  return shell('Your account | StockKaki', 'Sign in to StockKaki to save stocks to your watchlist and get dividend alerts.', SITE + '/account/', body, script);
+}
+
 // ---------- confirm / unsubscribe utility pages ----------
 function utilPage(title, rpc, okMsg, okSub, dupMsg) {
   const body = `  <section class="hero" style="padding-bottom:6px">
@@ -1719,18 +1826,22 @@ mkdirSync(new URL('trending/', out), { recursive: true });
 writeFileSync(new URL('trending/index.html', out), trendingPage(hub.trending));
 mkdirSync(new URL('ssb/', out), { recursive: true });
 writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb, sgs));
+mkdirSync(new URL('account/', out), { recursive: true });
+writeFileSync(new URL('account/index.html', out), accountPage());
 mkdirSync(new URL('confirm/', out), { recursive: true });
 writeFileSync(new URL('confirm/index.html', out), utilPage('Confirm your alerts', 'confirm_subscriber', "You're in! 🦁", "You'll get StockKaki dividend & ex-date alerts.", 'Already confirmed (or the link expired).'));
 mkdirSync(new URL('unsubscribe/', out), { recursive: true });
 writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'unsubscribe', 'Unsubscribed', 'You will no longer receive StockKaki emails.', 'Already unsubscribed.'));
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
+// compact slug -> [name, ticker, price, currency, yield] map for the account watchlist to render saved stocks
+writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null]]))));
 
 const urls = [SITE + '/', SITE + '/stocks/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
-writeFileSync(new URL('robots.txt', out), `User-agent: *\nAllow: /\nSitemap: ${SITE}/sitemap.xml\n`);
+writeFileSync(new URL('robots.txt', out), `User-agent: *\nAllow: /\nDisallow: /account/\nDisallow: /confirm/\nDisallow: /unsubscribe/\nSitemap: ${SITE}/sitemap.xml\n`);
 writeFileSync(new URL('llms.txt', out), `# StockKaki — Singapore dividend & stock tracker
 > Free, clean tool for SGX dividends, ex-dates, yields and stock info. Data sourced from the Singapore Exchange (SGX), updated daily. Not financial advice.
 
