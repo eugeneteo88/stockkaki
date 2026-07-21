@@ -610,11 +610,27 @@ const STYLE = `
   .ac-avatar{width:44px;height:44px;flex:0 0 auto;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;font-family:'Poppins',sans-serif}
   .ac-nm{font-weight:700;font-size:16px;display:block} .ac-em{color:var(--muted);font-size:13px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:200px}
   .ac-signout{font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;flex:0 0 auto} .ac-signout:hover{color:var(--ink);border-color:var(--muted)}
-  .ac-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0}
-  .ac-wl{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)} .ac-wl:last-child{border-bottom:0}
-  .ac-wlinfo{flex:1;min-width:0;display:block} .ac-wlnm{font-weight:600;font-size:14.5px} .ac-wlsub{display:block;color:var(--muted);font-size:12px;margin-top:2px;font-family:'JetBrains Mono',monospace}
-  .ac-x{color:var(--muted);background:none;border:0;cursor:pointer;font-size:15px;padding:6px 9px;border-radius:8px;flex:0 0 auto} .ac-x:hover{color:#c0442e;background:var(--row-hover)}
   .acct-ic{position:relative}
+  .ac-avatar{background:linear-gradient(135deg,var(--accent),var(--accent-dk));color:#fff}
+  .ac-sect{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:26px 2px 10px}
+  .ac-secth{font-family:'Poppins',sans-serif;font-weight:600;font-size:16px}
+  .ac-sectc{font-size:13px;color:var(--muted)}
+  .ac-soon{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 9px}
+  .ac-wlcard{padding:2px 16px}
+  .ac-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0;line-height:1.6}
+  .ac-emptybox{text-align:center;padding:22px 10px} .ac-emptybox svg{color:var(--line);margin-bottom:8px}
+  .ac-browse{display:inline-block;margin-top:12px;font-size:14px;font-weight:600;color:#fff;background:var(--accent);padding:9px 18px;border-radius:999px} .ac-browse:hover{background:var(--accent-dk)}
+  .ac-wl{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line)} .ac-wl:last-child{border-bottom:0}
+  .ac-wllink{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:14px 0;color:inherit} .ac-wllink:hover .ac-wlnm{color:var(--accent-dk)}
+  .ac-wlinfo{flex:1;min-width:0} .ac-wlnm{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .ac-wlsub{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;font-family:'JetBrains Mono',monospace}
+  .ac-wly{flex:0 0 auto;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15.5px;color:var(--accent-dk);line-height:1.1} .ac-wly.mut{color:var(--muted);font-weight:500}
+  .ac-wlyl{display:block;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+  .ac-x{color:var(--muted);background:none;border:0;cursor:pointer;padding:8px;border-radius:8px;flex:0 0 auto;display:inline-flex} .ac-x:hover{color:#c0442e;background:var(--row-hover)}
+  .ac-alerts{padding:6px 18px}
+  .ac-alert{display:flex;gap:13px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--line)} .ac-alert:last-of-type{border-bottom:0}
+  .ac-alic{width:34px;height:34px;flex:0 0 auto;border-radius:9px;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center}
+  .ac-alt{font-weight:600;font-size:14px;display:block} .ac-ald{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.5}
+  .ac-alsend{font-size:12px;color:var(--muted);text-align:center;margin:14px 0 6px;line-height:1.5} .ac-alsend b{color:var(--ink)}
 `;
 const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 
@@ -1539,11 +1555,17 @@ function accountPage() {
       <div class="ac-who"><span class="ac-avatar" id="acAvatar">?</span><span style="min-width:0;display:block"><span class="ac-nm" id="acName">You</span><span class="ac-em" id="acEm"></span></span></div>
       <button id="signOut" class="ac-signout">Sign out</button>
     </div>
-    <div class="hub-h">Your watchlist <span id="acWlCount" style="font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;font-size:13px"></span></div>
-    <div id="acWl" class="ac-card" style="padding:4px 18px">
-      <p class="ac-empty">Loading your watchlist…</p>
+
+    <div class="ac-sect"><span class="ac-secth">Your watchlist</span><span class="ac-sectc" id="acWlCount"></span></div>
+    <div id="acWl" class="ac-card ac-wlcard"><p class="ac-empty">Loading…</p></div>
+
+    <div class="ac-sect"><span class="ac-secth">Email alerts</span><span class="ac-soon">Coming soon</span></div>
+    <div class="ac-card ac-alerts">
+      <div class="ac-alert"><span class="ac-alic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><span><span class="ac-alt">Ex-date reminders</span><span class="ac-ald">A heads-up 3 days before a watchlist stock goes ex-dividend — so you buy in time.</span></span></div>
+      <div class="ac-alert"><span class="ac-alic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 5-7"/></svg></span><span><span class="ac-alt">Dividend changes</span><span class="ac-ald">When a saved stock declares, raises, cuts or suspends its dividend.</span></span></div>
+      <div class="ac-alert"><span class="ac-alic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></span><span><span class="ac-alt">New Savings Bond (SSB)</span><span class="ac-ald">Each month's new SSB issue with its 1-year and 10-year rates.</span></span></div>
+      <p class="ac-alsend">Sending to <b id="acEm2"></b> once alerts go live — you'll pick exactly what you want.</p>
     </div>
-    <p class="ac-fine" style="margin-top:14px">Email alerts (ex-date reminders, dividend changes, new SSB) are coming next — you'll pick what you want here.</p>
   </div>`;
   const script = `<script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -1554,24 +1576,36 @@ function show(v){['acLoading','acAuth','acView'].forEach(function(x){$(x).hidden
 $('googleBtn').onclick=function(){sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/account/'}});};
 $('emailForm').addEventListener('submit',async function(e){e.preventDefault();var email=$('acEmail').value.trim();if(!email)return;var btn=e.target.querySelector('button');btn.textContent='Sending…';btn.disabled=true;var r=await sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:location.origin+'/account/'}});$('acMsg').className='ac-msg '+(r.error?'err':'ok');$('acMsg').textContent=r.error?('Could not send — '+r.error.message):('✓ Check your inbox — sign-in link sent to '+email);btn.textContent='Email me a sign-in link';btn.disabled=false;});
 $('signOut').onclick=async function(){await sb.auth.signOut();location.href='/';};
+var TRASH='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>';
+var STARBIG='<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6L18.2 21 12 17l-6.2 4 1.6-6.9L2 9.5 9 9z"/></svg>';
+function paintRows(items){
+  var wl=$('acWl');
+  $('acWlCount').textContent=items.length?(items.length+' stock'+(items.length>1?'s':'')):'';
+  if(!items.length){wl.innerHTML='<div class="ac-emptybox">'+STARBIG+'<p class="ac-empty">No saved stocks yet.<br>Tap <b>★ Save</b> on any stock to add it here.</p><a class="ac-browse" href="/stocks/">Browse stocks →</a></div>';return;}
+  wl.innerHTML=items.map(function(it){
+    var tk=it.tk?' <span class="tick">'+it.tk+'</span>':'';
+    var sub=it.price?'<span class="ac-wlsub">'+it.cur+it.price+'</span>':'';
+    var yld=(it.y!=null)?'<span class="ac-wly">'+(+it.y).toFixed(2)+'%<span class="ac-wlyl">yield</span></span>':'<span class="ac-wly mut">—</span>';
+    return '<div class="ac-wl"><a class="ac-wllink" href="/stock/'+it.slug+'/"><span class="ac-wlinfo"><span class="ac-wlnm">'+it.name+tk+'</span>'+sub+'</span>'+yld+'</a><button class="ac-x" data-slug="'+it.slug+'" aria-label="Remove">'+TRASH+'</button></div>';
+  }).join('');
+  wl.querySelectorAll('.ac-x').forEach(function(b){b.onclick=async function(){if(DEMO){b.closest('.ac-wl').remove();return;}await sb.from('watchlist').delete().eq('slug',b.dataset.slug);loadWatchlist();};});
+}
 async function loadWatchlist(){
   var res=await sb.from('watchlist').select('slug,created_at').order('created_at',{ascending:false});
-  var rows=res.data||[];var wl=$('acWl');
-  $('acWlCount').textContent=rows.length?(rows.length+' stock'+(rows.length>1?'s':'')):'';
-  if(!rows.length){wl.innerHTML='<p class="ac-empty">No saved stocks yet. Tap <b>★ Save</b> on any stock page to add it here.</p>';return;}
-  var idx={};try{idx=await(await fetch('/api/stocks.json')).json();}catch(e){}
-  wl.innerHTML=rows.map(function(r){var d=idx[r.slug]||[r.slug];var name=d[0]||r.slug,tk=d[1]||'',price=d[2],cur=d[3]||'SGD',y=d[4];
-    return '<div class="ac-wl"><a class="ac-wlinfo" href="/stock/'+r.slug+'/"><span class="ac-wlnm">'+name+(tk?' <span class="tick">'+tk+'</span>':'')+'</span>'+(price?'<span class="ac-wlsub">'+cur+price+(y!=null?' · '+(+y).toFixed(2)+'% yield':'')+'</span>':'')+'</a><button class="ac-x" data-slug="'+r.slug+'" aria-label="Remove">✕</button></div>';}).join('');
-  wl.querySelectorAll('.ac-x').forEach(function(b){b.onclick=async function(){await sb.from('watchlist').delete().eq('slug',b.dataset.slug);loadWatchlist();};});
+  var rows=res.data||[];var idx={};try{idx=await(await fetch('/api/stocks.json')).json();}catch(e){}
+  paintRows(rows.map(function(r){var d=idx[r.slug]||[r.slug];return {slug:r.slug,name:d[0]||r.slug,tk:d[1]||'',price:d[2],cur:d[3]||'S$',y:d[4]};}));
 }
-async function render(){var s=(await sb.auth.getSession()).data.session;
+function fillUser(nm,em){$('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();var e2=$('acEm2');if(e2)e2.textContent=em;}
+var DEMO=new URLSearchParams(location.search).has('demo');
+async function render(){
+  if(DEMO){fillUser('Eugene','eugeneteo1988@gmail.com');show('acView');paintRows([{slug:'dbs-group-holdings-ltd',name:'DBS Group Holdings',tk:'D05',price:71.9,cur:'S$',y:4.31},{slug:'capitaland-ascendas-reit',name:'CapLand Ascendas REIT',tk:'A17U',price:2.48,cur:'S$',y:4.93},{slug:'singtel',name:'Singtel',tk:'Z74',price:4.46,cur:'S$',y:4.09}]);return;}
+  var s=(await sb.auth.getSession()).data.session;
   if(!s){show('acAuth');return;}
   var u=s.user;var em=u.email||'';var meta=u.user_metadata||{};var nm=meta.name||meta.full_name||em.split('@')[0]||'You';
-  $('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();
-  show('acView');loadWatchlist();
+  fillUser(nm,em);show('acView');loadWatchlist();
   if(nextUrl&&/^\\/stock\\//.test(nextUrl)){history.replaceState({},'',location.pathname);}
 }
-sb.auth.onAuthStateChange(function(){render();});
+if(!DEMO)sb.auth.onAuthStateChange(function(){render();});
 render();
 </script>`;
   return shell('Your account | StockKaki', 'Sign in to StockKaki to save stocks to your watchlist and get dividend alerts.', SITE + '/account/', body, script);
