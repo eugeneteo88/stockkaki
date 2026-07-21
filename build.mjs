@@ -332,14 +332,14 @@ const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a>
   <nav>${NAVLINKS}</nav>
-  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="tbtn" href="/account/" aria-label="Account" title="Your account">${ACCT_IC}</a><a class="btn wa deskonly" href="${WHATSAPP_URL}" target="_blank" rel="noopener">${WA} Join channel</a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="tbtn" href="/account/" aria-label="Account" title="Your account">${ACCT_IC}</a><span class="btn wa deskonly soon" title="Coming soon">${WA} Join channel <span class="soon-tag">Soon</span></span><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
 </header>
 <div id="mscrim" class="mscrim"></div>
 <aside id="mmenu" class="mmenu" aria-hidden="true">
   <div class="mmenu-head"><a class="brand" href="/"><span class="dot">${CUP}</span> StockKaki</a><button id="mclose" class="tbtn" aria-label="Close menu">${CLOSE}</button></div>
   <nav class="mmenu-links">${NAVLINKS}<a href="/account/">Account</a></nav>
-  <div class="mmenu-cta"><a class="btn wa" href="${WHATSAPP_URL}" target="_blank" rel="noopener">${WA} Join channel</a></div>
+  <div class="mmenu-cta"><span class="btn wa soon" title="Coming soon">${WA} Join channel <span class="soon-tag">Soon</span></span></div>
 </aside>`;
 const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
@@ -393,6 +393,8 @@ const STYLE = `
   .mmenu.open .mmenu-links a:nth-child(1){transition-delay:.04s}.mmenu.open .mmenu-links a:nth-child(2){transition-delay:.08s}.mmenu.open .mmenu-links a:nth-child(3){transition-delay:.12s}.mmenu.open .mmenu-links a:nth-child(4){transition-delay:.16s}.mmenu.open .mmenu-links a:nth-child(5){transition-delay:.2s}.mmenu.open .mmenu-links a:nth-child(6){transition-delay:.24s}
   .mmenu-cta{margin-top:auto;padding:18px 20px 26px} .mmenu-cta .btn.wa{display:flex;width:100%;justify-content:center;padding:13px}
   .btn.wa{display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff} .btn.wa:hover{background:#1fb857}
+  .btn.wa.soon,.btn.wa.soon:hover{background:var(--line);color:var(--muted);cursor:default;pointer-events:none}
+  .soon-tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--muted);color:var(--card);border-radius:999px;padding:2px 6px;line-height:1;opacity:.85}
   @media(min-width:820px){ .mmenu,.mscrim{display:none!important} }
   @media(min-width:820px){ .nav nav{display:flex} }
   .hero{padding:30px 0 4px} .kicker{color:var(--accent-dk);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
@@ -602,6 +604,7 @@ const STYLE = `
   .ac-authcard{text-align:center}
   .ac-lede{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:18px}
   .ac-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit} .ac-google:hover{background:var(--row-hover);border-color:var(--muted)}
+  .ac-google:disabled{opacity:.55;cursor:not-allowed} .ac-google:disabled:hover{background:var(--card);border-color:var(--line)}
   .ac-or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:16px 0} .ac-or:before,.ac-or:after{content:"";flex:1;height:1px;background:var(--line)}
   .ac-emailform{display:flex;flex-direction:column;gap:10px} .ac-emailform input{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;color:var(--ink);text-align:center} .ac-emailform input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   .ac-msg{font-size:13px;margin-top:12px;line-height:1.5} .ac-msg.ok{color:#0c7a4e} html[data-theme="dark"] .ac-msg.ok{color:#5fd39e} .ac-msg.err{color:#c0442e}
@@ -1568,7 +1571,7 @@ function accountPage() {
       </form>
       <p id="acMsg" class="ac-msg"></p>
       <div class="ac-or"><span>or</span></div>
-      <button id="googleBtn" class="ac-google">${GOOGLE_G} Continue with Google</button>
+      <button id="googleBtn" class="ac-google" disabled title="Coming soon">${GOOGLE_G} Continue with Google <span class="soon-tag">Soon</span></button>
       <p class="ac-fine">We'll only ever email you sign-in links and the alerts you choose — never spam.</p>
     </div>
   </div>
