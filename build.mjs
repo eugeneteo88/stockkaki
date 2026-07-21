@@ -1284,7 +1284,7 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
 var to=document.getElementById('stToast');
 function toast(m){if(!to)return;to.textContent=m;to.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){to.classList.remove('on');},3400);}
 var saveBtn=document.getElementById('stSave'),bell=document.getElementById('stBell');
-if(bell)bell.addEventListener('click',function(){toast('Ex-date & dividend alerts are coming soon — save the stock and we\\'ll wire them up.');});
+if(bell)bell.addEventListener('click',function(){location.href='/account/#alerts';});
 if(!saveBtn)return;
 var SLUG=${JSON.stringify(c.slug)};
 function lbl(x){var s=saveBtn.querySelector('.lbl');if(s)s.textContent=x;}
@@ -1663,6 +1663,7 @@ async function render(){
   if(!s){show('acAuth');return;}
   var u=s.user;var em=u.email||'';var meta=u.user_metadata||{};var nm=((meta.first_name||'')+' '+(meta.last_name||'')).trim()||meta.name||meta.full_name||em.split('@')[0]||'You';
   fillUser(nm,em);fillProfile(meta);show('acView');loadWatchlist();
+  if(location.hash==='#alerts'){var at=document.querySelector('.ac-tab[data-t="al"]');if(at)at.click();}
   if(nextUrl&&/^\\/stock\\//.test(nextUrl)){history.replaceState({},'',location.pathname);}
 }
 if(!DEMO)sb.auth.onAuthStateChange(function(evt,sess){if(evt==='SIGNED_IN'&&sess)trackAuth(sess.user);render();});
