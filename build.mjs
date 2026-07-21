@@ -78,6 +78,7 @@ const capSGD = (cur, n) => (n||0) * (FXSGD[cur] || 1);
 const esc = (s) => (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
 const TODAY = new Date().toISOString().slice(0,10);
+const YEAR = TODAY.slice(0,4);   // current year — for self-updating "best ... <year>" SEO titles (never hardcode the year)
 const daysTo = (s) => Math.round((new Date(s) - new Date(TODAY)) / 86400000);
 const exTag = (s) => { const d = daysTo(s); return d>=0 && d<=7 ? `<span class="tag soon">${d===0?'today':d+'d'}</span>` : ''; };
 const yearAgo = new Date(new Date(TODAY).getTime() - 365*86400000).toISOString().slice(0,10);
@@ -364,7 +365,7 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
     </div>
   </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
-const FOOTER = `<footer><div class="wrap"><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><span>© 2026 StockKaki</span></div></div></footer>`;
+const FOOTER = `<footer><div class="wrap"><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><span>© ${YEAR} StockKaki</span></div></div></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
@@ -1876,12 +1877,12 @@ mkdirSync(new URL('stocks/', out), { recursive: true });
 writeFileSync(new URL('stocks/index.html', out), stocksPage(listed));
 mkdirSync(new URL('dividends/', out), { recursive: true });
 writeFileSync(new URL('dividends/index.html', out), listPage({
-  title: 'Best Dividend Stocks in Singapore 2026 — Highest SGX Dividend Yields | StockKaki',
-  desc: 'The highest-yielding SGX dividend stocks and REITs, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.',
-  h1: 'Best dividend stocks in Singapore', sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listed.length} listed stocks above.)`,
+  title: `Best Dividend Stocks in Singapore ${YEAR} — Highest SGX Dividend Yields | StockKaki`,
+  desc: `The highest-yielding SGX dividend stocks and REITs for ${YEAR}, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.`,
+  h1: `Best dividend stocks in Singapore — ${YEAR}`, sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listed.length} listed stocks above.)`,
   intro: `Singapore is one of the world's best places for dividend investors — there is <b>no tax on dividends and no capital-gains tax</b>. Above are all <b>${dividendStocks.length}</b> SGX counters currently paying a dividend, ranked by trailing 12-month yield and updated daily. Use the filters for Stocks, REITs or ETFs — and note that an unusually high yield can signal a one-off special dividend or higher risk.`,
   faqs: [
-    { q: 'What are the best dividend stocks in Singapore?', a: 'This page ranks every SGX counter currently paying a dividend by trailing 12-month yield — the leaders are usually high-yield REITs, trusts and selected blue chips. Filter by Stocks, REITs or ETFs above; a very high yield may include a one-off special or reflect higher risk.' },
+    { q: `What are the best dividend stocks in Singapore in ${YEAR}?`, a: 'This page ranks every SGX counter currently paying a dividend by trailing 12-month yield — the leaders are usually high-yield REITs, trusts and selected blue chips. Filter by Stocks, REITs or ETFs above; a very high yield may include a one-off special or reflect higher risk.' },
     { q: 'What is a good dividend yield in Singapore?', a: 'Roughly 4–6% is a solid, sustainable yield for a Singapore dividend stock or REIT. Much higher — say above 10% — is worth a closer look, as it may include a special dividend or signal elevated risk.' },
     { q: 'Are dividends taxed in Singapore?', a: 'No. Singapore uses a one-tier corporate tax system, so dividends paid to individual shareholders are tax-free, and there is no capital-gains tax.' },
     { q: 'How do I buy dividend stocks in Singapore?', a: 'Through any SGX brokerage (DBS Vickers, moomoo, Tiger, Interactive Brokers and others) or with SRS funds. You must own the shares before the ex-dividend date to receive the next payout.' },
@@ -1893,12 +1894,12 @@ writeFileSync(new URL('screener/index.html', out), `<!DOCTYPE html><html lang="e
 mkdirSync(new URL('reits/', out), { recursive: true });
 const reitList = listed.filter(c => c.isReit);
 writeFileSync(new URL('reits/index.html', out), listPage({
-  title: 'Best REITs to Buy in Singapore 2026 — S-REIT Dividend Yields | StockKaki',
-  desc: 'All SGX-listed REITs and business trusts ranked by distribution yield — CapitaLand, Mapletree, Keppel, Frasers and more. Live, clean, updated daily.',
-  h1: 'Best REITs to buy in Singapore', sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
+  title: `Best REITs to Buy in Singapore ${YEAR} — S-REIT Dividend Yields | StockKaki`,
+  desc: `All SGX-listed REITs and business trusts ranked by distribution yield for ${YEAR} — CapitaLand, Mapletree, Keppel, Frasers and more. Live, clean, updated daily.`,
+  h1: `Best REITs to buy in Singapore — ${YEAR}`, sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
   intro: `Singapore REITs (S-REITs) are among the most popular income investments here — they must distribute at least 90% of income, so yields are typically higher than ordinary stocks, and distributions are <b>tax-free</b> for individuals. Above are all <b>${reitList.length}</b> SGX-listed REITs and business trusts, ranked by trailing distribution yield and updated daily.`,
   faqs: [
-    { q: 'What is the best REIT to buy in Singapore?', a: 'There is no single best REIT — it depends on your goals. This page ranks all SGX-listed S-REITs and business trusts by trailing distribution yield so you can compare income; also weigh the sector, gearing and track record before deciding.' },
+    { q: `What is the best REIT to buy in Singapore in ${YEAR}?`, a: 'There is no single best REIT — it depends on your goals. This page ranks all SGX-listed S-REITs and business trusts by trailing distribution yield so you can compare income; also weigh the sector, gearing and track record before deciding.' },
     { q: 'What is the average dividend yield of Singapore REITs?', a: 'S-REITs typically yield around 5–7%. They must distribute at least 90% of taxable income, which is why their yields are usually higher than ordinary shares.' },
     { q: 'Are Singapore REITs a good investment?', a: 'S-REITs offer regular income and property diversification, and distributions are tax-free for individuals. They carry risks too — interest rates, property values and gearing — so diversify and check each REIT’s fundamentals.' },
     { q: 'How are Singapore REIT distributions taxed?', a: 'Distributions from S-REITs are generally tax-exempt for individual investors.' },
@@ -1907,12 +1908,12 @@ writeFileSync(new URL('reits/index.html', out), listPage({
 mkdirSync(new URL('etfs/', out), { recursive: true });
 const etfList = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete));
 writeFileSync(new URL('etfs/index.html', out), listPage({
-  title: 'Best Singapore ETFs 2026 — Top SGX ETFs by Dividend Yield | StockKaki',
-  desc: 'SGX-listed ETFs ranked by distribution yield — STI, bond, REIT and dividend ETFs. Compare Singapore ETFs, clean and updated daily.',
-  h1: 'Best ETFs in Singapore', sub: `${etfList.length} SGX-listed ETFs that distribute, ranked by yield.`,
+  title: `Best Singapore ETFs ${YEAR} — Top SGX ETFs by Dividend Yield | StockKaki`,
+  desc: `SGX-listed ETFs ranked by distribution yield for ${YEAR} — STI, bond, REIT and dividend ETFs. Compare Singapore ETFs, clean and updated daily.`,
+  h1: `Best ETFs in Singapore — ${YEAR}`, sub: `${etfList.length} SGX-listed ETFs that distribute, ranked by yield.`,
   intro: `Exchange-traded funds (ETFs) let you own a whole basket of stocks or bonds in a single trade, and they trade on the SGX just like shares. Above are the <b>${etfList.length}</b> SGX-listed ETFs that currently distribute, ranked by trailing yield — useful for income. For growth, the underlying index matters more than the yield.`,
   faqs: [
-    { q: 'What are the best ETFs in Singapore?', a: 'Popular SGX ETFs include the Straits Times Index (STI) ETF and a range of bond, REIT and dividend ETFs. This page ranks the distributing SGX ETFs by yield — best for income; for growth, look at the underlying index rather than the yield.' },
+    { q: `What are the best ETFs in Singapore in ${YEAR}?`, a: 'Popular SGX ETFs include the Straits Times Index (STI) ETF and a range of bond, REIT and dividend ETFs. This page ranks the distributing SGX ETFs by yield — best for income; for growth, look at the underlying index rather than the yield.' },
     { q: 'Do Singapore ETFs pay dividends?', a: 'Many do — bond, REIT and dividend ETFs distribute regularly, while some equity ETFs accumulate instead. This list shows the distributing ones, ranked by yield.' },
     { q: 'How do I buy ETFs in Singapore?', a: 'ETFs trade like stocks on the SGX — buy them through any brokerage, or via a regular-savings plan (RSP) to dollar-cost average over time.' },
   ],
