@@ -588,7 +588,6 @@ const STYLE = `
   .st-tag{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px 9px} .st-tag.mono{font-family:'JetBrains Mono',monospace}
   .st-acts{flex:0 0 auto;display:flex;gap:8px}
   .st-save{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--accent-dk);background:var(--accent-soft);border:1px solid transparent;border-radius:999px;padding:8px 13px;cursor:pointer;font-family:inherit}
-  .st-bell{display:inline-flex;align-items:center;justify-content:center;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;width:37px;height:37px;cursor:pointer} .st-bell:hover{color:var(--accent-dk);border-color:var(--accent)}
   .st-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px} @media(max-width:560px){.st-kpi{grid-template-columns:1fr 1fr}}
   .kbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
   .kbox .kl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
@@ -633,8 +632,8 @@ const STYLE = `
   .ac-alt{font-weight:600;font-size:14px;display:block} .ac-ald{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.5}
   .ac-alsend{font-size:12px;color:var(--muted);text-align:center;margin:14px 0 6px;line-height:1.5} .ac-alsend b{color:var(--ink)}
   /* account tabs */
-  .ac-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:22px 0 4px;overflow-x:auto;scrollbar-width:none} .ac-tabs::-webkit-scrollbar{display:none}
-  .ac-tab{flex:0 0 auto;background:none;border:0;border-bottom:2px solid transparent;padding:11px 14px;margin-bottom:-1px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap} .ac-tab.on{color:var(--ink);border-bottom-color:var(--accent)} .ac-tab:hover{color:var(--ink)}
+  .ac-tabs{display:flex;border-bottom:1px solid var(--line);margin:22px 0 4px}
+  .ac-tab{flex:1 1 0;text-align:center;background:none;border:0;border-bottom:2px solid transparent;padding:12px 8px;margin-bottom:-1px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap} .ac-tab.on{color:var(--ink);border-bottom-color:var(--accent)} .ac-tab:hover{color:var(--ink)}
   .ac-pane{padding-top:6px}
   .ac-sect{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:16px 2px 8px} .ac-sectc{font-size:13px;color:var(--muted)}
   .ac-grp{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:18px 2px 8px;display:flex;align-items:center;gap:7px} .ac-grp span{font-family:'JetBrains Mono',monospace;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:1px 8px;font-size:10.5px}
@@ -1254,7 +1253,6 @@ ${c.anns.map(a => `    <div class="annrow"><span class="ann-type"><span class="t
 ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden'}>${t[2]}</div>`).join('\n')}`;
   const typeLabel = c.secType==='etfs' ? 'ETF' : c.isReit ? 'REIT' : 'Stock';
   const STAR = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6L18.2 21 12 17l-6.2 4 1.6-6.9L2 9.5 9 9z"/></svg>`;
-  const BELL = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>`;
   const kpi = c.ticker ? `<div class="st-kpi">
     <div class="kbox"><div class="kl">Div yield</div><div class="kv acc">${c.yieldPct!=null?c.yieldPct.toFixed(2)+'%':'—'}</div></div>
     <div class="kbox"><div class="kl">P/E</div><div class="kv">${(f&&f.pe!=null)?f.pe.toFixed(1):'—'}</div></div>
@@ -1268,7 +1266,7 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
         <h1 class="serif" style="font-size:26px;line-height:1.2">${c.name}</h1>
         <div class="st-tags"><span class="st-tag mono">SGX: ${c.ticker||'—'}</span><span class="st-tag">${typeLabel}</span>${c.cur&&c.cur!=='SGD'?`<span class="st-tag">${c.cur}</span>`:''}</div>
       </div>
-      ${c.ticker?`<div class="st-acts"><button class="st-save" id="stSave">${STAR} <span class="lbl">Save</span></button><button class="st-bell" id="stBell" aria-label="Alerts">${BELL}</button></div>`:''}
+      ${c.ticker?`<div class="st-acts"><button class="st-save" id="stSave">${STAR} <span class="lbl">Save</span></button></div>`:''}
     </div>
     ${c.price?`<div class="quote" style="margin-top:14px"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
     ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
@@ -1283,8 +1281,7 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
 (function(){
 var to=document.getElementById('stToast');
 function toast(m){if(!to)return;to.textContent=m;to.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){to.classList.remove('on');},3400);}
-var saveBtn=document.getElementById('stSave'),bell=document.getElementById('stBell');
-if(bell)bell.addEventListener('click',function(){location.href='/account/#alerts';});
+var saveBtn=document.getElementById('stSave');
 if(!saveBtn)return;
 var SLUG=${JSON.stringify(c.slug)};
 function lbl(x){var s=saveBtn.querySelector('.lbl');if(s)s.textContent=x;}
@@ -1300,7 +1297,7 @@ import('https://esm.sh/@supabase/supabase-js@2').then(async function(m){
  var r=await sb.from('watchlist').select('slug').eq('slug',SLUG).maybeSingle();saved=!!(r&&r.data);paint();
  saveBtn.addEventListener('click',async function(){if(busy)return;busy=true;
   if(saved){await sb.from('watchlist').delete().eq('slug',SLUG);saved=false;toast('Removed from watchlist');}
-  else{await sb.from('watchlist').insert({slug:SLUG,user_id:s.user.id});saved=true;toast('★ Saved to your watchlist');}
+  else{await sb.from('watchlist').insert({slug:SLUG,user_id:s.user.id});saved=true;toast('★ Saved — we\\'ll remind you before it goes ex-dividend');}
   paint();busy=false;});
 });
 })();</script>`;
