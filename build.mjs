@@ -904,9 +904,12 @@ const stockRow = (c) => {
         </a>`;
 };
 function stocksPage(list) {
-  // de-dupe renamed/duplicate counters (e.g. "Keppel Ltd" + "Keppel Corporation Ltd" share the same price & mkt cap)
-  const seenSig = new Set();
-  const uniq = list.filter(c => { const cap=(c.fund&&c.fund.mktCap)||0; if(!(cap>0&&c.price)) return true; const sig=c.name.toLowerCase().split(/[\s-]/)[0]+'|'+c.price+'|'+cap; if(seenSig.has(sig)) return false; seenSig.add(sig); return true; });
+  // collapse dual-currency / secondary twins — the SAME security listed twice (e.g. "AEM SGD" + "AEM USD",
+  // "CSOP … S$" + "US$", "Singtel" + "Singtel 10"). Keep one per name-group, preferring the SGD / most-traded line.
+  const stripCur = (n) => n.replace(/\s*(?:S\$|US\$|U\$|SGD|USD|HKD|CNY|RMB|GBP|EUR|JPY|YEN\s?1k|CNY\s?1k|1k|10|100)\s*$/i,'').replace(/\s{2,}/g,' ').trim().toLowerCase();
+  const bestBy = new Map();
+  for (const c of list) { const k = stripCur(c.name); const score = (c.cur==='SGD'?1e15:0) + (((c.fund&&c.fund.vol)||c.vol||0) * (c.price||0)); const prev = bestBy.get(k); if (!prev || score > prev.s) bestBy.set(k, { c, s:score }); }
+  const uniq = [...bestBy.values()].map(x => x.c);
   const sorted = [...uniq].sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);   // A–Z default (reliable; market-cap data can be patchy)
   const nStock = uniq.filter(c => !c.isReit && c.secType!=='etfs').length;
   const nReit = uniq.filter(c => c.isReit).length;
