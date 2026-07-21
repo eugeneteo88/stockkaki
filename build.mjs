@@ -362,12 +362,13 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
     </div>
   </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
-const FOOTER = `<footer><p class="disc">© 2026 StockKaki · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></footer>`;
+const FOOTER = `<footer><div class="wrap"><p class="disc">© 2026 StockKaki · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></div></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
   html[data-theme="dark"]{ --ink:#F3EBE0; --muted:#A08D79; --line:#33291F; --bg:#17120E; --card:#211A14; --accent:#E9944F; --accent-soft:#3A2A1C; --accent-dk:#EDA766; --nav-bg:rgba(23,18,14,.92); --row-hover:#2A2018; }
-  *{box-sizing:border-box;margin:0;padding:0} body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
+  *{box-sizing:border-box;margin:0;padding:0} body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100dvh;display:flex;flex-direction:column}
+  main.wrap{flex:1 0 auto}
   .serif{font-family:'Poppins',sans-serif;letter-spacing:-.01em} a{color:inherit;text-decoration:none} .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
   header.nav{position:sticky;top:0;z-index:20;background:var(--nav-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
   .nav .row{display:flex;align-items:center;justify-content:space-between;height:60px}
@@ -511,7 +512,7 @@ const STYLE = `
   .bk-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px} @media(max-width:620px){.bk-list{grid-template-columns:1fr}}
   .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
   .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
-  footer{margin:36px 0 40px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px}
+  footer{flex-shrink:0;margin-top:36px;padding-bottom:34px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px}
   .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:18px;padding:22px}
   .ssb-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:6px 13px;border-radius:999px}
   .ssb-status .pulse{width:7px;height:7px;border-radius:50%;background:currentColor}
@@ -631,6 +632,28 @@ const STYLE = `
   .ac-alic{width:34px;height:34px;flex:0 0 auto;border-radius:9px;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center}
   .ac-alt{font-weight:600;font-size:14px;display:block} .ac-ald{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.5}
   .ac-alsend{font-size:12px;color:var(--muted);text-align:center;margin:14px 0 6px;line-height:1.5} .ac-alsend b{color:var(--ink)}
+  /* account tabs */
+  .ac-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:22px 0 4px;overflow-x:auto;scrollbar-width:none} .ac-tabs::-webkit-scrollbar{display:none}
+  .ac-tab{flex:0 0 auto;background:none;border:0;border-bottom:2px solid transparent;padding:11px 14px;margin-bottom:-1px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap} .ac-tab.on{color:var(--ink);border-bottom-color:var(--accent)} .ac-tab:hover{color:var(--ink)}
+  .ac-pane{padding-top:6px}
+  .ac-sect{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:16px 2px 8px} .ac-sectc{font-size:13px;color:var(--muted)}
+  .ac-grp{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:18px 2px 8px;display:flex;align-items:center;gap:7px} .ac-grp span{font-family:'JetBrains Mono',monospace;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:1px 8px;font-size:10.5px}
+  .ac-grpcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 16px}
+  /* profile form */
+  .ac-form{padding:20px} .ac-formlede{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px}
+  .ac-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px} .ac-field label{font-size:12px;font-weight:600;color:var(--muted)} .ac-opt{font-weight:400;text-transform:none;letter-spacing:0;opacity:.8}
+  .ac-field input{border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink)} .ac-field input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)} .ac-field input:disabled{color:var(--muted);cursor:not-allowed}
+  .ac-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ac-savebar{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:6px} .ac-save{padding:10px 20px;border-radius:11px}
+  .ac-saved{font-size:13px;font-weight:600;color:#0c7a4e} html[data-theme="dark"] .ac-saved{color:#5fd39e} .ac-saved.err{color:#c0442e}
+  .ac-note{font-size:12px;color:var(--muted);flex:1;text-align:left}
+  /* alert toggles */
+  .ac-toprow{display:flex;align-items:center;gap:14px;justify-content:space-between;padding:14px 0 4px;border-bottom:1px solid var(--line)} .ac-alt2{font-weight:600;font-size:14.5px} .ac-toprow .ac-alt2{font-size:15px}
+  .ac-subs{transition:opacity .2s} .ac-subs.off{opacity:.45;pointer-events:none}
+  .ac-alert2{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)} .ac-alert2:last-child{border-bottom:0}
+  .sw{flex:0 0 auto;width:46px;height:27px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:.2s;border:0;padding:0}
+  .sw:after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .sw.on{background:var(--accent)} .sw.on:after{left:22px}
 `;
 const SEARCH_IC = `<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
 
@@ -655,8 +678,9 @@ ${FONTS}
 ${NAV}
 <main class="wrap">
 ${body}
+</main>
 ${FOOTER}
-</main>${script}<script>
+${script}<script>
 var SBFN='${SUPABASE_URL}/functions/v1',SBK='${SUPABASE_ANON}';
 (function(){
 var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};
@@ -1556,15 +1580,40 @@ function accountPage() {
       <button id="signOut" class="ac-signout">Sign out</button>
     </div>
 
-    <div class="ac-sect"><span class="ac-secth">Your watchlist</span><span class="ac-sectc" id="acWlCount"></span></div>
-    <div id="acWl" class="ac-card ac-wlcard"><p class="ac-empty">Loading…</p></div>
+    <div class="ac-tabs" role="tablist">
+      <button class="ac-tab on" data-t="wl">Watchlist</button>
+      <button class="ac-tab" data-t="pf">Profile</button>
+      <button class="ac-tab" data-t="al">Alerts</button>
+    </div>
 
-    <div class="ac-sect"><span class="ac-secth">Email alerts</span><span class="ac-soon">Coming soon</span></div>
-    <div class="ac-card ac-alerts">
-      <div class="ac-alert"><span class="ac-alic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><span><span class="ac-alt">Ex-date reminders</span><span class="ac-ald">A heads-up 3 days before a watchlist stock goes ex-dividend — so you buy in time.</span></span></div>
-      <div class="ac-alert"><span class="ac-alic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 5-7"/></svg></span><span><span class="ac-alt">Dividend changes</span><span class="ac-ald">When a saved stock declares, raises, cuts or suspends its dividend.</span></span></div>
-      <div class="ac-alert"><span class="ac-alic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></span><span><span class="ac-alt">New Savings Bond (SSB)</span><span class="ac-ald">Each month's new SSB issue with its 1-year and 10-year rates.</span></span></div>
-      <p class="ac-alsend">Sending to <b id="acEm2"></b> once alerts go live — you'll pick exactly what you want.</p>
+    <div class="ac-pane" id="pane-wl">
+      <div class="ac-sect"><span class="ac-sectc" id="acWlCount"></span></div>
+      <div id="acWl"><p class="ac-empty">Loading…</p></div>
+    </div>
+
+    <div class="ac-pane" id="pane-pf" hidden>
+      <div class="ac-card ac-form">
+        <p class="ac-formlede">Add a few details for your profile. Only your email is required — the rest is optional and helps us personalise alerts later.</p>
+        <div class="ac-field"><label>Email</label><input id="pfEmail" type="email" disabled></div>
+        <div class="ac-row2">
+          <div class="ac-field"><label>First name</label><input id="pfFirst" type="text" autocomplete="given-name" placeholder="Eugene"></div>
+          <div class="ac-field"><label>Last name</label><input id="pfLast" type="text" autocomplete="family-name" placeholder="Teo"></div>
+        </div>
+        <div class="ac-field"><label>Mobile number <span class="ac-opt">optional</span></label><input id="pfMobile" type="tel" autocomplete="tel" placeholder="+65 9xxx xxxx"></div>
+        <div class="ac-savebar"><span class="ac-saved" id="pfMsg"></span><button class="btn ac-save" id="pfSave">Save profile</button></div>
+      </div>
+    </div>
+
+    <div class="ac-pane" id="pane-al" hidden>
+      <div class="ac-card">
+        <div class="ac-toprow"><div style="min-width:0"><div class="ac-alt2">Email me alerts</div><div class="ac-ald">Master switch for all StockKaki alert emails, sent to <b id="acEm2">you</b>.</div></div><button class="sw on" id="alMaster" data-k="master" role="switch" aria-label="Email me alerts"></button></div>
+        <div class="ac-subs" id="alSubs">
+          <div class="ac-alert2"><span class="ac-alic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><div style="flex:1;min-width:0"><div class="ac-alt2">Ex-date reminders</div><div class="ac-ald">3 days before a watchlist stock goes ex-dividend.</div></div><button class="sw on" data-k="exdate" role="switch"></button></div>
+          <div class="ac-alert2"><span class="ac-alic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 5-7"/></svg></span><div style="flex:1;min-width:0"><div class="ac-alt2">Dividend changes</div><div class="ac-ald">When a saved stock declares, raises, cuts or suspends its dividend.</div></div><button class="sw on" data-k="divchange" role="switch"></button></div>
+          <div class="ac-alert2"><span class="ac-alic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></span><div style="flex:1;min-width:0"><div class="ac-alt2">New Savings Bond (SSB)</div><div class="ac-ald">Each month's new SSB issue with its 1-year &amp; 10-year rates.</div></div><button class="sw" data-k="ssb" role="switch"></button></div>
+        </div>
+        <div class="ac-savebar"><span class="ac-note" id="alNote">Delivery is rolling out soon — set your preferences now.</span><button class="btn ac-save" id="alSave">Save</button></div>
+      </div>
     </div>
   </div>`;
   const script = `<script type="module">
@@ -1578,32 +1627,42 @@ $('emailForm').addEventListener('submit',async function(e){e.preventDefault();va
 $('signOut').onclick=async function(){await sb.auth.signOut();location.href='/';};
 var TRASH='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>';
 var STARBIG='<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6L18.2 21 12 17l-6.2 4 1.6-6.9L2 9.5 9 9z"/></svg>';
+function rowHTML(it){
+  var tk=it.tk?' <span class="tick">'+it.tk+'</span>':'';
+  var sub=it.price?'<span class="ac-wlsub">'+it.cur+it.price+'</span>':'';
+  var yld=(it.y!=null)?'<span class="ac-wly">'+(+it.y).toFixed(2)+'%<span class="ac-wlyl">yield</span></span>':'<span class="ac-wly mut">—</span>';
+  return '<div class="ac-wl"><a class="ac-wllink" href="/stock/'+it.slug+'/"><span class="ac-wlinfo"><span class="ac-wlnm">'+it.name+tk+'</span>'+sub+'</span>'+yld+'</a><button class="ac-x" data-slug="'+it.slug+'" aria-label="Remove">'+TRASH+'</button></div>';
+}
+function bindRemove(){document.querySelectorAll('#acWl .ac-x').forEach(function(b){b.onclick=async function(){if(DEMO){b.closest('.ac-wl').remove();return;}await sb.from('watchlist').delete().eq('slug',b.dataset.slug);loadWatchlist();};});}
 function paintRows(items){
   var wl=$('acWl');
-  $('acWlCount').textContent=items.length?(items.length+' stock'+(items.length>1?'s':'')):'';
+  $('acWlCount').textContent=items.length?(items.length+' saved · grouped by type'):'';
   if(!items.length){wl.innerHTML='<div class="ac-emptybox">'+STARBIG+'<p class="ac-empty">No saved stocks yet.<br>Tap <b>★ Save</b> on any stock to add it here.</p><a class="ac-browse" href="/stocks/">Browse stocks →</a></div>';return;}
-  wl.innerHTML=items.map(function(it){
-    var tk=it.tk?' <span class="tick">'+it.tk+'</span>':'';
-    var sub=it.price?'<span class="ac-wlsub">'+it.cur+it.price+'</span>':'';
-    var yld=(it.y!=null)?'<span class="ac-wly">'+(+it.y).toFixed(2)+'%<span class="ac-wlyl">yield</span></span>':'<span class="ac-wly mut">—</span>';
-    return '<div class="ac-wl"><a class="ac-wllink" href="/stock/'+it.slug+'/"><span class="ac-wlinfo"><span class="ac-wlnm">'+it.name+tk+'</span>'+sub+'</span>'+yld+'</a><button class="ac-x" data-slug="'+it.slug+'" aria-label="Remove">'+TRASH+'</button></div>';
-  }).join('');
-  wl.querySelectorAll('.ac-x').forEach(function(b){b.onclick=async function(){if(DEMO){b.closest('.ac-wl').remove();return;}await sb.from('watchlist').delete().eq('slug',b.dataset.slug);loadWatchlist();};});
+  var groups=[['stock','Stocks'],['reit','REITs & Trusts'],['etf','ETFs']],html='';
+  groups.forEach(function(g){var gi=items.filter(function(it){return (it.type||'stock')===g[0];});if(!gi.length)return;
+    html+='<div class="ac-grp">'+g[1]+' <span>'+gi.length+'</span></div><div class="ac-grpcard">'+gi.map(rowHTML).join('')+'</div>';});
+  wl.innerHTML=html;bindRemove();
 }
 async function loadWatchlist(){
   var res=await sb.from('watchlist').select('slug,created_at').order('created_at',{ascending:false});
   var rows=res.data||[];var idx={};try{idx=await(await fetch('/api/stocks.json')).json();}catch(e){}
-  paintRows(rows.map(function(r){var d=idx[r.slug]||[r.slug];return {slug:r.slug,name:d[0]||r.slug,tk:d[1]||'',price:d[2],cur:d[3]||'S$',y:d[4]};}));
+  paintRows(rows.map(function(r){var d=idx[r.slug]||[r.slug];return {slug:r.slug,name:d[0]||r.slug,tk:d[1]||'',price:d[2],cur:d[3]||'S$',y:d[4],type:d[5]||'stock'};}));
 }
-function fillUser(nm,em){$('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();var e2=$('acEm2');if(e2)e2.textContent=em;}
+function fillUser(nm,em){$('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();var e2=$('acEm2');if(e2)e2.textContent=em;var pe=$('pfEmail');if(pe)pe.value=em;}
+function fillProfile(meta){$('pfFirst').value=meta.first_name||'';$('pfLast').value=meta.last_name||'';$('pfMobile').value=meta.mobile||'';
+  if(meta.alerts){var a=meta.alerts;var m=$('alMaster');if(m)m.classList.toggle('on',a.master!==false);['exdate','divchange','ssb'].forEach(function(k){var s=document.querySelector('#alSubs .sw[data-k="'+k+'"]');if(s)s.classList.toggle('on',!!a[k]);});$('alSubs').classList.toggle('off',a.master===false);}}
 var DEMO=new URLSearchParams(location.search).has('demo');
+document.querySelectorAll('.ac-tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.ac-tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');['wl','pf','al'].forEach(function(k){var p=$('pane-'+k);if(p)p.hidden=(k!==t.dataset.t);});};});
+document.addEventListener('click',function(e){var s=e.target.closest&&e.target.closest('#pane-al .sw');if(!s)return;s.classList.toggle('on');if(s.id==='alMaster')$('alSubs').classList.toggle('off',!s.classList.contains('on'));});
+$('pfSave').onclick=async function(){var data={first_name:$('pfFirst').value.trim(),last_name:$('pfLast').value.trim(),mobile:$('pfMobile').value.trim()};var btn=$('pfSave');btn.disabled=true;btn.textContent='Saving…';var r=DEMO?{}:await sb.auth.updateUser({data:data});btn.disabled=false;btn.textContent='Save profile';var msg=$('pfMsg');msg.className='ac-saved'+((r&&r.error)?' err':'');msg.textContent=(r&&r.error)?'Could not save':'✓ Saved';setTimeout(function(){msg.textContent='';},2500);var nm=(data.first_name+' '+data.last_name).trim();if(nm){$('acName').textContent=nm;$('acAvatar').textContent=nm[0].toUpperCase();}};
+$('alSave').onclick=async function(){var pref={};document.querySelectorAll('#pane-al .sw').forEach(function(s){pref[s.dataset.k]=s.classList.contains('on');});var btn=$('alSave');btn.disabled=true;btn.textContent='Saving…';var r=DEMO?{}:await sb.auth.updateUser({data:{alerts:pref}});btn.disabled=false;btn.textContent='Save';var n=$('alNote');n.textContent=(r&&r.error)?'Could not save — try again':'✓ Preferences saved';setTimeout(function(){n.textContent='Delivery is rolling out soon — set your preferences now.';},2800);};
 function trackAuth(user){try{if(!window.gtag||!user)return;var method=(user.app_metadata&&user.app_metadata.provider)||'email';var isNew=false;try{isNew=(Date.now()-new Date(user.created_at).getTime())<120000;}catch(e){}var k='sk_su_'+user.id;if(isNew&&!localStorage.getItem(k)){window.gtag('event','sign_up',{method:method});try{localStorage.setItem(k,'1');}catch(e){}}window.gtag('event','login',{method:method});}catch(e){}}
 async function render(){
-  if(DEMO){fillUser('Eugene','eugeneteo1988@gmail.com');show('acView');paintRows([{slug:'dbs-group-holdings-ltd',name:'DBS Group Holdings',tk:'D05',price:71.9,cur:'S$',y:4.31},{slug:'capitaland-ascendas-reit',name:'CapLand Ascendas REIT',tk:'A17U',price:2.48,cur:'S$',y:4.93},{slug:'singtel',name:'Singtel',tk:'Z74',price:4.46,cur:'S$',y:4.09}]);return;}
+  if(DEMO){fillUser('Eugene Teo','eugeneteo1988@gmail.com');fillProfile({first_name:'Eugene',last_name:'Teo',mobile:'+65 9123 4567'});show('acView');paintRows([{slug:'dbs-group-holdings-ltd',name:'DBS Group Holdings',tk:'D05',price:71.9,cur:'S$',y:4.31,type:'stock'},{slug:'singtel',name:'Singtel',tk:'Z74',price:4.46,cur:'S$',y:4.09,type:'stock'},{slug:'capitaland-ascendas-reit',name:'CapLand Ascendas REIT',tk:'A17U',price:2.48,cur:'S$',y:4.93,type:'reit'},{slug:'mapletree-industrial-trust',name:'Mapletree Industrial Trust',tk:'ME8U',price:1.92,cur:'S$',y:6.59,type:'reit'},{slug:'abf-sg-bond-etf',name:'ABF SG Bond ETF',tk:'A35',price:1.115,cur:'S$',y:3.1,type:'etf'}]);return;}
   var s=(await sb.auth.getSession()).data.session;
   if(!s){show('acAuth');return;}
-  var u=s.user;var em=u.email||'';var meta=u.user_metadata||{};var nm=meta.name||meta.full_name||em.split('@')[0]||'You';
-  fillUser(nm,em);show('acView');loadWatchlist();
+  var u=s.user;var em=u.email||'';var meta=u.user_metadata||{};var nm=((meta.first_name||'')+' '+(meta.last_name||'')).trim()||meta.name||meta.full_name||em.split('@')[0]||'You';
+  fillUser(nm,em);fillProfile(meta);show('acView');loadWatchlist();
   if(nextUrl&&/^\\/stock\\//.test(nextUrl)){history.replaceState({},'',location.pathname);}
 }
 if(!DEMO)sb.auth.onAuthStateChange(function(evt,sess){if(evt==='SIGNED_IN'&&sess)trackAuth(sess.user);render();});
@@ -1870,7 +1929,7 @@ writeFileSync(new URL('unsubscribe/index.html', out), utilPage('Unsubscribe', 'u
 mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 // compact slug -> [name, ticker, price, currency, yield] map for the account watchlist to render saved stocks
-writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null]]))));
+writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
 
 const urls = [SITE + '/', SITE + '/stocks/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
