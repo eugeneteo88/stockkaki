@@ -1523,14 +1523,14 @@ function accountPage() {
   <div id="acLoading" class="ac-note">Loading…</div>
   <div id="acAuth" hidden class="ac-authwrap">
     <div class="ac-card ac-authcard">
-      <p class="ac-lede">Sign in to save stocks to your watchlist and — soon — get ex-date &amp; dividend alerts by email. No password.</p>
-      <button id="googleBtn" class="ac-google">${GOOGLE_G} Continue with Google</button>
-      <div class="ac-or"><span>or</span></div>
+      <p class="ac-lede">Sign in to save stocks to your watchlist and — soon — get ex-date &amp; dividend alerts by email. <b>No password</b> — we email you a secure sign-in link.</p>
       <form id="emailForm" class="ac-emailform">
         <input id="acEmail" type="email" autocomplete="email" placeholder="you@email.com" required>
-        <button class="btn" type="submit" style="width:100%;padding:12px;border-radius:12px">Email me a sign-in link</button>
+        <button class="btn" type="submit" style="width:100%;padding:13px;border-radius:12px;font-size:15px">Email me a sign-in link</button>
       </form>
       <p id="acMsg" class="ac-msg"></p>
+      <div class="ac-or"><span>or</span></div>
+      <button id="googleBtn" class="ac-google">${GOOGLE_G} Continue with Google</button>
       <p class="ac-fine">We'll only ever email you sign-in links and the alerts you choose — never spam.</p>
     </div>
   </div>
