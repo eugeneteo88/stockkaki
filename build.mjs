@@ -1057,6 +1057,7 @@ sortBy('n');
 
 // ---------- dividend calendar (upcoming ex-dates, chronological) ----------
 function calendarPage(upcoming) {
+  const cm = fullMonthYr(TODAY);   // current month, e.g. "August 2026" — self-updates daily so the page targets "SGX ex-dividend dates <month>" searches
   const rows = upcoming.map(r => {
     const amt = r.divIncomplete ? 'scrip' : money(r.ccy, r.amt);
     const tag = exTag(r.exISO);
@@ -1069,6 +1070,7 @@ function calendarPage(upcoming) {
         </a>`;
   }).join('\n');
   const faqs = [
+    { q: `Which Singapore stocks go ex-dividend in ${cm}?`, a: `The calendar above lists every SGX counter going ex-dividend from ${cm} onwards — with its ex-date, dividend amount and pay date, updated daily. Buy before a stock's ex-date to receive its next dividend.` },
     { q: 'What is an ex-dividend date?', a: 'The ex-dividend (ex) date is the cut-off to qualify for a dividend — you must own the shares before the ex-date to be entitled. On the ex-date the share price typically drops by roughly the dividend amount.' },
     { q: "What's the difference between the ex-date and the pay date?", a: 'The ex-date decides who is entitled; the pay date is when the cash is actually credited to your account — usually a few weeks after the ex-date.' },
     { q: 'How do I use a dividend calendar?', a: 'Buy a stock before its ex-date to receive the upcoming dividend. This calendar lists the next SGX ex-dates and pay dates, updated daily.' },
@@ -1076,10 +1078,10 @@ function calendarPage(upcoming) {
   const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore dividend calendar</h1>
-    <p class="sub" style="margin-bottom:0">Upcoming SGX ex-dividend and pay dates, in order — updated daily.</p>
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Calendar — ${cm}</h1>
+    <p class="sub" style="margin-bottom:0">Every upcoming SGX ex-dividend and pay date for ${cm} and beyond, in order — updated daily.</p>
   </section>
-  <div class="intro">Buy a stock <b>before its ex-date</b> to receive the upcoming dividend. Below are the next <b>${upcoming.length}</b> SGX ex-dividend dates with their amounts and pay dates, newest first. For the full picture on any counter, tap through to its page.</div>
+  <div class="intro">Buy a stock <b>before its ex-date</b> to receive the upcoming dividend. Below are the next <b>${upcoming.length}</b> SGX ex-dividend dates from <b>${cm}</b> onwards, with their amounts and pay dates, newest first. For the full picture on any counter, tap through to its page.</div>
   <div class="ltable cols-home" style="margin-top:12px">
     <div class="lrow lhead"><span>Company</span><span class="lr-exd">Ex-date</span><span class="lr-amt">Amount</span><span class="lr-ex">Pay date</span></div>
     <div id="tb">
@@ -1089,8 +1091,8 @@ ${rows}
   <p class="metaline" style="font-size:12px">Ex-dates &amp; amounts from SGX; <b>scrip</b> = a reinvestment-option distribution (cash amount not published in the free feed).</p>
   ${faqHTML}
   ${jsonLd}`;
-  return shell('Singapore Dividend Calendar 2026 — Upcoming SGX Ex-Dates & Pay Dates | StockKaki',
-    'Upcoming Singapore dividend dates — every SGX ex-dividend and pay date in order, updated daily. Never miss a payout.',
+  return shell(`Singapore Dividend Calendar ${cm} — Upcoming SGX Ex-Dividend & Pay Dates | StockKaki`,
+    `Singapore dividend calendar for ${cm}: every upcoming SGX ex-dividend and pay date in order, updated daily. Never miss a payout.`,
     SITE + '/dividend-calendar/', body, '', '/og/dividend-calendar.png');
 }
 
