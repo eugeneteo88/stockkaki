@@ -10,6 +10,14 @@ on:
     - cron: '30 0 * * *'     # 00:30 UTC = 08:30 SGT, daily     — morning news/fundamentals refresh (incl. weekends)
     - cron: '30 10 * * 1-5'  # 10:30 UTC = 18:30 SGT, Mon–Fri   — after SGX close: capture the day's closing prices
   workflow_dispatch:
+    inputs:
+      alerts_test:
+        description: 'Send a SAMPLE ex-date reminder to this email (blank = normal run)'
+        required: false
+      alerts_dry:
+        description: 'Dry-run alerts (log only, no emails sent)'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -38,12 +46,14 @@ jobs:
       - name: Keyword radar (Google Autocomplete → /keywords/)
         if: github.event_name != 'push'
         run: node keywords.mjs || true
-      - name: Send weekly dividend alerts (Mondays)
+      - name: Send ex-date alerts
         if: github.event_name != 'push'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERTS_TEST: ${{ github.event.inputs.alerts_test }}
+          DRY_RUN: ${{ github.event_name == 'schedule' && '0' || (github.event.inputs.alerts_dry == 'false' && '0' || '1') }}
         run: node send-alerts.mjs
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
