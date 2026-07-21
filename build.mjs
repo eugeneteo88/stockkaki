@@ -362,7 +362,7 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
     </div>
   </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
-const FOOTER = `<footer><div class="wrap"><p class="disc">© 2026 StockKaki · <a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a></p></div></footer>`;
+const FOOTER = `<footer><div class="wrap"><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><span>© 2026 StockKaki</span></div></div></footer>`;
 
 const STYLE = `
   :root{ --ink:#3A2A20; --muted:#8C7A69; --line:#EBE0D2; --bg:#FBF6EE; --card:#FFFDF9; --accent:#E07A3B; --accent-soft:#FBEADF; --accent-dk:#B45F27; --nav-bg:rgba(251,246,238,.9); --row-hover:#FDF7EE; }
@@ -513,7 +513,7 @@ const STYLE = `
   .bk-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px} @media(max-width:620px){.bk-list{grid-template-columns:1fr}}
   .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
   .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
-  footer{flex-shrink:0;margin-top:36px;padding-bottom:34px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px}
+  footer{flex-shrink:0;margin-top:36px;padding-bottom:34px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
   .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:18px;padding:22px}
   .ssb-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:6px 13px;border-radius:999px}
   .ssb-status .pulse{width:7px;height:7px;border-radius:50%;background:currentColor}
@@ -641,9 +641,9 @@ const STYLE = `
   .ac-grpcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 16px}
   /* profile form */
   .ac-form{padding:20px} .ac-formlede{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px}
-  .ac-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px} .ac-field label{font-size:12px;font-weight:600;color:var(--muted)} .ac-opt{font-weight:400;text-transform:none;letter-spacing:0;opacity:.8}
-  .ac-field input{border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink)} .ac-field input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)} .ac-field input:disabled{color:var(--muted);cursor:not-allowed}
-  .ac-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ac-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;min-width:0} .ac-field label{font-size:12px;font-weight:600;color:var(--muted)} .ac-opt{font-weight:400;text-transform:none;letter-spacing:0;opacity:.8}
+  .ac-field input{width:100%;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:11px 13px;font-size:15px;font-family:inherit;color:var(--ink)} .ac-field input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)} .ac-field input:disabled{color:var(--muted);cursor:not-allowed}
+  .ac-row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
   .ac-savebar{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:6px} .ac-save{padding:10px 20px;border-radius:11px}
   .ac-saved{font-size:13px;font-weight:600;color:#0c7a4e} html[data-theme="dark"] .ac-saved{color:#5fd39e} .ac-saved.err{color:#c0442e}
   .ac-note{font-size:12px;color:var(--muted);flex:1;text-align:left}
