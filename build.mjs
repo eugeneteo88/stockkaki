@@ -1597,6 +1597,7 @@ async function loadWatchlist(){
 }
 function fillUser(nm,em){$('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();var e2=$('acEm2');if(e2)e2.textContent=em;}
 var DEMO=new URLSearchParams(location.search).has('demo');
+function trackAuth(user){try{if(!window.gtag||!user)return;var method=(user.app_metadata&&user.app_metadata.provider)||'email';var isNew=false;try{isNew=(Date.now()-new Date(user.created_at).getTime())<120000;}catch(e){}var k='sk_su_'+user.id;if(isNew&&!localStorage.getItem(k)){window.gtag('event','sign_up',{method:method});try{localStorage.setItem(k,'1');}catch(e){}}window.gtag('event','login',{method:method});}catch(e){}}
 async function render(){
   if(DEMO){fillUser('Eugene','eugeneteo1988@gmail.com');show('acView');paintRows([{slug:'dbs-group-holdings-ltd',name:'DBS Group Holdings',tk:'D05',price:71.9,cur:'S$',y:4.31},{slug:'capitaland-ascendas-reit',name:'CapLand Ascendas REIT',tk:'A17U',price:2.48,cur:'S$',y:4.93},{slug:'singtel',name:'Singtel',tk:'Z74',price:4.46,cur:'S$',y:4.09}]);return;}
   var s=(await sb.auth.getSession()).data.session;
@@ -1605,7 +1606,7 @@ async function render(){
   fillUser(nm,em);show('acView');loadWatchlist();
   if(nextUrl&&/^\\/stock\\//.test(nextUrl)){history.replaceState({},'',location.pathname);}
 }
-if(!DEMO)sb.auth.onAuthStateChange(function(){render();});
+if(!DEMO)sb.auth.onAuthStateChange(function(evt,sess){if(evt==='SIGNED_IN'&&sess)trackAuth(sess.user);render();});
 render();
 </script>`;
   return shell('Your account | StockKaki', 'Sign in to StockKaki to save stocks to your watchlist and get dividend alerts.', SITE + '/account/', body, script);
