@@ -3,3 +3,5 @@ index.html
 node_modules/
 *.log
 .DS_Store
+.ga-key.json
+ga-key*.json
