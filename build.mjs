@@ -355,8 +355,15 @@ const BROKERS = [
   { n: 'Tiger Brokers',       u: 'https://www.tigerbrokers.com.sg',      d: 'Popular with SG investors' },
   { n: 'Interactive Brokers', u: 'https://www.interactivebrokers.com',   d: 'Global markets, low cost' },
 ];
-// Affiliate/broker slot hidden until real partners are set up (Eugene, 2026-07). Re-enable by restoring the markup below.
-const brokerSlot = () => '';
+// moomoo affiliate card — shown only on tradeable stock pages (has a ticker), personalised to the stock. SHIPPED 2026-07.
+const MOOMOO_URL = 'https://j.moomoo.com/0EQpF6';
+const brokerSlot = (c) => (c && c.ticker) ? `  <aside class="mm-card" aria-label="Sponsored — open a brokerage account">
+    <div class="mm-top"><span class="mm-eyebrow">Ready to invest?</span><span class="mm-tile"><img src="/moomoo.png" width="38" height="38" alt="moomoo" loading="lazy"></span></div>
+    <p class="mm-lede">Open a <b>moomoo</b> account to buy <b>${esc(c.name)}</b> and 970+ SGX stocks — plus US, HK &amp; China markets, all in one app.</p>
+    <div class="mm-offer">🎁 New users get <b>up to S$1,200</b> in welcome rewards</div>
+    <a class="mm-btn" href="${MOOMOO_URL}" target="_blank" rel="sponsored nofollow noopener">Open a moomoo account →</a>
+    <p class="mm-disc">Affiliate link — StockKaki may earn a commission if you sign up, at no extra cost to you. Not financial advice.</p>
+  </aside>` : '';
 /* const brokerSlot = () => `<aside class="brokers">
     <div class="bk-h"><span class="bk-t">Start collecting dividends</span><span class="bk-ad">Affiliate</span></div>
     <p class="bk-sub">Open a brokerage account to buy SGX dividend stocks — compare popular options:</p>
@@ -588,6 +595,17 @@ const STYLE = `
   .t10 .ti{flex:1;min-width:0;display:block} .t10 .tn{display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .t10 .tn .tick{margin-left:5px}
   .t10 .ts{display:block;color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .t10 .ty{flex:0 0 auto;text-align:right} .t10 .tyv{display:block;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--accent-dk)} .t10 .tyv.mut{color:var(--muted);font-weight:600} .t10 .tp{display:block;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+  /* ---- moomoo affiliate card (stock pages) ---- */
+  .mm-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;position:relative;overflow:hidden;margin:26px 0 8px}
+  .mm-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#ff9a3d,#ff7a00)}
+  .mm-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
+  .mm-eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-dk)}
+  .mm-tile{background:#fff;border-radius:11px;padding:7px 11px;display:inline-flex;align-items:center;box-shadow:0 1px 4px rgba(58,42,32,.12)}
+  .mm-tile img{height:38px;width:auto;display:block}
+  .mm-lede{font-size:14.5px;color:var(--muted);line-height:1.6;margin-bottom:14px} .mm-lede b{color:var(--ink)}
+  .mm-offer{font-size:13px;font-weight:600;color:var(--accent-dk);background:var(--accent-soft);border-radius:10px;padding:9px 13px;margin-bottom:16px;line-height:1.5} .mm-offer b{font-weight:700}
+  .mm-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;text-decoration:none;padding:11px 20px;border-radius:999px} .mm-btn:hover{background:#c9692f}
+  .mm-disc{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.55}
   /* ---- stock header: tags, actions, KPI strip ---- */
   .st-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   .st-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
@@ -1282,8 +1300,8 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
     ${kpi}
   </section>
   ${tabsHTML}
+  ${brokerSlot(c)}
   ${faqHTML}
-  ${brokerSlot()}
   <div class="st-toast" id="stToast"></div>
   ${jsonLd}`;
   const tabScript = `<script>document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.tabpane').forEach(function(p){p.hidden=true;});var e=document.getElementById('t-'+t.dataset.tab);if(e)e.hidden=false;});});
@@ -1858,7 +1876,7 @@ const out = new URL('./dist/', import.meta.url);
 // held (Explorer window, Defender, indexer) causing EBUSY on rmdir even when children are deletable.
 mkdirSync(out, { recursive: true });
 for (const entry of readdirSync(out)) rmSync(new URL(entry, out), { recursive: true, force: true, maxRetries: 12, retryDelay: 300 });
-for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
+for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png', 'moomoo.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
 mkdirSync(new URL('og/', out), { recursive: true });   // per-page social cards (assets/og/*.png → /og/*.png)
 try { const ogDir = new URL('assets/og/', import.meta.url); for (const f of readdirSync(ogDir)) if (f.endsWith('.png')) copyFileSync(new URL(f, ogDir), new URL(`og/${f}`, out)); } catch {}
 writeFileSync(new URL('index.html', out), homepage(listed, index, hub));
