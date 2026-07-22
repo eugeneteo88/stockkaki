@@ -353,7 +353,7 @@ const WA = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d=
 const ACCT_IC = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 // TODO(Eugene): paste your WhatsApp channel/community invite link here to activate the "Join channel" button.
 const WHATSAPP_URL = 'https://whatsapp.com/channel/';
-const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/news/">News</a>`;
+const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/news/">News</a><a href="/guides/">Guides</a>`;
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/">StockKaki<span class="bdot">.</span></a>
@@ -435,6 +435,17 @@ const STYLE = `
   .hero .sub{color:var(--muted);font-size:14.5px;max-width:520px} @media(min-width:820px){ .hero h1{font-size:40px} }
   @media(max-width:819px){ .hero{padding:22px 0 4px} .hero h1{font-size:26px} .hero .sub{display:none} }
   .crumb{color:var(--muted);font-size:13px;margin-bottom:6px} .crumb a:hover{color:var(--accent-dk)}
+  .prose{max-width:680px;font-size:16px;line-height:1.72;color:var(--ink);margin-top:8px}
+  .prose p{margin:0 0 18px}
+  .prose h2{font-family:'IBM Plex Serif',serif;font-weight:600;font-size:22px;letter-spacing:-.01em;margin:34px 0 12px}
+  .prose ul,.prose ol{margin:0 0 18px 20px} .prose li{margin:7px 0}
+  .prose a{color:var(--accent-dk);font-weight:500;border-bottom:1px solid var(--line)} .prose a:hover{border-color:var(--accent)}
+  .prose strong{font-weight:600} .prose em{font-style:italic}
+  .prose .formula{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:15px 18px;margin:0 0 20px;font-family:'IBM Plex Mono',monospace;font-size:15px;line-height:1.5}
+  .guidelist{display:grid;grid-template-columns:1fr;gap:10px;max-width:760px;margin-top:8px} @media(min-width:640px){.guidelist{grid-template-columns:1fr 1fr}}
+  .gcard{display:block;border:1px solid var(--line);border-radius:10px;padding:18px 20px;color:inherit} .gcard:hover{border-color:var(--accent);background:var(--row-hover)}
+  .gc-t{display:block;font-family:'IBM Plex Serif',serif;font-weight:600;font-size:17px;letter-spacing:-.01em}
+  .gc-b{display:block;font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.5}
   .search{position:relative;margin-top:16px;max-width:540px}
   .search input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:13px 16px 13px 44px;font-size:15px;font-family:inherit;color:var(--ink)}
   .search input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
@@ -1636,6 +1647,73 @@ if(swOld&&SWAP_OLD.length){
 }
 
 // ---------- disclaimer ----------
+// ---------- Evergreen guides (top-of-funnel content; internal-linked to the tools) ----------
+const GUIDES = [
+  {
+    slug: 'how-is-dividend-yield-calculated',
+    title: 'How Is Dividend Yield Calculated? (With Singapore Examples) | StockKaki',
+    desc: 'Dividend yield explained simply — the formula, a worked SGX example, trailing vs forward yield, and what actually counts as a good yield in Singapore. Free, no jargon.',
+    h1: 'How is dividend yield calculated?',
+    blurb: 'The formula, a worked SGX example, and what actually counts as a good yield in Singapore.',
+    body: `<p><strong>Dividend yield</strong> tells you how much income a stock pays each year <strong>relative to its price</strong>. It's the single most useful number for comparing dividend stocks — a S$50 share and a S$2 share can't be compared on dividend amount alone, but their yields put them on the same footing.</p>
+<h2>The formula</h2>
+<div class="formula">Dividend yield (%) = Annual dividend per share ÷ Share price × 100</div>
+<p>Take the total dividends a company paid over a year, divide by the current share price, and multiply by 100 to get a percentage. That's all there is to it.</p>
+<h2>A worked example</h2>
+<p>Say a stock trades at <strong>S$2.00</strong> and paid <strong>S$0.10</strong> in dividends over the past 12 months:</p>
+<div class="formula">S$0.10 ÷ S$2.00 × 100 = 5.0%</div>
+<p>So for every S$1,000 invested at that price, you'd receive about <strong>S$50 a year</strong> in dividends. Notice what happens if the share price rises to S$2.50 while the dividend stays the same: the yield <em>falls</em> to 4.0%, because you're paying more for the same payout. Yield and price move in opposite directions.</p>
+<h2>Trailing vs forward yield</h2>
+<p>You'll see two versions of the number:</p>
+<ul>
+<li><strong>Trailing yield</strong> uses the dividends actually paid over the <em>last</em> 12 months. It's factual and can't be dressed up.</li>
+<li><strong>Forward yield</strong> uses the dividends a company is <em>expected</em> to pay over the next 12 months. It's an estimate — and it's wrong if the company later cuts or raises the payout.</li>
+</ul>
+<p>StockKaki shows the <strong>trailing 12-month yield</strong> on every <a href="/dividends/">dividend stock page</a> — the real, paid figure — so you're comparing facts, not forecasts.</p>
+<h2>What's a good dividend yield in Singapore?</h2>
+<p>Roughly <strong>4–6%</strong> is a solid, sustainable yield for an SGX blue chip or REIT. Singapore is unusually kind to dividend investors: there's <strong>no tax on dividends and no capital-gains tax</strong>, so the yield you see is close to the yield you keep. You can compare every payer on the <a href="/dividends/">best dividend stocks</a> page, or the typically higher-yielding property plays on the <a href="/reits/">Singapore REITs</a> page.</p>
+<h2>When a high yield is a warning, not a bargain</h2>
+<p>A very high yield — say above 10% — deserves a second look rather than an instant buy. Two common reasons:</p>
+<ul>
+<li><strong>The price fell for a reason.</strong> Because yield = dividend ÷ price, a sinking share price mechanically <em>pushes the yield up</em>. This is the classic "yield trap" — the market may be pricing in a coming dividend cut.</li>
+<li><strong>A one-off special dividend.</strong> A single large payout inflates the trailing yield for a year, then disappears — so the "normal" yield is lower than it looks.</li>
+</ul>
+<p>Always check whether the dividend is <em>sustainable</em>: is it covered by earnings, and has it been paid consistently? Every stock page shows the full <a href="/dividend-calendar/">dividend history and upcoming ex-dates</a>, so you can judge the track record rather than the headline number.</p>`,
+    faqs: [
+      { q: 'What is a good dividend yield in Singapore?', a: 'Around 4–6% is a solid, sustainable yield for an SGX blue chip or REIT. Because Singapore has no tax on dividends and no capital-gains tax, the yield you see is close to what you keep. Yields much above 10% warrant a closer look — they can signal a falling price or a one-off special dividend.' },
+      { q: 'Is a higher dividend yield always better?', a: 'No. A very high yield often means the share price has fallen (a "yield trap"), or that a one-off special dividend has temporarily inflated the trailing figure. What matters is whether the dividend is sustainable — covered by earnings and paid consistently.' },
+      { q: 'Does StockKaki use trailing or forward dividend yield?', a: 'Trailing 12-month yield — the dividends actually paid over the last year, divided by the current price. It is factual and lets you compare counters on the same basis, rather than relying on a forecast.' },
+    ],
+  },
+];
+function guidePage(g) {
+  const faqHTML = (g.faqs && g.faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${g.faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
+  const ld = { "@context":"https://schema.org","@graph":[
+    { "@type":"BreadcrumbList","itemListElement":[ { "@type":"ListItem","position":1,"name":"Guides","item":`${SITE}/guides/` }, { "@type":"ListItem","position":2,"name":g.h1,"item":`${SITE}/guides/${g.slug}/` } ] },
+    { "@type":"Article","headline":g.h1,"description":g.desc,"author":{ "@type":"Organization","name":"StockKaki" },"publisher":{ "@type":"Organization","name":"StockKaki" },"mainEntityOfPage":`${SITE}/guides/${g.slug}/` },
+    ...(g.faqs && g.faqs.length ? [{ "@type":"FAQPage","mainEntity":g.faqs.map(f => ({ "@type":"Question","name":f.q,"acceptedAnswer":{ "@type":"Answer","text":f.a } })) }] : []),
+  ] };
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 6px">
+    <div class="crumb"><a href="/guides/">Guides</a> › ${g.h1}</div>
+    <h1 class="serif" style="font-size:30px;max-width:22ch;line-height:1.12">${g.h1}</h1>
+  </section>
+  <article class="prose">${g.body}</article>
+  ${faqHTML}
+  ${jsonLd}`;
+  return shell(g.title, g.desc, `${SITE}/guides/${g.slug}/`, body);
+}
+function guidesIndexPage(guides) {
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <span class="kicker">Learn</span>
+    <h1 class="serif" style="font-size:30px;margin:6px 0 6px">Guides</h1>
+    <p class="sub" style="margin-bottom:0">Plain-English explainers for Singapore dividend &amp; income investing — no jargon, no fluff.</p>
+  </section>
+  <div class="guidelist">
+${guides.map(g => `    <a class="gcard" href="/guides/${g.slug}/"><span class="gc-t">${g.h1}</span><span class="gc-b">${g.blurb}</span></a>`).join('\n')}
+  </div>`;
+  return shell('Investing Guides — Singapore Dividends & Income Explained | StockKaki', 'Plain-English guides to dividend investing in Singapore — how dividend yield works, SSB vs T-bills, ex-dividend dates, REITs and more. Free, no jargon.', `${SITE}/guides/`, body);
+}
 function disclaimerPage() {
   const body = `  <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/">Dividends</a> › Disclaimer</div>
@@ -1965,6 +2043,9 @@ writeFileSync(new URL('index.html', out), homepage(listed, index, hub, upcoming)
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
+mkdirSync(new URL('guides/', out), { recursive: true });
+writeFileSync(new URL('guides/index.html', out), guidesIndexPage(GUIDES));
+for (const g of GUIDES) { const gd = new URL(`guides/${g.slug}/`, out); mkdirSync(gd, { recursive: true }); writeFileSync(new URL('index.html', gd), guidePage(g)); }
 
 // Per-stock OG share cards: the top-N counters by market cap get a data-rich card; the rest use the generic /og.png.
 const OG_TOP_N = 200;
@@ -2055,7 +2136,7 @@ writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r =
 writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
 if (ssb && ssb.current) writeFileSync(new URL('api/ssb.json', out), JSON.stringify({ code: ssb.current.code, y1: ssb.current.y1, y10: ssb.current.y10, applyFmt: ssb.current.applyFmt, issueFmt: ssb.current.issueFmt }));   // for new-SSB alerts
 
-const urls = [SITE + '/', SITE + '/stocks/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/stocks/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
