@@ -409,7 +409,7 @@ const STYLE = `
   .brand{display:inline-flex;align-items:center;font-family:'IBM Plex Serif',serif;font-weight:600;font-size:20px}
   .brand{letter-spacing:-.015em} .brand .bdot{color:var(--accent)}
   .nav nav{display:none;gap:24px;font-size:14px;color:var(--muted);font-weight:500} .nav nav a:hover{color:var(--ink)}
-  .btn{background:var(--accent);color:#fff;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:999px;border:0;cursor:pointer} .btn:hover{background:#c9692f}
+  .btn{background:var(--accent);color:#fff;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:999px;border:0;cursor:pointer} .btn:hover{background:var(--accent-dk)}
   .tbtn{background:none;border:0;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;padding:6px;border-radius:8px} .tbtn:hover{color:var(--ink)}
   html[data-theme="dark"] .moon{display:none} html:not([data-theme="dark"]) .sun{display:none}
   .deskonly{display:none} @media(min-width:820px){ .deskonly{display:inline-block} }
@@ -488,7 +488,7 @@ const STYLE = `
   .q-price{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600} .q-chg{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600} .q-vol{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
   .amt{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:600;font-size:14px}
   .yld{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--accent-dk)}
-  .date{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;color:#6E5E50}
+  .date{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;color:var(--muted)}
   .tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-dk);font-family:'IBM Plex Mono',monospace}
   .tag.soon{background:var(--accent);color:#fff}
   .empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:14px}
@@ -504,7 +504,7 @@ const STYLE = `
   .lr-co{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   .lr-price,.lr-yield,.lr-div,.lr-ex,.lr-amt,.lr-exd{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13.5px;white-space:nowrap}
   .lr-yield{color:var(--accent-dk);font-weight:600} .lr-yield.mut{color:var(--muted);font-weight:500}
-  .lr-ex,.lr-exd{color:#6E5E50;font-size:12.5px} html[data-theme="dark"] .lr-ex,html[data-theme="dark"] .lr-exd{color:var(--muted)}
+  .lr-ex,.lr-exd{color:var(--muted);font-size:12.5px} html[data-theme="dark"] .lr-ex,html[data-theme="dark"] .lr-exd{color:var(--muted)}
   .lr-meta{display:none} .lr-tag{margin-left:6px}
   .lr-sub{font-size:12px;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .lr-type .tag{vertical-align:middle}
@@ -520,7 +520,7 @@ const STYLE = `
   .lr-rank{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:6px;background:var(--accent-soft);color:var(--accent-dk);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px}
   /* home dashboard: adaptive dividend vs stock columns */
   .cols-home2.m-div .c-stk{display:none} .cols-home2.m-stk .c-div{display:none}
-  .lr-mc,.lr-pe,.lr-chg{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13.5px;white-space:nowrap} .lr-chg.up{color:#0c9a63} .lr-chg.down{color:#c0392b}
+  .lr-mc,.lr-pe,.lr-chg{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13.5px;white-space:nowrap} .lr-chg.up{color:var(--up)} .lr-chg.down{color:var(--down)}
   .cols-home2.m-div .lrow{grid-template-columns:minmax(0,1fr) 86px 80px 98px 104px}
   .cols-home2.m-stk .lrow{grid-template-columns:minmax(0,1fr) 86px 120px 58px 84px}
   .lsort{display:none} .lsort[hidden]{display:none}
@@ -605,7 +605,7 @@ const STYLE = `
   @media(min-width:720px){.trgrid{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);grid-template-rows:none;grid-auto-columns:auto;overflow:visible}}
   .trwall{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(min-width:720px){.trwall{grid-template-columns:repeat(4,1fr)}}
   .trcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px 16px} .trcard:hover{border-color:var(--accent)}
-  .tchip .up{color:#0c9a63} .tchip .down{color:#c0392b}
+  .tchip .up{color:var(--up)} .tchip .down{color:var(--down)}
   .readmore{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--accent-dk)} .readmore:hover{text-decoration:underline}
   .hubnews .nd{font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
   .pager{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:20px 0 4px}
@@ -614,7 +614,7 @@ const STYLE = `
   .pager .pg-dots{color:var(--muted);align-self:center;padding:0 2px}
   .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;margin-left:5px}
   .trcard .tp{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
-  .trcard .tm{font-size:12px;margin-top:4px;font-family:'IBM Plex Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:#0c9a63} .trcard .tm .down{color:#c0392b}
+  .trcard .tm{font-size:12px;margin-top:4px;font-family:'IBM Plex Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:var(--up)} .trcard .tm .down{color:var(--down)}
   .hubnews{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 18px}
   .hubnews a{display:block;padding:15px 0;border-bottom:1px solid var(--line);color:inherit} .hubnews a:last-child{border-bottom:0}
   .hubnews .nt{font-weight:600;font-size:15px;line-height:1.4} .hubnews a:hover .nt{color:var(--accent-dk)}
@@ -637,7 +637,7 @@ const STYLE = `
   .mm-tile img{height:38px;width:auto;display:block}
   .mm-lede{font-size:14.5px;color:var(--muted);line-height:1.6;margin-bottom:14px} .mm-lede b{color:var(--ink)}
   .mm-offer{font-size:13px;font-weight:600;color:var(--accent-dk);background:var(--accent-soft);border-radius:10px;padding:9px 13px;margin-bottom:16px;line-height:1.5} .mm-offer b{font-weight:700}
-  .mm-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;text-decoration:none;padding:11px 20px;border-radius:999px} .mm-btn:hover{background:#c9692f}
+  .mm-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;text-decoration:none;padding:11px 20px;border-radius:999px} .mm-btn:hover{background:var(--accent-dk)}
   .mm-disc{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.55}
   /* ---- stock header: tags, actions, KPI strip ---- */
   .st-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
@@ -1209,7 +1209,7 @@ function priceChart(prices, cur) {
   const X = i => PL + (W-PL-PR) * (P.length>1 ? i/(P.length-1) : 0);
   const Y = v => PT + (H-PT-PB) * (1 - (v-lo)/span);
   const line = P.map((p,i) => X(i).toFixed(1)+','+Y(p.c).toFixed(1)).join(' ');
-  const up = P[P.length-1].c >= P[0].c, col = up ? '#0c9a63' : '#c0392b';
+  const up = P[P.length-1].c >= P[0].c, col = up ? 'var(--up)' : 'var(--down)';
   const area = `${X(0).toFixed(1)},${(H-PB).toFixed(1)} ${line} ${X(P.length-1).toFixed(1)},${(H-PB).toFixed(1)}`;
   const s = csym(cur);
   const fM = monthYr(new Date(P[0].t*1000).toISOString().slice(0,7));
@@ -1385,7 +1385,7 @@ function allotCard(ssb) {
   const subPct = a.applied / a.size * 100;
   const guar = a.cutoff != null ? Math.round(a.cutoff * 1e6) : null;
   return `  <div class="h2">Latest allotment result</div>
-  <div class="ssb-card" style="border-left-color:#3E8FB0">
+  <div class="ssb-card" style="border-left-color:var(--muted)">
     <span class="ssb-status ${balloted?'closed':'open'}">${balloted?'Balloted · oversubscribed':'Fully allotted'}</span>
     <div class="ssb-stats">
       <div class="bigstat"><div class="k">Applications</div><div class="v" style="font-size:26px">S$${a.applied.toFixed(0)}m</div><div class="cap">of S$${a.size.toFixed(0)}m offered · ${subPct.toFixed(0)}% subscribed</div></div>
@@ -1428,11 +1428,11 @@ function projCard(ssb, sgs) {
   const d = sgs.y10 - c.y10;
   const dir = Math.abs(d) < 0.03 ? '≈ about the same as' : d > 0 ? '↑ higher than' : '↓ lower than';
   return `  <div class="h2">Next issue — projected</div>
-  <div class="ssb-card" style="border-left-color:#3E8FB0">
+  <div class="ssb-card" style="border-left-color:var(--muted)">
     <span class="ssb-status" style="background:var(--bg);color:var(--muted)">Projection · ${refMonth} SGS yields · ${sgs.days} trading day${sgs.days>1?'s':''} so far</span>
     <div class="ssb-stats">
-      <div class="bigstat"><div class="k">Projected 1st-year</div><div class="v" style="color:#3E8FB0">~${sgs.y1.toFixed(2)}%</div><div class="cap">now ${c.y1.toFixed(2)}%</div></div>
-      <div class="bigstat"><div class="k">Projected 10-yr average</div><div class="v" style="color:#3E8FB0">~${sgs.y10.toFixed(2)}%</div><div class="cap">${dir} the ${c.y10.toFixed(2)}% now</div></div>
+      <div class="bigstat"><div class="k">Projected 1st-year</div><div class="v" style="color:var(--muted)">~${sgs.y1.toFixed(2)}%</div><div class="cap">now ${c.y1.toFixed(2)}%</div></div>
+      <div class="bigstat"><div class="k">Projected 10-yr average</div><div class="v" style="color:var(--muted)">~${sgs.y10.toFixed(2)}%</div><div class="cap">${dir} the ${c.y10.toFixed(2)}% now</div></div>
     </div>
     <p class="ssb-meta">Projected average return by holding period: <b>1yr ~${sgs.y1.toFixed(2)}%</b> · 2yr ~${sgs.y2!=null?sgs.y2.toFixed(2):'—'}% · 5yr ~${sgs.y5!=null?sgs.y5.toFixed(2):'—'}% · <b>10yr ~${sgs.y10.toFixed(2)}%</b>. The next issue's applications open around early ${appMonth}, when MAS confirms the final rate. This is an estimate from SGS benchmark yields (MAS sets SSB rates from the prior month's average yields) — not an official figure.</p>
   </div>
@@ -1490,10 +1490,10 @@ function ssbPage(ssb, sgs) {
     <line x1="${PL}" y1="${Y(lo).toFixed(1)}" x2="${W-PR}" y2="${Y(lo).toFixed(1)}" stroke="var(--line)"/>
     <text x="${W-PR+6}" y="${(Y(hi)+4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'IBM Plex Mono',monospace">${hi.toFixed(1)}%</text>
     <text x="${W-PR+6}" y="${(Y(lo)+4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'IBM Plex Mono',monospace">${lo.toFixed(1)}%</text>
-    ${poly('y1','#3E8FB0')}
+    ${poly('y1','var(--muted)')}
     ${poly('y10','var(--accent)')}
     <circle cx="${X(n-1).toFixed(1)}" cy="${Y(last.y10).toFixed(1)}" r="3.5" fill="var(--accent)"/>
-    <circle cx="${X(n-1).toFixed(1)}" cy="${Y(last.y1).toFixed(1)}" r="3.5" fill="#3E8FB0"/>
+    <circle cx="${X(n-1).toFixed(1)}" cy="${Y(last.y1).toFixed(1)}" r="3.5" fill="var(--muted)"/>
     <text x="${PL}" y="${H-8}" fill="var(--muted)" font-size="11" font-family="'IBM Plex Mono',monospace">${monthYr(S[0].issueISO)}</text>
     <text x="${(W-PR).toFixed(1)}" y="${H-8}" fill="var(--muted)" font-size="11" text-anchor="end" font-family="'IBM Plex Mono',monospace">${monthYr(last.issueISO)}</text>
   </svg>`;
@@ -1558,7 +1558,7 @@ ${stepRows}
 
   <div class="h2">SSB rate trend</div>
   <div class="chartwrap">
-    <div class="leg"><span><i style="background:var(--accent)"></i>10-year average return</span><span><i style="background:#3E8FB0"></i>1st-year interest</span></div>
+    <div class="leg"><span><i style="background:var(--accent)"></i>10-year average return</span><span><i style="background:var(--muted)"></i>1st-year interest</span></div>
     ${chart}
   </div>
 
