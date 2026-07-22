@@ -69,6 +69,7 @@ const secNorm = (s) => {
 const CSYM = { SGD:'S$', USD:'US$', GBP:'£', EUR:'€', HKD:'HK$', CNY:'¥', AUD:'A$', JPY:'¥', MYR:'RM' };
 const csym = (cur) => CSYM[cur] || (cur ? cur+' ' : 'S$');
 const money = (ccy, amt) => `${ccy==='USD'?'US$':ccy==='SGD'?'S$':ccy+' '}${amt}`;
+const pxf = (sym, p) => !p ? '—' : sym + (Number(p) >= 1 ? Number(p).toFixed(2) : p);   // prices: 2dp above S$1, keep precision for penny stocks
 const num = (n) => n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
 const fmtVol = (n) => (n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n));
 const fmtCap = (cur, n) => { if (!n) return null; const s = csym(cur); return n>=1e9 ? s+(n/1e9).toFixed(2)+'B' : n>=1e6 ? s+(n/1e6).toFixed(0)+'M' : s+n.toFixed(0); };
@@ -335,7 +336,7 @@ const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/">StockKaki<span class="bdot">.</span></a>
   <nav>${NAVLINKS}</nav>
-  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="tbtn" href="/account/" aria-label="Account" title="Your account">${ACCT_IC}</a><span class="btn wa deskonly soon" title="Coming soon">${WA} Join channel <span class="soon-tag">Soon</span></span><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="tbtn" href="/account/" aria-label="Account" title="Your account">${ACCT_IC}</a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
 </header>
 <div id="mscrim" class="mscrim"></div>
@@ -380,7 +381,7 @@ const STYLE = `
   *{box-sizing:border-box;margin:0;padding:0} html{overflow-x:clip}
   body{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100dvh;display:flex;flex-direction:column;overflow-x:clip}
   main.wrap{flex:1 0 auto;min-width:0}
-  .serif{font-family:'IBM Plex Serif',sans-serif;letter-spacing:-.01em} a{color:inherit;text-decoration:none} .wrap{width:100%;max-width:1080px;margin:0 auto;padding:0 20px}
+  .serif{font-family:'IBM Plex Serif',sans-serif;letter-spacing:-.01em} a{color:inherit;text-decoration:none} .wrap{width:100%;max-width:1000px;margin:0 auto;padding:0 20px}
   header.nav{position:sticky;top:0;z-index:20;background:var(--nav-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
   .nav .row{display:flex;align-items:center;justify-content:space-between;height:60px}
   .brand{display:inline-flex;align-items:center;font-family:'IBM Plex Serif',serif;font-weight:600;font-size:20px}
@@ -428,7 +429,7 @@ const STYLE = `
   .nextcard{margin:18px 0 4px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;gap:28px;align-items:center}
   .nextcard .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600} .nextcard .v{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:18px;margin-top:3px}
   .metaline{color:var(--muted);font-size:13.5px;margin-top:14px} .metaline b{color:var(--ink);font-family:'IBM Plex Mono',monospace}
-  .h2{font-family:'IBM Plex Serif',sans-serif;font-weight:600;font-size:16px;margin:26px 0 10px}
+  .h2{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;letter-spacing:-.01em;margin:28px 0 11px}
   .faq{max-width:760px} .faq-q{font-weight:600;margin-top:16px} .faq-a{color:var(--muted);font-size:14.5px;margin-top:4px;line-height:1.7}
   .intro{max-width:730px;color:var(--muted);font-size:14.5px;line-height:1.75;margin:2px 0 6px} .intro b{color:var(--ink)} .intro a{color:var(--accent-dk);font-weight:600}
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:20px 0 0;overflow-x:auto;scrollbar-width:none} .tabs::-webkit-scrollbar{display:none}
@@ -451,7 +452,9 @@ const STYLE = `
   .news-d{display:block;font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
   .news-m{display:block;font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'IBM Plex Mono',monospace}
   .ov-chart-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);margin:16px 0 4px} .ov-chart-h span:last-child{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:var(--ink)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;max-width:820px}
+  .card:has(table){max-width:560px}
+  thead th,tbody td{padding-top:11px;padding-bottom:11px}
   table{width:100%;border-collapse:collapse}
   thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line)}
   thead th.r,tbody td.r{text-align:right}
@@ -470,7 +473,7 @@ const STYLE = `
   .hide-m{display:none} @media(min-width:720px){ .hide-m{display:table-cell} }
   @media(max-width:560px){ thead th,tbody td{padding:12px 10px;font-size:13px} .tick{display:none} .amt,.yld{font-size:13px} }
   /* ---- responsive data list (screener / reits / homepage): aligned columns on desktop, 2-line cards on mobile ---- */
-  .ltable{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .ltable{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .lrow{display:grid;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);color:inherit}
   .lrow:last-child{border-bottom:0} .lrow:not(.lhead):hover{background:var(--row-hover)}
   .lhead{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:transparent}
@@ -526,7 +529,7 @@ const STYLE = `
   .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
   .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
   footer{flex-shrink:0;margin-top:36px;padding-bottom:34px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-  .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:18px;padding:22px}
+  .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:22px;max-width:820px}
   .ssb-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;font-family:'IBM Plex Mono',monospace;padding:6px 13px;border-radius:999px}
   .ssb-status .pulse{width:7px;height:7px;border-radius:50%;background:currentColor}
   .ssb-status.open{background:#dcf3e7;color:#0c7a4e} html[data-theme="dark"] .ssb-status.open{background:#123726;color:#5fd39e}
@@ -561,19 +564,25 @@ const STYLE = `
   .trend{display:flex;gap:8px;align-items:center;margin-top:18px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} .trend::-webkit-scrollbar{display:none}
   .trend .tl{color:var(--muted);font-size:13px;flex:0 0 auto}
   .tchip{flex:0 0 auto;white-space:nowrap;font-size:13px;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 13px} .tchip:hover{border-color:var(--accent);background:var(--accent-soft)} .tchip b{color:var(--accent-dk);font-weight:600}
-  .hub-h{font-family:'IBM Plex Serif',sans-serif;font-weight:600;font-size:18px;margin:34px 0 12px;display:flex;align-items:baseline;justify-content:space-between}
+  .hub-h{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:16px;letter-spacing:-.01em;margin:34px 0 12px;display:flex;align-items:baseline;justify-content:space-between}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden;margin-top:24px;max-width:820px}
+  .stat{padding:15px 18px;border-right:1px solid var(--line);color:inherit} .stat:last-child{border-right:0} .stat:hover{background:var(--row-hover)}
+  .stat .sl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .stat .sv{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:23px;font-weight:500;letter-spacing:-.01em;margin-top:8px} .stat .sv.acc{color:var(--accent)}
+  .stat .sc{font-size:12px;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:640px){.stats{grid-template-columns:1fr 1fr} .stat{border-bottom:1px solid var(--line)} .stat:nth-child(2n){border-right:0} .stat:nth-child(n+3){border-bottom:0}}
   .hub-h a{font-size:13px;font-weight:500;color:var(--accent-dk)}
   .catgrid{display:grid;grid-template-columns:1fr;gap:12px} @media(min-width:620px){.catgrid{grid-template-columns:1fr 1fr}}
-  .cat{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;transition:.15s} .cat:hover{border-color:var(--accent);background:var(--row-hover)}
-  .cat .ci{width:44px;height:44px;flex:0 0 auto;border-radius:12px;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center}
-  .cat .ct{font-family:'IBM Plex Serif',sans-serif;font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:8px}
+  .cat{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px 18px;transition:.15s} .cat:hover{border-color:var(--accent);background:var(--row-hover)}
+  .cat .ci{display:none}
+  .cat .ct{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
   .cat .cn{font-size:11.5px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
   .cat .cd{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5} .cat .cd b{color:var(--ink);font-family:'IBM Plex Mono',monospace}
   /* home trending: 2-row grid that scrolls sideways on mobile, 4-col wall on desktop */
   .trgrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,1fr);grid-auto-columns:min(74vw,264px);gap:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;min-width:0} .trgrid::-webkit-scrollbar{display:none}
   @media(min-width:720px){.trgrid{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);grid-template-rows:none;grid-auto-columns:auto;overflow:visible}}
   .trwall{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(min-width:720px){.trwall{grid-template-columns:repeat(4,1fr)}}
-  .trcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px} .trcard:hover{border-color:var(--accent)}
+  .trcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px 16px} .trcard:hover{border-color:var(--accent)}
   .tchip .up{color:#0c9a63} .tchip .down{color:#c0392b}
   .readmore{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--accent-dk)} .readmore:hover{text-decoration:underline}
   .hubnews .nd{font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
@@ -598,7 +607,7 @@ const STYLE = `
   .t10 .ts{display:block;color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .t10 .ty{flex:0 0 auto;text-align:right} .t10 .tyv{display:block;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:16px;color:var(--accent-dk)} .t10 .tyv.mut{color:var(--muted);font-weight:600} .t10 .tp{display:block;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
   /* ---- moomoo affiliate card (stock pages) ---- */
-  .mm-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;position:relative;overflow:hidden;margin:26px 0 8px}
+  .mm-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;position:relative;overflow:hidden;margin:26px 0 8px;max-width:820px}
   .mm-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
   .mm-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
   .mm-eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-dk)}
@@ -614,10 +623,11 @@ const STYLE = `
   .st-tag{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px 9px} .st-tag.mono{font-family:'IBM Plex Mono',monospace}
   .st-acts{flex:0 0 auto;display:flex;gap:8px}
   .st-save{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--accent-dk);background:var(--accent-soft);border:1px solid transparent;border-radius:999px;padding:8px 13px;cursor:pointer;font-family:inherit}
-  .st-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px} @media(max-width:560px){.st-kpi{grid-template-columns:1fr 1fr}}
-  .kbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .st-kpi{display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px;max-width:640px;border:1px solid var(--line);border-radius:10px;overflow:hidden} @media(max-width:560px){.st-kpi{grid-template-columns:1fr 1fr}}
+  .kbox{background:var(--card);border:0;border-right:1px solid var(--line);border-radius:0;padding:13px 16px} .kbox:last-child{border-right:0} @media(max-width:560px){.kbox:nth-child(2n){border-right:0} .kbox:nth-child(-n+2){border-bottom:1px solid var(--line)}}
   .kbox .kl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
   .kbox .kv{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;margin-top:3px} .kbox .kv.acc{color:var(--accent-dk)}
+  .kicker,thead th,.lhead,.kbox .kl,.bigstat .k,.nextcard .k,.lsort{font-family:'IBM Plex Mono',monospace}
   .st-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);font-size:13px;font-weight:500;padding:11px 18px;border-radius:999px;box-shadow:0 12px 30px -12px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.25s ease;z-index:60} .st-toast.on{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   .st-save.on{background:var(--accent);color:#fff}
   /* ---- account / login ---- */
@@ -736,10 +746,18 @@ const trCard = (c) => {
   const chg = c.chg;
   const chgTxt = (chg!=null && chg!==0) ? `<span class="${chg>0?'up':'down'}">${chg>0?'▲':'▼'} ${Math.abs(chg).toFixed(1)}%</span>` : '';
   const yTxt = c.yieldPct!=null ? `<span class="ty">${c.yieldPct.toFixed(2)}% yield</span>` : '';
-  return `    <a class="trcard" href="/stock/${c.slug}/"><div class="tn">${c.name}${c.ticker?`<span class="tt">${c.ticker}</span>`:''}</div><div class="tp">${c.price?CS+c.price:'—'}</div><div class="tm">${[yTxt,chgTxt].filter(Boolean).join(' · ')||'&nbsp;'}</div></a>`;
+  return `    <a class="trcard" href="/stock/${c.slug}/"><div class="tn">${c.name}${c.ticker?`<span class="tt">${c.ticker}</span>`:''}</div><div class="tp">${pxf(CS,c.price)}</div><div class="tm">${[yTxt,chgTxt].filter(Boolean).join(' · ')||'&nbsp;'}</div></a>`;
 };
-function homepage(listed, index, hub) {
+function homepage(listed, index, hub, upcoming) {
   const idxJson = JSON.stringify(index).replace(/</g,'\\u003c');
+  const topY = (listed||[]).filter(c => c.yieldPct!=null && !c.divIncomplete && c.yieldPct<=30).sort((a,b)=>b.yieldPct-a.yieldPct)[0];
+  const nextEx = (upcoming||[])[0];
+  const statsHTML = (topY || nextEx || hub.ssbHi!=null) ? `  <div class="stats">
+    ${topY?`<a class="stat" href="/dividends/"><div class="sl">Highest yield</div><div class="sv acc">${topY.yieldPct.toFixed(2)}%</div><div class="sc">${esc(topY.name)}</div></a>`:''}
+    <a class="stat" href="/stocks/"><div class="sl">Counters tracked</div><div class="sv">${hub.stockCount}</div><div class="sc">Stocks · REITs · ETFs</div></a>
+    ${nextEx?`<a class="stat" href="/dividend-calendar/"><div class="sl">Next ex-date</div><div class="sv">${prettyShort(nextEx.exISO)}</div><div class="sc">${esc(nextEx.name)}</div></a>`:''}
+    ${hub.ssbHi!=null?`<a class="stat" href="/ssb/"><div class="sl">SSB 10-yr</div><div class="sv">${hub.ssbHi.toFixed(2)}%</div><div class="sc">this month</div></a>`:''}
+  </div>` : '';
   const trendingChips = (hub.trending||[]).slice(0,8).map(c => {
     const m = c.yieldPct!=null ? `<b>${c.yieldPct.toFixed(1)}%</b>`
       : (c.chg!=null && c.chg!==0 ? `<b class="${c.chg>0?'up':'down'}">${c.chg>0?'+':''}${c.chg.toFixed(1)}%</b>` : '');
@@ -766,6 +784,7 @@ ${hub.news.map(n => `    <a href="${esc(n.link)}" target="_blank" rel="noopener 
     <div class="hub-search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search a stock or ticker — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
     <div class="trend"><span class="tl">Trending:</span>${trendingChips}</div>
   </section>
+${statsHTML}
   <div class="hub-h">Browse by what you're after</div>
   <div class="catgrid">
 ${cards}
@@ -825,7 +844,7 @@ const trendingRow = (c, i) => {
   const chgCls = 'lr-chg' + (chg>0?' up':chg<0?' down':'');
   const yTxt = c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : '—';
   const yCls = 'lr-yield' + (c.yieldPct==null?' mut':'');
-  const priceTxt = c.price ? CS+c.price : '—';
+  const priceTxt = pxf(CS,c.price);
   const meta = [priceTxt, chgTxt!=='—'?chgTxt:null, c.yieldPct!=null?yTxt+' yield':null].filter(Boolean).join('  ·  ');
   return `        <a class="lrow" href="/stock/${c.slug}/">
           <span class="lr-name"><span class="lr-rank">${i+1}</span><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
@@ -868,7 +887,7 @@ const companyRow = (c) => {
   const yTitle = special ? ' title="Trailing yield likely inflated by a one-off special dividend"' : (c.divIncomplete ? ` title="${esc(SCRIP_TITLE)}"` : '');
   const yTxt = y ? (special ? `${y}%*` : `${y}%`) : (c.divIncomplete ? 'scrip' : '—');
   const yCls = 'lr-yield' + ((!y || special || c.divIncomplete) ? ' mut' : '');
-  const priceTxt = c.price ? csym(c.cur)+c.price : '—';
+  const priceTxt = pxf(csym(c.cur),c.price);
   const divTxt = c.divIncomplete ? 'scrip' : (c.ttm>0 ? csym(c.cur)+num(c.ttm) : '—');
   const nx = c.divs.find(d => d.exISO >= TODAY);
   const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
@@ -905,7 +924,7 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
     const sub = [type, (c.ttm>0 && !c.divIncomplete) ? `${CS}${num(c.ttm)} / yr` : (c.divIncomplete?'scrip payer':null)].filter(Boolean).join(' · ');
     const y = c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : (c.divIncomplete?'scrip':'—');
     const yCls = 'tyv' + ((c.yieldPct==null||c.divIncomplete) ? ' mut' : '');
-    return `      <a class="t10${i<3?' gold':''}" href="/stock/${c.slug}/"><span class="rk">${i+1}</span><span class="ti"><span class="tn">${c.name}${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span><span class="ts">${sub}</span></span><span class="ty"><span class="${yCls}">${y}</span>${c.price?`<span class="tp">${CS}${c.price}</span>`:''}</span></a>`;
+    return `      <a class="t10${i<3?' gold':''}" href="/stock/${c.slug}/"><span class="rk">${i+1}</span><span class="ti"><span class="tn">${c.name}${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span><span class="ts">${sub}</span></span><span class="ty"><span class="${yCls}">${y}</span>${c.price?`<span class="tp">${pxf(CS,c.price)}</span>`:''}</span></a>`;
   };
   const topBlock = (sorted.length > 10 && top10.length >= 6) ? `  <div class="hub-h" style="margin-bottom:12px">Top 10 ${h1.replace(/^Best /,'').replace(/ in Singapore$/,'')} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">by yield</span></div>
   <div class="top10">
@@ -975,7 +994,7 @@ sortBy('y');
 // ---------- all Singapore stocks (full SGX universe) — same concept as the dividend page, ranked by market cap ----------
 const stockRow = (c) => {
   const f = c.fund || {};
-  const priceTxt = c.price ? csym(c.cur)+c.price : '—';
+  const priceTxt = pxf(csym(c.cur),c.price);
   const mc = fmtCap(f.cur||c.cur, f.mktCap) || '—';
   const pe = f.pe!=null ? f.pe.toFixed(1) : '—';
   const chg = (c.chgPct!=null && c.chgPct!==0) ? c.chgPct : (f.chg!=null ? f.chg : null);
@@ -1218,7 +1237,7 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">${CS}$
   const divSection = c.divs.length ? `
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${inc?'<span style="font-size:14px;color:var(--muted)">scrip</span>':money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
   ${inc ? scripNote : ''}
-  ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at ${CS}${c.price} last`:''}.</p>` : ''}
+  ${ttmStr ? `<p class="metaline">Trailing 12-month dividends: <b>${ttmStr}</b> per security${c.yieldPct?` &middot; indicative yield <b>${c.yieldPct.toFixed(2)}%</b> at ${pxf(CS,c.price)} last`:''}.</p>` : ''}
   ${signals ? `<p class="metaline">${signals}.</p>` : ''}
   ${annual}
   <div class="h2">Full dividend history</div>
@@ -1230,10 +1249,10 @@ ${hist}
   </table></div>
   <p class="metaline" style="font-size:12px">*Yield uses the current last price (${CS}${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
   const faqs = [];
-  if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at ${CS}${c.price} on the SGX.` });
+  if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at ${pxf(CS,c.price)} on the SGX.` });
   if (c.divs.length) {
     faqs.push({ q: `Does ${c.name} pay dividends?`, a: `Yes. ${c.name} has paid dividends over the last ${years.length} year${years.length>1?'s':''}${freq?`, currently ${freq.toLowerCase()}`:''}${ttmStr?`, totalling ${ttmStr} per security in the past 12 months`:''}.` });
-    faqs.push({ q: `What is ${c.name}'s dividend yield?`, a: c.yieldPct ? `${c.name}'s indicative dividend yield is about ${c.yieldPct.toFixed(2)}%, based on trailing 12-month dividends of ${ttmStr} per security against a last price of ${CS}${c.price}.` : (inc ? `${c.name} distributes via a scrip/reinvestment option, and SGX's free feed doesn't publish the full per-unit cash amount — so an accurate trailing yield can't be shown here.` : `${c.name} has no trailing 12-month dividends on record, so no indicative yield.`) });
+    faqs.push({ q: `What is ${c.name}'s dividend yield?`, a: c.yieldPct ? `${c.name}'s indicative dividend yield is about ${c.yieldPct.toFixed(2)}%, based on trailing 12-month dividends of ${ttmStr} per security against a last price of ${pxf(CS,c.price)}.` : (inc ? `${c.name} distributes via a scrip/reinvestment option, and SGX's free feed doesn't publish the full per-unit cash amount — so an accurate trailing yield can't be shown here.` : `${c.name} has no trailing 12-month dividends on record, so no indicative yield.`) });
     faqs.push({ q: `When is ${c.name}'s next ex-dividend date?`, a: next ? `${c.name}'s next ex-dividend date is ${pretty(next.exISO)}, paying ${money(next.ccy,next.amt)} per security (pay date ${pretty(next.pay)}). You must own the shares before the ex-date to be entitled.` : `No upcoming ex-dividend date has been announced for ${c.name}.` });
   } else {
     faqs.push({ q: `Does ${c.name} pay dividends?`, a: `${c.name} has not paid a dividend in the last ~6 years, based on SGX corporate-action filings.` });
@@ -1297,7 +1316,7 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
       </div>
       ${c.ticker?`<div class="st-acts"><button class="st-save" id="stSave">${STAR} <span class="lbl">Save</span></button></div>`:''}
     </div>
-    ${c.price?`<div class="quote" style="margin-top:14px"><span class="q-price">${CS}${c.price}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'#0f7a52':'#c0392b'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
+    ${c.price?`<div class="quote" style="margin-top:14px"><span class="q-price">${pxf(CS,c.price)}</span>${(c.chgPct!=null&&c.chgPct!==0)?`<span class="q-chg" style="color:${c.chgPct>=0?'var(--up)':'var(--down)'}">${c.chgPct>=0?'▲':'▼'} ${Math.abs(c.chgPct).toFixed(2)}%</span>`:''}${c.vol?`<span class="q-vol">Vol ${fmtVol(c.vol)}</span>`:''}<span class="q-vol">last close</span></div>`:''}
     ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
     ${kpi}
   </section>
@@ -1332,7 +1351,7 @@ import('https://esm.sh/@supabase/supabase-js@2').then(async function(m){
 })();</script>`;
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
-    `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price ${CS}${c.price}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
+    `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price ${pxf(CS,c.price)}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
     `${SITE}/stock/${c.slug}/`, body, tabScript);
 }
 
@@ -1881,7 +1900,7 @@ for (const entry of readdirSync(out)) rmSync(new URL(entry, out), { recursive: t
 for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png', 'moomoo.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
 mkdirSync(new URL('og/', out), { recursive: true });   // per-page social cards (assets/og/*.png → /og/*.png)
 try { const ogDir = new URL('assets/og/', import.meta.url); for (const f of readdirSync(ogDir)) if (f.endsWith('.png')) copyFileSync(new URL(f, ogDir), new URL(`og/${f}`, out)); } catch {}
-writeFileSync(new URL('index.html', out), homepage(listed, index, hub));
+writeFileSync(new URL('index.html', out), homepage(listed, index, hub, upcoming));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
