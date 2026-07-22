@@ -639,6 +639,11 @@ const STYLE = `
   .mm-offer{font-size:13px;font-weight:600;color:var(--accent-dk);background:var(--accent-soft);border-radius:10px;padding:9px 13px;margin-bottom:16px;line-height:1.5} .mm-offer b{font-weight:700}
   .mm-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;text-decoration:none;padding:11px 20px;border-radius:999px} .mm-btn:hover{background:var(--accent-dk)}
   .mm-disc{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.55}
+  .related{display:grid;grid-template-columns:1fr;gap:8px;max-width:820px} @media(min-width:480px){.related{grid-template-columns:1fr 1fr}} @media(min-width:720px){.related{grid-template-columns:1fr 1fr 1fr}}
+  .rel{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:8px;padding:11px 14px;color:inherit} .rel:hover{border-color:var(--accent);background:var(--row-hover)}
+  .rel-n{font-size:13.5px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rel-t{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-left:7px}
+  .rel-y{font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;color:var(--accent-dk);flex:0 0 auto}
   /* ---- stock header: tags, actions, KPI strip ---- */
   .st-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   .st-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
@@ -1227,6 +1232,25 @@ function priceChart(prices, cur) {
   </svg>`;
 }
 
+// Related counters — same class (REIT/ETF/stock), closest by dividend yield (falls back to market-cap proximity).
+// Builds a dense internal-link web (each page → 6 peers) that helps crawl/indexing and stock-to-stock discovery.
+function relatedStocks(c) {
+  if (!c.ticker || typeof listed === 'undefined') return '';
+  const classOf = (x) => x.isReit ? 'reit' : x.secType === 'etfs' ? 'etf' : 'stock';
+  const cls = classOf(c);
+  const label = cls === 'reit' ? 'REITs' : cls === 'etf' ? 'ETFs' : 'dividend stocks';
+  const pool = listed.filter(x => x.slug !== c.slug && x.ticker && classOf(x) === cls);
+  if (!pool.length) return '';
+  let ranked;
+  if (c.yieldPct != null) ranked = pool.filter(x => x.yieldPct != null).sort((a,b) => Math.abs(a.yieldPct - c.yieldPct) - Math.abs(b.yieldPct - c.yieldPct));
+  else ranked = pool.filter(x => x.fund && x.fund.mktCap).sort((a,b) => Math.abs((a.fund.mktCap||0) - ((c.fund&&c.fund.mktCap)||0)) - Math.abs((b.fund.mktCap||0) - ((c.fund&&c.fund.mktCap)||0)));
+  const picks = (ranked.length ? ranked : pool).slice(0, 6);
+  if (!picks.length) return '';
+  return `  <div class="h2">Related ${label}</div>
+  <div class="related">
+${picks.map(x => `    <a class="rel" href="/stock/${x.slug}/"><span class="rel-n">${esc(x.name)}${x.ticker?`<span class="rel-t">${x.ticker}</span>`:''}</span><span class="rel-y">${x.yieldPct!=null?x.yieldPct.toFixed(2)+'%':'—'}</span></a>`).join('\n')}
+  </div>`;
+}
 function stockPage(c) {
   const upcoming = c.divs.filter(d => d.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1);
   const next = upcoming[0];
@@ -1344,6 +1368,7 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
   </section>
   ${tabsHTML}
   ${brokerSlot(c)}
+  ${relatedStocks(c)}
   ${faqHTML}
   <div class="st-toast" id="stToast"></div>
   ${jsonLd}`;
