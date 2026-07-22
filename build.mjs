@@ -465,7 +465,7 @@ const STYLE = `
   .yld{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--accent-dk)}
   .date{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;color:#6E5E50}
   .tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-dk);font-family:'IBM Plex Mono',monospace}
-  .tag.soon{background:#FBE1CF;color:#A94E17}
+  .tag.soon{background:var(--accent);color:#fff}
   .empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:14px}
   .hide-m{display:none} @media(min-width:720px){ .hide-m{display:table-cell} }
   @media(max-width:560px){ thead th,tbody td{padding:12px 10px;font-size:13px} .tick{display:none} .amt,.yld{font-size:13px} }
@@ -689,7 +689,7 @@ const shell = (title, desc, canon, body, script='', og='/og.png') => `<!DOCTYPE 
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="google-site-verification" content="GP6YGT1x9z7T6QlUkLDTXvfbGlqkocw2RSWOWmKkO1Q">
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="theme-color" content="#E07A3B">
+<meta name="theme-color" content="#2647DD">
 <!-- Google Analytics (GA4) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-GQWYJ6T6DY"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-GQWYJ6T6DY');</script>
