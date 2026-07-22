@@ -1685,6 +1685,143 @@ const GUIDES = [
       { q: 'Does StockKaki use trailing or forward dividend yield?', a: 'Trailing 12-month yield — the dividends actually paid over the last year, divided by the current price. It is factual and lets you compare counters on the same basis, rather than relying on a forecast.' },
     ],
   },
+  {
+    slug: 'singapore-savings-bonds-vs-t-bills',
+    title: `Singapore Savings Bonds vs T-Bills — Which Is Better? | StockKaki`,
+    desc: `Singapore Savings Bonds vs Treasury Bills compared: tenor, interest, early exit, minimums and when each makes sense. Both are Singapore-Government-backed. Plain English.`,
+    h1: `Singapore Savings Bonds vs T-bills`,
+    blurb: `Both are backed by the Singapore Government — but they suit very different needs. A plain comparison.`,
+    body: `<p>Both <strong>Singapore Savings Bonds (SSBs)</strong> and <strong>Treasury Bills (T-bills)</strong> are issued by the Singapore Government, so both are about as low-risk as an investment gets. But they work differently, and the right one depends on your time horizon and how much flexibility you want.</p>
+<h2>What each one is</h2>
+<p><strong>Singapore Savings Bonds</strong> are long-dated (up to 10 years) but flexible. Interest <em>steps up</em> the longer you hold, and you can redeem in any month with no penalty and get your capital back plus accrued interest. A new issue is offered every month.</p>
+<p><strong>Treasury Bills</strong> are short-dated — <strong>6-month</strong> or <strong>1-year</strong>. You buy them at a discount to face value and receive the full face value at maturity; the difference is your return. They are sold by auction, and you generally cannot redeem early (you would have to sell on the secondary market).</p>
+<h2>The key differences</h2>
+<ul>
+<li><strong>Tenor</strong> — SSB: up to 10 years, hold as long or short as you like. T-bill: fixed 6-month or 1-year.</li>
+<li><strong>How the return works</strong> — SSB: step-up coupons paid every 6 months. T-bill: a single discount, locked in at auction.</li>
+<li><strong>Early exit</strong> — SSB: redeem any month, no penalty. T-bill: no early redemption; sell on the secondary market if you must.</li>
+<li><strong>Minimum</strong> — SSB: S$500 (multiples of S$500, max S$200,000 held). T-bill: S$1,000 (multiples of S$1,000).</li>
+<li><strong>Funds you can use</strong> — SSB: cash or SRS. T-bill: cash, SRS, and CPF-OA/SA — useful for deploying idle CPF savings.</li>
+</ul>
+<h2>When to choose which</h2>
+<p>Pick an <strong>SSB</strong> if you value flexibility — you are parking money you might need back at short notice, or you want a long-term home for cash you can top up and exit freely. Pick a <strong>T-bill</strong> if you have a fixed sum you will not need for 6–12 months and want to lock in a known return, or if you want to put CPF-OA funds to work.</p>
+<p>Rates on both move with the market. You can see the latest SSB rates, the full step-up schedule and a returns calculator on the <a href="/ssb/">Singapore Savings Bonds page</a>, which also projects the likely rate of the next issue.</p>
+<h2>What they have in common</h2>
+<p>Both are backed by the AAA-rated Singapore Government, both are bought through DBS/POSB, OCBC or UOB (internet banking or ATM), and the return on either is <strong>not taxed</strong> in Singapore. They are tools for the safe part of a portfolio — not a substitute for the growth you would seek from <a href="/dividends/">dividend stocks</a> or <a href="/reits/">REITs</a>.</p>`,
+    faqs: [
+      { q: `Do Singapore Savings Bonds or T-bills pay more?`, a: `It depends on the interest-rate environment — sometimes short-term T-bills yield more than the first-year SSB rate, sometimes less. SSBs reward longer holding via step-up interest, while T-bills lock in a single rate for 6 or 12 months. Check the current SSB rates and recent T-bill cut-offs before deciding.` },
+      { q: `Can I use CPF to buy T-bills and Singapore Savings Bonds?`, a: `T-bills can be bought with CPF-OA and CPF-SA funds, as well as cash and SRS. Singapore Savings Bonds are bought with cash or SRS (not CPF). This makes T-bills a common choice for deploying idle CPF-OA savings.` },
+      { q: `Are Singapore Savings Bonds and T-bills safe?`, a: `Both are issued and fully backed by the Singapore Government, which is AAA-rated, so credit risk is minimal. The main practical difference is liquidity: SSBs can be redeemed any month with no penalty, while T-bills are meant to be held to maturity.` },
+    ],
+  },
+  {
+    slug: 'what-is-an-ex-dividend-date',
+    title: `What Is an Ex-Dividend Date? (How to Qualify for a Dividend) | StockKaki`,
+    desc: `The ex-dividend date is the cut-off to receive a dividend. Learn the key dates, how to qualify, why the price drops on the ex-date, and the dividend-capture myth. SGX-focused.`,
+    h1: `What is an ex-dividend date?`,
+    blurb: `The cut-off that decides who gets the dividend — plus the key dates around it, explained simply.`,
+    body: `<p>The <strong>ex-dividend date</strong> (or "ex-date") is the cut-off that decides who receives a dividend. The rule is simple: <strong>you must already own the shares before the ex-date</strong> to be entitled to that dividend. Buy on the ex-date or later, and the dividend goes to the seller instead.</p>
+<h2>The four dates to know</h2>
+<ul>
+<li><strong>Declaration date</strong> — when the company announces the dividend, the amount, and the dates below.</li>
+<li><strong>Ex-dividend date</strong> — the cut-off. Own the shares <em>before</em> this date to qualify.</li>
+<li><strong>Record date</strong> — usually the business day after the ex-date; the company checks its register to confirm who the shareholders are.</li>
+<li><strong>Payment date</strong> — when the cash actually lands in your account, typically a few weeks after the ex-date.</li>
+</ul>
+<h2>Why the share price usually drops on the ex-date</h2>
+<p>On the ex-date, the share price typically falls by roughly the dividend amount. That is not a loss — it simply reflects that new buyers no longer get the upcoming payout, so they pay a little less. If a S$2.00 stock pays a S$0.10 dividend, it might open around S$1.90 on the ex-date. The S$0.10 has not vanished; it is on its way to existing shareholders as cash.</p>
+<h2>The "dividend capture" myth</h2>
+<p>A common idea is to buy just before the ex-date, collect the dividend, and sell straight after for free income. In practice it rarely works: the price drop on the ex-date roughly cancels the dividend, and you would owe brokerage costs on both trades. Dividends reward <em>holding</em> good businesses, not timing the calendar.</p>
+<h2>How to use it in practice</h2>
+<p>If you want a stock's next dividend, make sure you own it <strong>before</strong> its ex-date — buying at least one trading day earlier is the safe approach. You do not need to keep holding until the payment date; once you are past the ex-date as an owner, the dividend is yours even if you sell.</p>
+<p>You can see the next ex-dates and pay dates for every SGX counter, in order, on the <a href="/dividend-calendar/">Singapore dividend calendar</a> — and each <a href="/dividends/">stock page</a> lists that counter's full history of past ex-dates and amounts.</p>`,
+    faqs: [
+      { q: `Do I need to hold a stock until the payment date to get the dividend?`, a: `No. As long as you owned the shares before the ex-dividend date, the dividend is yours — even if you sell before the payment date. Entitlement is fixed at the ex-date, not the pay date.` },
+      { q: `If I buy a stock on its ex-dividend date, do I get the dividend?`, a: `No. Buying on the ex-date or later means you are not entitled to that dividend — it goes to the previous owner. You must own the shares before the ex-date.` },
+      { q: `Why does a share price fall on the ex-dividend date?`, a: `Because new buyers no longer receive the upcoming dividend, the stock trades lower by roughly the dividend amount on the ex-date. It is a mechanical adjustment, not a loss — the cash is being paid out to existing shareholders.` },
+    ],
+  },
+  {
+    slug: 'how-to-buy-dividend-stocks-in-singapore',
+    title: `How to Buy Dividend Stocks in Singapore (Beginner's Guide) | StockKaki`,
+    desc: `A step-by-step guide to buying dividend stocks in Singapore: opening a brokerage (CDP vs custodian), funding, choosing stocks, placing a trade, and collecting dividends.`,
+    h1: `How to buy dividend stocks in Singapore`,
+    blurb: `From opening a brokerage to placing your first trade and collecting dividends — a step-by-step start.`,
+    body: `<p>Buying dividend stocks on the SGX is straightforward once your account is set up. Here is the whole process, start to finish.</p>
+<h2>Step 1 — Open a brokerage account</h2>
+<p>You will need a broker to place trades. There are two account types to understand:</p>
+<ul>
+<li><strong>CDP-linked</strong> — your shares are held in your own name in a Central Depository (CDP) account. You are the direct legal owner, and dividends are paid straight to your linked bank account.</li>
+<li><strong>Custodian</strong> — your shares are held by the broker on your behalf. Fees are often lower, but the broker is the nominee.</li>
+</ul>
+<p>For long-term dividend investing many Singaporeans prefer CDP for the direct ownership; for lower costs, a custodian works well. Either is fine to start.</p>
+<h2>Step 2 — Fund your account</h2>
+<p>Transfer money in via PayNow, FAST or bank transfer. You can also invest with your <strong>SRS</strong> funds through most brokers, which can bring tax relief on the amount you contribute.</p>
+<h2>Step 3 — Choose your stocks</h2>
+<p>This is where StockKaki helps. Compare every SGX payer ranked by yield on the <a href="/dividends/">best dividend stocks</a> page, or the property plays on the <a href="/reits/">Singapore REITs</a> page. Do not chase the highest number blindly — a very high yield can be a warning (see <a href="/guides/how-is-dividend-yield-calculated/">how dividend yield works</a>). Look for a sustainable payout and a consistent history, and spread your money across a few names rather than one.</p>
+<h2>Step 4 — Place the order</h2>
+<p>In your broker's app, search the stock, choose <strong>buy</strong>, and pick an order type: a <strong>market order</strong> fills immediately at the going price, while a <strong>limit order</strong> only fills at your chosen price or better. SGX trades in board lots of 100 shares.</p>
+<h2>Step 5 — Collect your dividends</h2>
+<p>Once you own a stock <strong>before its ex-dividend date</strong> (see <a href="/guides/what-is-an-ex-dividend-date/">what an ex-date is</a>), you are entitled to its next payout. Dividends are paid automatically — to your bank account (CDP) or into your brokerage (custodian) — on the payment date, usually a few weeks later. There is nothing to claim.</p>
+<h2>A note on costs and tax</h2>
+<p>Brokers charge a commission per trade, often with a minimum, so very small trades can be inefficient — factor that in. The good news on tax: Singapore has <strong>no tax on dividends and no capital-gains tax</strong>, so the income and any gains are yours to keep (<a href="/guides/are-dividends-taxed-in-singapore/">more on dividend tax</a>).</p>`,
+    faqs: [
+      { q: `How much money do I need to start buying dividend stocks in Singapore?`, a: `There is no official minimum, but because brokers charge a commission (often with a minimum fee) and SGX trades in lots of 100 shares, very small trades are inefficient. Many beginners start with a few hundred to a few thousand dollars per stock so fees are a small percentage of the trade.` },
+      { q: `Should I use a CDP or custodian account?`, a: `CDP holds shares in your own name with dividends paid to your bank — favoured for long-term ownership. Custodian accounts, held by the broker, usually have lower fees. Both are legitimate; the choice comes down to whether you prioritise direct ownership or lower costs.` },
+      { q: `Do I pay tax on dividends from Singapore stocks?`, a: `No. Singapore does not tax dividends from SGX-listed companies for individual investors, and there is no capital-gains tax. Foreign stocks can be subject to withholding tax in their home country.` },
+    ],
+  },
+  {
+    slug: 'singapore-reits-explained',
+    title: `Singapore REITs Explained: How S-REITs Work | StockKaki`,
+    desc: `What Singapore REITs (S-REITs) are, why they yield more, the key numbers to check — distribution yield, gearing, occupancy, WALE — and the main risks. Plain English.`,
+    h1: `Singapore REITs explained`,
+    blurb: `What S-REITs are, why they yield more, and the key numbers to check before buying.`,
+    body: `<p>A <strong>REIT</strong> — Real Estate Investment Trust — owns a portfolio of income-producing property (malls, offices, warehouses, data centres) and passes the rental income to unitholders. Singapore's REITs, or <strong>S-REITs</strong>, are one of the most popular ways locals earn passive income.</p>
+<h2>Why S-REITs yield more than ordinary stocks</h2>
+<p>To keep their tax-transparent status, S-REITs must distribute <strong>at least 90% of their taxable income</strong> to unitholders. That rule forces a high payout, which is why REIT distribution yields — often <strong>5–7%</strong> — tend to be higher than the dividend yields of ordinary shares. For individual investors, those distributions are also <strong>tax-exempt</strong>.</p>
+<h2>The main types</h2>
+<p>S-REITs are usually grouped by the property they hold: <strong>retail</strong> (malls), <strong>industrial &amp; logistics</strong> (warehouses, business parks), <strong>office</strong>, <strong>hospitality</strong> (hotels, serviced apartments), <strong>data centre</strong>, <strong>healthcare</strong>, and <strong>diversified</strong>. Each behaves a little differently — hospitality is more cyclical, while data centres and logistics have been structural growth areas.</p>
+<h2>The numbers to check before you buy</h2>
+<ul>
+<li><strong>Distribution yield</strong> — the annual distribution divided by the price. Higher is not automatically better; check it is sustainable.</li>
+<li><strong>Gearing (aggregate leverage)</strong> — how much debt the REIT carries against its assets, capped at <strong>50%</strong> by regulation. Lower gearing (say under 40%) means more headroom if property values fall.</li>
+<li><strong>Occupancy rate</strong> — the percentage of space actually rented. High and stable is good.</li>
+<li><strong>WALE</strong> — weighted average lease expiry, i.e. how long current leases run. A longer WALE means more predictable income.</li>
+<li><strong>Sponsor quality</strong> — a strong sponsor (CapitaLand, Mapletree, Frasers, Keppel) can back the REIT with a property pipeline and cheaper funding.</li>
+</ul>
+<h2>The risks</h2>
+<p>REITs are <strong>interest-rate sensitive</strong>: they borrow to buy property, so rising rates raise their costs and can pull unit prices down. They can also raise money by issuing new units (a <strong>rights issue</strong>), which dilutes existing holders. And ultimately their value tracks the property market. None of this makes them bad — it just means the yield is not free of risk.</p>
+<p>You can compare every S-REIT by distribution yield on the <a href="/reits/">Singapore REITs page</a>, and each REIT's page shows its full distribution history and upcoming ex-dates.</p>`,
+    faqs: [
+      { q: `How are Singapore REIT distributions taxed?`, a: `Distributions from S-REITs are generally tax-exempt for individual investors holding the units in their personal capacity. This is part of what makes S-REITs attractive for income.` },
+      { q: `What is a good yield for a Singapore REIT?`, a: `Around 5–7% is typical and reasonable for an S-REIT. A yield well above that can signal higher gearing, a weaker portfolio, or a market pricing in trouble — so check the fundamentals rather than buying on yield alone.` },
+      { q: `What is gearing in a REIT?`, a: `Gearing (aggregate leverage) is the REIT's total debt as a percentage of its asset value, capped at 50% by MAS. Lower gearing means more financial headroom and less risk if property values decline or interest rates rise.` },
+    ],
+  },
+  {
+    slug: 'are-dividends-taxed-in-singapore',
+    title: `Are Dividends Taxed in Singapore? | StockKaki`,
+    desc: `The short answer is no — Singapore does not tax dividends from local companies, and there is no capital-gains tax. Plus the nuances for REITs and foreign (e.g. US) stocks.`,
+    h1: `Are dividends taxed in Singapore?`,
+    blurb: `The short answer is no — but there are a few nuances worth knowing (REITs, foreign stocks, when it applies).`,
+    body: `<p><strong>For dividends from Singapore-resident companies, the answer is no — they are tax-free in your hands.</strong> There is also no capital-gains tax, so profits when you sell are yours to keep. This is a big part of why Singapore is such a friendly place for income investors.</p>
+<h2>Why Singapore dividends are not taxed</h2>
+<p>Singapore uses a <strong>one-tier corporate tax system</strong>. Companies pay tax on their profits, and when those after-tax profits are paid out as dividends, they are <em>not</em> taxed again at the shareholder level. So a dividend from an SGX-listed Singapore company arrives with no further tax to pay, and nothing to declare.</p>
+<h2>What about REIT distributions?</h2>
+<p>Distributions from <a href="/reits/">Singapore REITs</a> are generally <strong>tax-exempt for individuals</strong> holding units in their personal capacity. Different rules can apply if you hold them through a business or as a trading activity.</p>
+<h2>The nuance: foreign stocks</h2>
+<p>The tax-free treatment applies to <em>Singapore</em> dividends. If you own foreign shares, the <strong>source country may withhold tax</strong> before the dividend reaches you. The most common example: US-listed stocks withhold <strong>30%</strong> on dividends for Singapore residents (there is no US–Singapore tax treaty to reduce it). This does not apply to SGX-listed Singapore companies — but it is worth knowing before you buy US dividend stocks for income.</p>
+<h2>When could Singapore tax apply?</h2>
+<p>For ordinary investors buying and holding SGX stocks, dividends and capital gains are not taxed. Tax can enter the picture in narrower cases — for instance if you are assessed as <em>trading</em> shares as a business rather than investing — but that is the exception, not the rule for a typical dividend investor.</p>
+<p>Because the yield you see is close to the yield you keep, comparing SGX payers is refreshingly simple — start with the <a href="/dividends/">best dividend stocks</a> page.</p>
+<p style="font-size:14px;color:var(--muted)"><em>This is general information, not tax advice. For your own situation, check <a href="https://www.iras.gov.sg/" target="_blank" rel="noopener nofollow">IRAS</a> or a qualified tax professional.</em></p>`,
+    faqs: [
+      { q: `Do I need to pay tax on dividends from Singapore stocks?`, a: `No. Under Singapore's one-tier corporate tax system, dividends from SGX-listed Singapore-resident companies are tax-exempt for shareholders, and there is no capital-gains tax. You generally do not need to declare them.` },
+      { q: `Are dividends from US stocks taxed for Singapore investors?`, a: `Yes — the US withholds 30% on dividends paid to Singapore residents, as there is no US–Singapore tax treaty to reduce the rate. This is separate from Singapore, which does not tax the dividend again.` },
+      { q: `Is there capital-gains tax in Singapore?`, a: `No. Singapore does not impose a capital-gains tax, so profits from selling shares are generally not taxable for individual investors.` },
+    ],
+  },
 ];
 function guidePage(g) {
   const faqHTML = (g.faqs && g.faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${g.faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
