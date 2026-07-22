@@ -545,6 +545,8 @@ const STYLE = `
   .calc input,.calc select{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ink)}
   .calc input:focus,.calc select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   .calc-out{margin-top:16px;display:flex;gap:14px;flex-wrap:wrap} .calc-out .bigstat{min-width:140px}
+  .calc-out .bigstat .v{font-size:26px;letter-spacing:-.015em;white-space:nowrap}
+  #swKeepBox .k,#swNewBox .k{min-height:2.5em}
   .chartwrap{margin-top:6px} .leg{display:flex;gap:18px;font-size:12px;color:var(--muted);margin:2px 0 10px}
   .leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
   .stepup tr.hl td{background:var(--accent-soft)} .stepup tr.hl td:first-child{font-weight:700}
