@@ -240,6 +240,28 @@ function fetchGoogleNews(name) {
   const merged = [...good, ...rest.slice(0, Math.max(0, 3 - good.length))];   // prefer quality outlets; backfill lightly so it's never empty
   return merged.slice(0, 6);
 }
+// General Singapore-market news — a single broad, recency-biased query so the /news/ feed always has fresh
+// daily market headlines even when no individual tracked counter published news. Quality outlets ONLY.
+function fetchMarketNews() {
+  const q = encodeURIComponent('(SGX OR "Straits Times Index" OR "Singapore shares" OR "Singapore stocks" OR "Singapore market") when:4d');
+  let xml; try { xml = execFileSync('curl', ['-s','-m','20','-A',UA, `https://news.google.com/rss/search?q=${q}&hl=en-SG&gl=SG&ceid=SG:en`], { maxBuffer: 12*1024*1024 }).toString('utf8'); } catch { return []; }
+  const out = [];
+  for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const it = m[1];
+    let title = decodeEntities((it.match(/<title>([\s\S]*?)<\/title>/)||[])[1] || '');
+    const link = ((it.match(/<link>([\s\S]*?)<\/link>/)||[])[1] || '').trim();
+    const source = decodeEntities((it.match(/<source[^>]*>([\s\S]*?)<\/source>/)||[])[1] || '').trim();
+    const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
+    if (!title || !link) continue;
+    title = title.replace(new RegExp('\\s*-\\s*' + source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*$'), '').trim();
+    if (NEWS_JUNK.test(title)) continue;
+    if (!NEWS_OK.has(source)) continue;                       // general feed = reputable outlets only
+    let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
+    if (!dateISO) continue;
+    out.push({ title, link, dateISO, source, name: 'Singapore market' });
+  }
+  return out.slice(0, 25);
+}
 // ---------- Singapore Savings Bonds (MAS) ----------
 function getMAS(path) {
   const out = execFileSync('curl', ['-s','-m','30','-A',UA,'-H','Accept: application/json','--compressed', `${MAS}/${path}`], { maxBuffer: 16*1024*1024 });
@@ -819,7 +841,7 @@ function newsPage(items) {
   const PER = 15;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore stock market news</h1>
-    <p class="sub" style="margin-bottom:6px">The latest news on SGX-listed companies — updated daily.</p>
+    <p class="sub" style="margin-bottom:6px">The latest on the Singapore market and SGX-listed companies — refreshed through the day.</p>
   </section>
   <div class="newslist" id="newswrap">
 ${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</span></a>`).join('\n')}
@@ -1837,6 +1859,14 @@ for (const c of yTargets) {                                                // 2)
 }
 if (!SKIP_YAHOO) console.log(`Enrichment: dividends ${yFixed}/${yTargets.length} · news ${yNews} (Google→Yahoo)`);
 
+// General Singapore-market news feed (cached like everything else so push builds keep it).
+let marketNews = Array.isArray(cache.__market) ? cache.__market : [];
+if (!SKIP_YAHOO) {
+  const mn = fetchMarketNews();
+  if (mn.length) { marketNews = mn; fresh.__market = mn; }
+  console.log(`Market news: ${mn.length} items fetched (${marketNews.length} in feed)`);
+}
+
 // Fundamentals (market cap, P/E, P/B, EPS, 52-week) for ALL listed counters — batched, ~15 calls.
 if (!SKIP_YAHOO) {
   const cr = yahooCrumb();
@@ -1878,17 +1908,21 @@ const trending = [...listed].filter(c => c.cur==='SGD' && _turnover(c) > 0)
 // Hub "Latest news": curate to the biggest, best-known counters + whitelisted outlets only — avoids obscure
 // micro-caps and ambiguous-ticker false matches (e.g. "GRC" pulling Singapore political news).
 const _newsSlugs = new Set([...listed].filter(c => c.fund && c.fund.mktCap).sort((a,b) => b.fund.mktCap - a.fund.mktCap).slice(0, 60).map(c => c.slug));
-const hubNews = companies.filter(c => _newsSlugs.has(c.slug) && c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, slug: c.slug, name: c.name, source: n.source || '' })))
-  .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
-  .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)   // de-dupe identical headlines across stocks
-  .slice(0, 5);
-// Full aggregated feed for the /news/ page (quality outlets, newest first, de-duped).
-const newsFeed = companies.filter(c => c.news && c.news.length)
-  .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, source: n.source || '', name: c.name, slug: c.slug })))
-  .sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)
-  .filter((n,i,arr) => arr.findIndex(x => x.title === n.title) === i)
-  .slice(0, 60);
+const _dedupe = (arr) => arr.filter((n,i) => arr.findIndex(x => x.title === n.title) === i);   // keep first (newest, post-sort)
+const marketItems = (marketNews || []).filter(n => n.dateISO && NEWS_OK.has(n.source) && !NEWS_JUNK.test(n.title))
+  .map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, source: n.source || '', name: 'Singapore market', slug: null }));
+// Homepage "Latest news": general market feed + top-counter news, newest first.
+const hubNews = _dedupe([
+  ...marketItems,
+  ...companies.filter(c => _newsSlugs.has(c.slug) && c.news && c.news.length)
+    .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, slug: c.slug, name: c.name, source: n.source || '' }))),
+].sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)).slice(0, 5);
+// Full aggregated feed for the /news/ page: general market feed + every counter's news, newest first, de-duped.
+const newsFeed = _dedupe([
+  ...marketItems,
+  ...companies.filter(c => c.news && c.news.length)
+    .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, source: n.source || '', name: c.name, slug: c.slug }))),
+].sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)).slice(0, 60);
 const hub = { stockCount: listed.length, divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
   ssbLo: ssb && ssb.current ? ssb.current.y1 : null, ssbHi: ssb && ssb.current ? ssb.current.y10 : null,
   trending, trendingCount: trending.length, news: hubNews };

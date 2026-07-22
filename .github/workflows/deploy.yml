@@ -7,8 +7,13 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '30 0 * * *'     # 00:30 UTC = 08:30 SGT, daily     — morning news/fundamentals refresh (incl. weekends)
-    - cron: '30 10 * * 1-5'  # 10:30 UTC = 18:30 SGT, Mon–Fri   — after SGX close: capture the day's closing prices
+    # Every ~4h so news (incl. the general Singapore-market feed) stays fresh through the day.
+    # GitHub cron is best-effort and can run 1–3h late, so the spread also absorbs those delays.
+    - cron: '30 0 * * *'    # 08:30 SGT — morning
+    - cron: '30 4 * * *'    # 12:30 SGT — midday
+    - cron: '30 8 * * *'    # 16:30 SGT — before SGX close
+    - cron: '30 10 * * 1-5' # 18:30 SGT (Mon–Fri) — after SGX close: capture closing prices
+    - cron: '30 13 * * *'   # 21:30 SGT — evening (post-close news + US pre-market)
   workflow_dispatch:
     inputs:
       alerts_test:
