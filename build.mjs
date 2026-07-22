@@ -1352,7 +1352,8 @@ import('https://esm.sh/@supabase/supabase-js@2').then(async function(m){
   const nextTxt = next ? ` Next ex-date ${pretty(next.exISO)} (${money(next.ccy,next.amt)}).` : '';
   return shell(`${c.name}${c.ticker?' ('+c.ticker+')':''} Share Price, Dividends & Ex-Dates | StockKaki`,
     `${c.name}${c.ticker?' ('+c.ticker+')':''} — ${c.price?`last price ${pxf(CS,c.price)}, `:''}${c.yieldPct?`dividend yield ${c.yieldPct.toFixed(2)}%, `:''}dividend history and ex-dates on SGX.${nextTxt} Updated daily.`,
-    `${SITE}/stock/${c.slug}/`, body, tabScript);
+    `${SITE}/stock/${c.slug}/`, body, tabScript,
+    (typeof ogStockSet !== 'undefined' && ogStockSet.has(c.slug)) ? `/og/stock/${c.slug}.png` : '/og.png');
 }
 
 // Allotment tracker — did the latest issue fully allot, or was it balloted?
@@ -1900,10 +1901,26 @@ for (const entry of readdirSync(out)) rmSync(new URL(entry, out), { recursive: t
 for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png', 'moomoo.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
 mkdirSync(new URL('og/', out), { recursive: true });   // per-page social cards (assets/og/*.png → /og/*.png)
 try { const ogDir = new URL('assets/og/', import.meta.url); for (const f of readdirSync(ogDir)) if (f.endsWith('.png')) copyFileSync(new URL(f, ogDir), new URL(`og/${f}`, out)); } catch {}
+try { const sd = new URL('assets/og/stock/', import.meta.url); mkdirSync(new URL('og/stock/', out), { recursive: true }); for (const f of readdirSync(sd)) if (f.endsWith('.png')) copyFileSync(new URL(f, sd), new URL(`og/stock/${f}`, out)); } catch {}   // per-stock share cards
 writeFileSync(new URL('index.html', out), homepage(listed, index, hub, upcoming));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
+
+// Per-stock OG share cards: the top-N counters by market cap get a data-rich card; the rest use the generic /og.png.
+const OG_TOP_N = 200;
+const ogStocks = listed.filter(c => c.fund && c.fund.mktCap)
+  .sort((a, b) => capSGD(b.fund.cur || b.cur, b.fund.mktCap) - capSGD(a.fund.cur || a.cur, a.fund.mktCap))
+  .slice(0, OG_TOP_N);
+const ogStockSet = new Set(ogStocks.map(c => c.slug));
+mkdirSync(new URL('api/', out), { recursive: true });
+writeFileSync(new URL('api/og-stocks.json', out), JSON.stringify(ogStocks.map(c => ({
+  slug: c.slug, name: c.name, ticker: c.ticker || '', cur: csym(c.cur),
+  yield: c.yieldPct != null ? +c.yieldPct.toFixed(2) : null,
+  ttm: (c.ttm > 0 && !c.divIncomplete) ? +c.ttm.toFixed(4) : null,
+  type: c.isReit ? 'REIT' : c.secType === 'etfs' ? 'ETF' : 'Stock',
+  mcap: fmtCap(c.fund.cur || c.cur, c.fund.mktCap) || ''
+}))));
 
 let n = 0;
 for (const c of companies) {
