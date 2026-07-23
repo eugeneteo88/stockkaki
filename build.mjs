@@ -374,7 +374,7 @@ const WA = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d=
 const ACCT_IC = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 // TODO(Eugene): paste your WhatsApp channel/community invite link here to activate the "Join channel" button.
 const WHATSAPP_URL = 'https://whatsapp.com/channel/';
-const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/news/">News</a><a href="/guides/">Guides</a>`;
+const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/t-bills/">T-bills</a><a href="/news/">News</a><a href="/guides/">Guides</a>`;
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/">StockKaki<span class="bdot">.</span></a>
