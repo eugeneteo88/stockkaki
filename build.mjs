@@ -316,6 +316,27 @@ function fetchSGSYields() {
 }
 const monthAdd = (ym, n) => { let [y,m] = ym.split('-').map(Number); m += n; y += Math.floor((m-1)/12); m = ((m-1)%12+12)%12+1; return `${MONTHS[m-1]} ${y}`; };
 
+// ---------- Singapore Treasury Bills (MAS auctions) ----------
+// Retail T-bills are product_type "B": issue codes BS…(6-month) and BY…(1-year). product_type "M" = MAS Bills (institutional) — excluded.
+function fetchTBills() {
+  let recs;
+  // sort=auction_date desc → newest first; the space MUST be %20-encoded or MAS ignores it and returns the oldest rows
+  try { recs = getMAS('listbondsandbills?rows=200&sort=auction_date%20desc').result.records; } catch { return null; }
+  const B = (recs || []).filter(r => r.product_type === 'B' && (r.auction_tenor === 0.5 || r.auction_tenor === 1))
+    .sort((a, b) => a.auction_date < b.auction_date ? 1 : -1);   // newest auction first (defensive)
+  if (!B.length) return null;
+  const done = (r) => r.cutoff_yield > 0;                                   // auction whose results are published
+  const tenor = (t) => B.filter(r => r.auction_tenor === t);
+  const six = tenor(0.5), one = tenor(1);
+  const latest = (arr) => arr.find(done) || null;                          // newest with a cut-off yield
+  const next = [...B].filter(r => r.auction_date >= TODAY).sort((a,b) => a.auction_date < b.auction_date ? -1 : 1)[0] || null;
+  return {
+    l6: latest(six), l1: latest(one), next,
+    hist6: six.filter(done).slice(0, 12),                                   // recent 6-month results (main retail product)
+    trend: six.filter(done).slice(0, 14).reverse().map(r => ({ y: r.cutoff_yield, iso: r.auction_date })),
+  };
+}
+
 // Exact normalised match only. (A loose startsWith() fallback used to mis-attach e.g.
 // "Keppel Pacific Oak US REIT" → "Keppel Ltd" because both start with "keppel".)
 const matchTicker = (name, map) => { const k = secNorm(name); return k && map.has(k) ? map.get(k) : null; };
@@ -778,6 +799,7 @@ const CAT_IC = {
   hy:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>`,
   stk:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M19 9l2 2-2 2M19 15l2 2-2 2" opacity="0"/><circle cx="20" cy="6" r="1.6"/><circle cx="20" cy="12" r="1.6"/></svg>`,
   bc:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.4 7 21l5-3 5 3-1.5-8.6"/></svg>`,
+  tb:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 12h.01M18 12h.01"/></svg>`,
 };
 const catCard = (href, ic, title, count, desc) => `    <a class="cat" href="${href}"><span class="ci">${CAT_IC[ic]}</span><span style="min-width:0"><span class="ct">${title}${count!=null?`<span class="cn">${count}</span>`:''}</span><span class="cd">${desc}</span></span></a>`;
 const trCard = (c) => {
@@ -810,6 +832,7 @@ function homepage(listed, index, hub, upcoming) {
     catCard('/etfs/', 'etf', 'Best ETFs', hub.etfCount, 'SGX ETFs ranked by distribution yield.'),
     catCard('/dividend-calendar/', 'cal', 'Dividend calendar', null, 'Upcoming ex-dates &amp; pay dates, in order.'),
     catCard('/ssb/', 'ssb', 'Savings Bonds (SSB)', null, hub.ssbLo!=null?`This month <b>${hub.ssbLo.toFixed(2)}%</b> → <b>${hub.ssbHi.toFixed(2)}%</b>. Rates, swap &amp; calculator.`:'Rates, step-up schedule, swap &amp; calculator.'),
+    catCard('/t-bills/', 'tb', 'T-bill rates', null, hub.tb6!=null?`Latest 6-mo <b>${hub.tb6.toFixed(2)}%</b>. Cut-off yields, next auction & history.`:'Latest 6-month & 1-year auction cut-off yields.'),
     catCard('/dividends/', 'hy', 'Highest yield', hub.hyCount, 'Top yielders — with a risk note on the specials.'),
   ].join('\n');
   const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
@@ -1213,6 +1236,101 @@ sortBy('mc');
   return shell(`Singapore Blue-Chip Stocks ${YEAR} — Largest SGX Companies (STI) | StockKaki`,
     `The ${sorted.length} largest SGX-listed companies by market cap — Singapore's blue-chip stocks and STI heavyweights. Live price, market cap, P/E and yield. Free, updated daily.`,
     SITE + '/blue-chips/', body, script, '/og/screener.png');
+}
+
+// ---------- Singapore T-bill rates (latest MAS auction cut-off yields) ----------
+function tbillsPage(tb) {
+  const mo = fullMonthYr(TODAY);
+  if (!tb || !tb.l6) {
+    const body = `  <section class="hero" style="padding:22px 0 2px"><h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore T-Bill Rates — ${mo}</h1><p class="sub">Live T-bill auction data from MAS is temporarily unavailable — please check back shortly.</p></section>`;
+    return shell(`Singapore T-Bill Rates ${YEAR} — Latest 6-Month & 1-Year Yields | StockKaki`, 'Latest Singapore Treasury Bill (T-bill) cut-off yields from MAS.', SITE + '/t-bills/', body);
+  }
+  const l6 = tb.l6, l1 = tb.l1, nx = tb.next;
+  const tenorName = (t) => t === 0.5 ? '6-month' : t === 1 ? '1-year' : `${t}-year`;
+  const nextHTML = nx
+    ? `<span class="ssb-status open"><span class="pulse"></span>Next auction · ${pretty(nx.auction_date)} · ${tenorName(nx.auction_tenor)} T-bill · issues ${pretty(nx.issue_date)}</span>`
+    : `<span class="ssb-status closed">Next auction date to be announced by MAS</span>`;
+  const histRows = tb.hist6.map(r =>
+    `        <tr><td class="date">${pretty(r.auction_date)}</td><td class="r amt">${r.cutoff_yield.toFixed(2)}%</td><td class="r yld">${r.bid_to_cover ? r.bid_to_cover.toFixed(2) + '×' : '—'}</td></tr>`).join('\n');
+
+  // 6-month cut-off yield trend (inline SVG, no libs)
+  const T = tb.trend, n = T.length;
+  let chart = '';
+  if (n >= 2) {
+    const vals = T.map(p => p.y);
+    const lo = Math.floor(Math.min(...vals) * 10) / 10, hi = Math.ceil(Math.max(...vals) * 10) / 10, span = (hi - lo) || 1;
+    const W = 640, H = 200, PL = 6, PR = 46, PT = 14, PB = 26;
+    const X = i => (PL + (W - PL - PR) * (n > 1 ? i / (n - 1) : 0));
+    const Y = v => (PT + (H - PT - PB) * (1 - (v - lo) / span));
+    const pts = T.map((p, i) => X(i).toFixed(1) + ',' + Y(p.y).toFixed(1)).join(' ');
+    const last = T[n - 1];
+    chart = `  <div class="h2">6-month T-bill yield trend</div>
+  <div class="chartwrap">
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Singapore 6-month T-bill cut-off yield trend">
+      <line x1="${PL}" y1="${Y(hi).toFixed(1)}" x2="${W - PR}" y2="${Y(hi).toFixed(1)}" stroke="var(--line)"/>
+      <line x1="${PL}" y1="${Y(lo).toFixed(1)}" x2="${W - PR}" y2="${Y(lo).toFixed(1)}" stroke="var(--line)"/>
+      <text x="${W - PR + 6}" y="${(Y(hi) + 4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'IBM Plex Mono',monospace">${hi.toFixed(1)}%</text>
+      <text x="${W - PR + 6}" y="${(Y(lo) + 4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'IBM Plex Mono',monospace">${lo.toFixed(1)}%</text>
+      <polyline fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>
+      <circle cx="${X(n - 1).toFixed(1)}" cy="${Y(last.y).toFixed(1)}" r="3.5" fill="var(--accent)"/>
+      <text x="${PL}" y="${H - 8}" fill="var(--muted)" font-size="11" font-family="'IBM Plex Mono',monospace">${monthYr(T[0].iso)}</text>
+      <text x="${(W - PR).toFixed(1)}" y="${H - 8}" fill="var(--muted)" font-size="11" text-anchor="end" font-family="'IBM Plex Mono',monospace">${monthYr(last.iso)}</text>
+    </svg>
+  </div>
+  <p class="metaline" style="font-size:12px">Cut-off yield at each 6-month T-bill auction — the annualised return the last successful bidder locked in. Source: MAS.</p>`;
+  }
+
+  const faqs = [
+    { q: `What is the latest Singapore T-bill rate?`, a: `The most recent 6-month T-bill (${l6.issue_code}, auctioned ${pretty(l6.auction_date)}) had a cut-off yield of ${l6.cutoff_yield.toFixed(2)}% per year.${l1 ? ` The latest 1-year T-bill (${l1.issue_code}, ${pretty(l1.auction_date)}) came in at ${l1.cutoff_yield.toFixed(2)}%.` : ''} The cut-off yield is the effective annualised return you earn if allotted.` },
+    { q: `How do Singapore T-bills work?`, a: `A T-bill is a short-term Singapore Government security. You buy it at a discount to its face value and are repaid the full face value at maturity — the difference is your return. There are two tenors: 6-month and 1-year. They are as low-risk as it gets, being fully backed by the AAA-rated Singapore Government.` },
+    { q: `How do I buy T-bills in Singapore?`, a: `Apply through DBS/POSB, OCBC or UOB (internet banking or ATM) during the auction window, using cash, SRS, or CPF-OA/CPF-SA funds. The minimum is S$1,000, in multiples of S$1,000. Most retail investors submit a "non-competitive" bid and are allotted at the cut-off yield.` },
+    { q: `Can I buy T-bills with CPF?`, a: `Yes. T-bills can be bought with CPF Ordinary Account (CPF-OA) and CPF Special Account (CPF-SA) funds, as well as cash and SRS. This makes them a popular way to earn a fixed return on idle CPF-OA savings — though you should weigh it against the CPF-OA interest you give up.` },
+    { q: `Are T-bills or Singapore Savings Bonds better?`, a: `It depends on your needs. T-bills lock in a fixed rate for 6 or 12 months and can be bought with CPF; SSBs are flexible — redeemable any month with no penalty — and step up the longer you hold. See our full SSB vs T-bills comparison for the details.` },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const ld = { "@context":"https://schema.org","@graph":[
+    { "@type":"BreadcrumbList","itemListElement":[
+      { "@type":"ListItem","position":1,"name":"StockKaki","item":`${SITE}/` },
+      { "@type":"ListItem","position":2,"name":"Singapore T-Bill Rates","item":`${SITE}/t-bills/` } ] },
+    { "@type":"FAQPage","mainEntity":faqs.map(f => ({ "@type":"Question","name":f.q,"acceptedAnswer":{ "@type":"Answer","text":f.a } })) } ] };
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
+
+  const body = `  <section class="hero" style="padding:22px 0 2px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore T-Bill Rates — ${mo}</h1>
+    <p class="sub" style="margin-bottom:0">The latest 6-month Singapore T-bill (${l6.issue_code}) cut off at <b>${l6.cutoff_yield.toFixed(2)}%</b> per year, auctioned ${pretty(l6.auction_date)}.${l1 ? ` The latest 1-year T-bill cut off at <b>${l1.cutoff_yield.toFixed(2)}%</b>.` : ''} Rates, next auction and yield history below — from MAS, updated every auction.</p>
+  </section>
+  <div class="ssb-card">
+    ${nextHTML}
+    <div class="ssb-stats">
+      <div class="bigstat"><div class="k">6-month cut-off yield</div><div class="v">${l6.cutoff_yield.toFixed(2)}%</div><div class="cap">${l6.issue_code} · auctioned ${pretty(l6.auction_date)}</div></div>
+      <div class="bigstat"><div class="k">1-year cut-off yield</div><div class="v">${l1 ? l1.cutoff_yield.toFixed(2) + '%' : '—'}</div><div class="cap">${l1 ? l1.issue_code + ' · auctioned ' + pretty(l1.auction_date) : 'quarterly issue'}</div></div>
+      <div class="bigstat alt"><div class="k">Next auction</div><div class="v" style="font-size:20px;margin-top:10px">${nx ? prettyShort(nx.auction_date) : '—'}</div><div class="cap">${nx ? tenorName(nx.auction_tenor) + ' · issues ' + pretty(nx.issue_date) : 'to be announced'}</div></div>
+    </div>
+    <div class="facts">
+      <span class="fact">Min <b>S$1,000</b></span>
+      <span class="fact">Cash · <b>SRS</b> · <b>CPF-OA/SA</b></span>
+      <span class="fact"><b>6-month</b> or <b>1-year</b></span>
+      <span class="fact"><b>SG-Government</b> backed</span>
+      <span class="fact">Returns <b>tax-free</b></span>
+    </div>
+    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM), or with SRS or CPF funds, during the auction window. Applications generally close about a day before the auction (earlier for CPF) — check your bank's cut-off. Rates are set at auction, so they're the same wherever you apply.</p>
+  </div>
+  <div class="intro" style="margin-top:16px">A <b>Treasury Bill (T-bill)</b> is a short-term Singapore Government security — as safe as a <a href="/ssb/">Savings Bond</a>, but it works differently. You buy it at a <b>discount</b> and are repaid the full face value at maturity; the difference is your return, quoted above as the annualised <b>cut-off yield</b>. MAS auctions the 6-month T-bill roughly every two weeks and the 1-year about once a quarter.</div>
+  <div class="h2">Recent 6-month T-bill auctions</div>
+  <div class="card"><table class="stepup">
+    <thead><tr><th>Auction date</th><th class="r">Cut-off yield</th><th class="r">Bid-to-cover</th></tr></thead>
+    <tbody>
+${histRows}
+    </tbody>
+  </table></div>
+  <p class="metaline" style="font-size:12px">Bid-to-cover = total bids ÷ amount offered; higher means stronger demand. A higher demand auction often pushes the cut-off yield down. Source: MAS.</p>
+${chart}
+  <div class="intro" style="margin-top:18px"><b>T-bill or Savings Bond?</b> T-bills lock in a fixed rate for 6–12 months and can be bought with CPF; SSBs are flexible — redeem any month with no penalty — and step up the longer you hold. Read the full <a href="/guides/singapore-savings-bonds-vs-t-bills/">SSB vs T-bills comparison</a>, or check the latest <a href="/ssb/">Singapore Savings Bond rates</a>.</div>
+  ${faqHTML}
+  ${jsonLd}`;
+  return shell(`Singapore T-Bill Rates ${YEAR} — Latest 6-Month & 1-Year Cut-off Yields | StockKaki`,
+    `The latest Singapore T-bill rates from MAS: 6-month and 1-year cut-off yields, the next auction date, and full yield history. Clean, free, updated every auction.`,
+    SITE + '/t-bills/', body, '', '/og/ssb.png');
 }
 
 // ---------- dividend calendar (upcoming ex-dates, chronological) ----------
@@ -1649,7 +1767,7 @@ function ssbPage(ssb, sgs) {
       <span class="fact"><b>SG-Government</b> backed</span>
       <span class="fact">Interest paid <b>every 6 months</b></span>
     </div>
-    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds. Rates are the same at every bank — they're set by MAS.</p>
+    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds. Rates are the same at every bank — they're set by MAS. Prefer a fixed 6–12 month rate you can also buy with CPF? Compare the latest <a href="/t-bills/">Singapore T-bill rates</a>.</p>
   </div>
 ${projCard(ssb, sgs)}
   <div class="h2">How much you'd earn</div>
@@ -1776,7 +1894,7 @@ const GUIDES = [
     body: `<p>Both <strong>Singapore Savings Bonds (SSBs)</strong> and <strong>Treasury Bills (T-bills)</strong> are issued by the Singapore Government, so both are about as low-risk as an investment gets. But they work differently, and the right one depends on your time horizon and how much flexibility you want.</p>
 <h2>What each one is</h2>
 <p><strong>Singapore Savings Bonds</strong> are long-dated (up to 10 years) but flexible. Interest <em>steps up</em> the longer you hold, and you can redeem in any month with no penalty and get your capital back plus accrued interest. A new issue is offered every month.</p>
-<p><strong>Treasury Bills</strong> are short-dated — <strong>6-month</strong> or <strong>1-year</strong>. You buy them at a discount to face value and receive the full face value at maturity; the difference is your return. They are sold by auction, and you generally cannot redeem early (you would have to sell on the secondary market).</p>
+<p><strong>Treasury Bills</strong> are short-dated — <strong>6-month</strong> or <strong>1-year</strong>. You buy them at a discount to face value and receive the full face value at maturity; the difference is your return. They are sold by auction, and you generally cannot redeem early (you would have to sell on the secondary market). See the latest <a href="/t-bills/">Singapore T-bill rates</a> for current cut-off yields.</p>
 <h2>The key differences</h2>
 <ul>
 <li><strong>Tenor</strong> — SSB: up to 10 years, hold as long or short as you like. T-bill: fixed 6-month or 1-year.</li>
@@ -2125,6 +2243,7 @@ const secByNorm = new Map();
 for (const s of secList) { const k = secNorm(s.name); if (k && !secByNorm.has(k)) secByNorm.set(k, s); }
 const ssb = fetchSSB();           // Singapore Savings Bonds (MAS)
 const sgs = fetchSGSYields();     // SGS benchmark yields → project the next SSB issue
+const tbills = fetchTBills();     // Singapore Treasury Bill auction cut-off yields (MAS)
 const raw = await fetchRaw(50);   // ~5-6 years of history
 SCRIP = collectScrip(raw);        // stocks whose trailing distributions hide the amount (scrip/DRP)
 const rows = parseDividends(raw);
@@ -2277,6 +2396,7 @@ const newsFeed = _dedupe([
 ].sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)).slice(0, 60);
 const hub = { stockCount: listed.length, divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
   ssbLo: ssb && ssb.current ? ssb.current.y1 : null, ssbHi: ssb && ssb.current ? ssb.current.y10 : null,
+  tb6: tbills && tbills.l6 ? tbills.l6.cutoff_yield : null,
   trending, trendingCount: trending.length, news: hubNews };
 
 const out = new URL('./dist/', import.meta.url);
@@ -2375,6 +2495,8 @@ mkdirSync(new URL('trending/', out), { recursive: true });
 writeFileSync(new URL('trending/index.html', out), trendingPage(hub.trending));
 mkdirSync(new URL('ssb/', out), { recursive: true });
 writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb, sgs));
+mkdirSync(new URL('t-bills/', out), { recursive: true });
+writeFileSync(new URL('t-bills/index.html', out), tbillsPage(tbills));
 mkdirSync(new URL('account/', out), { recursive: true });
 writeFileSync(new URL('account/index.html', out), accountPage());
 mkdirSync(new URL('confirm/', out), { recursive: true });
@@ -2387,7 +2509,7 @@ writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r =
 writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
 if (ssb && ssb.current) writeFileSync(new URL('api/ssb.json', out), JSON.stringify({ code: ssb.current.code, y1: ssb.current.y1, y10: ssb.current.y10, applyFmt: ssb.current.applyFmt, issueFmt: ssb.current.issueFmt }));   // for new-SSB alerts
 
-const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
