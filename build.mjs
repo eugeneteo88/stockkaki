@@ -1854,6 +1854,36 @@ const GUIDES = [
     ],
   },
   {
+    slug: 'how-to-buy-etf-in-singapore',
+    title: `How to Buy an ETF in Singapore (Beginner's Guide) | StockKaki`,
+    desc: `A step-by-step guide to buying ETFs in Singapore: choosing an ETF, opening a brokerage, Regular Savings Plans for dollar-cost averaging, and the US vs Ireland-domiciled withholding-tax difference.`,
+    h1: `How to buy an ETF in Singapore`,
+    blurb: `Pick an ETF, open a broker, and start — including Regular Savings Plans and the withholding-tax trick that saves you money.`,
+    body: `<p>An <strong>ETF</strong> (exchange-traded fund) holds a whole basket of stocks or bonds in one unit, and it trades on an exchange just like a share. Buying one in Singapore is the same process as buying a stock — here it is, start to finish.</p>
+<h2>Step 1 — Choose an ETF</h2>
+<p>Decide what you want exposure to first:</p>
+<ul>
+<li><strong>The Singapore market</strong> — an <strong>STI ETF</strong> tracks the 30 <a href="/blue-chips/">blue-chip STI companies</a> in a single trade. Two trade on the SGX: the SPDR STI ETF (ES3) and the Nikko AM STI ETF (G3B).</li>
+<li><strong>The US / global market</strong> — an <strong>S&amp;P 500</strong> or all-world ETF gives broad global growth. These are listed overseas, so you need a broker that offers US or London-listed markets.</li>
+<li><strong>Income</strong> — bond, REIT and dividend ETFs distribute regularly. Compare the SGX-listed ones ranked by yield on the <a href="/etfs/">best Singapore ETFs</a> page.</li>
+</ul>
+<h2>Step 2 — Open a brokerage account</h2>
+<p>You need a broker to place trades. As with stocks, there are two account types: <strong>CDP-linked</strong> (shares held in your own name — only for SGX-listed ETFs like the STI ETF) and <strong>custodian</strong> (held by the broker; usually lower fees, and required for overseas ETFs). Popular choices include DBS Vickers, moomoo, Tiger, FSMOne and Interactive Brokers.</p>
+<h2>Step 3 — Consider a Regular Savings Plan (RSP)</h2>
+<p>This is the ETF investor's best friend in Singapore. An <strong>RSP</strong> automatically invests a fixed sum every month — say S$100 or S$500 — buying more units when prices are low and fewer when high. This is <strong>dollar-cost averaging</strong>, and it removes the temptation to time the market. Many brokers and banks offer RSPs into the STI ETF and popular global ETFs. It is the simplest way for a beginner to build a position steadily.</p>
+<h2>Step 4 — Place the order</h2>
+<p>To buy a lump sum instead, search the ETF in your broker's app, choose <strong>buy</strong>, and pick a <strong>market order</strong> (fills immediately) or a <strong>limit order</strong> (fills only at your price or better). SGX ETFs trade in board lots, often 100 or 10 units.</p>
+<h2>A note on withholding tax (this can save you money)</h2>
+<p>For ETFs that hold <em>US</em> shares, where the fund is legally based matters. A <strong>US-domiciled</strong> ETF has <strong>30%</strong> tax withheld on its US dividends for Singapore investors; an <strong>Ireland-domiciled</strong> (UCITS) ETF holding the same shares is taxed at only <strong>15%</strong>. For long-term investors that gap compounds, so many Singaporeans prefer Ireland-domiciled ETFs (their tickers often end in a way your broker will show). Singapore-listed ETfs like the STI ETF are not affected, and Singapore itself charges <strong>no tax on the dividends or gains</strong> you receive.</p>
+<p>Once you own the ETF, distributions (if it is a distributing ETF) are paid automatically; accumulating ETFs reinvest internally instead. That is all there is to it.</p>`,
+    faqs: [
+      { q: `What is the best ETF for beginners in Singapore?`, a: `A common starting point is an STI ETF (ES3 or G3B) for instant exposure to Singapore's 30 blue chips, or a global/S&P 500 ETF for worldwide growth. Beginners often build the position gradually through a monthly Regular Savings Plan rather than one lump sum.` },
+      { q: `Can I buy the S&P 500 ETF in Singapore?`, a: `Yes — through a broker that offers US or London-listed markets. Note that a US-domiciled S&P 500 ETF has 30% US withholding tax on dividends for Singapore investors, while an Ireland-domiciled (UCITS) equivalent is taxed at 15%, which is why many locals choose the Ireland-domiciled version for the long term.` },
+      { q: `What is a Regular Savings Plan (RSP)?`, a: `An RSP automatically invests a fixed amount each month into an ETF (or stock), buying more units when prices are low and fewer when high. This dollar-cost averaging smooths out your entry price and removes the need to time the market — ideal for beginners.` },
+      { q: `Do ETFs in Singapore pay dividends?`, a: `Many do. Bond, REIT and dividend ETFs distribute regularly, while some equity ETFs "accumulate" — reinvesting income internally instead of paying it out. The SGX-listed distributing ETFs are ranked by yield on the StockKaki ETFs page.` },
+    ],
+  },
+  {
     slug: 'singapore-reits-explained',
     title: `Singapore REITs Explained: How S-REITs Work | StockKaki`,
     desc: `What Singapore REITs (S-REITs) are, why they yield more, the key numbers to check — distribution yield, gearing, occupancy, WALE — and the main risks. Plain English.`,
@@ -2328,7 +2358,7 @@ writeFileSync(new URL('etfs/index.html', out), listPage({
   title: `Best Singapore ETFs ${YEAR} — Top SGX ETFs by Dividend Yield | StockKaki`,
   desc: `SGX-listed ETFs ranked by distribution yield for ${YEAR} — STI, bond, REIT and dividend ETFs. Compare Singapore ETFs, clean and updated daily.`,
   h1: `Best ETFs in Singapore — ${YEAR}`, sub: `${etfList.length} SGX-listed ETFs that distribute, ranked by yield.`,
-  intro: `Exchange-traded funds (ETFs) let you own a whole basket of stocks or bonds in a single trade, and they trade on the SGX just like shares. Above are the <b>${etfList.length}</b> SGX-listed ETFs that currently distribute, ranked by trailing yield — useful for income. For growth, the underlying index matters more than the yield.`,
+  intro: `Exchange-traded funds (ETFs) let you own a whole basket of stocks or bonds in a single trade, and they trade on the SGX just like shares. Above are the <b>${etfList.length}</b> SGX-listed ETFs that currently distribute, ranked by trailing yield — useful for income. For growth, the underlying index matters more than the yield. New to this? See <a href="/guides/how-to-buy-etf-in-singapore/">how to buy an ETF in Singapore</a>.`,
   faqs: [
     { q: `What are the best ETFs in Singapore in ${YEAR}?`, a: 'Popular SGX ETFs include the Straits Times Index (STI) ETF and a range of bond, REIT and dividend ETFs. This page ranks the distributing SGX ETFs by yield — best for income; for growth, look at the underlying index rather than the yield.' },
     { q: 'Do Singapore ETFs pay dividends?', a: 'Many do — bond, REIT and dividend ETFs distribute regularly, while some equity ETFs accumulate instead. This list shows the distributing ones, ranked by yield.' },
