@@ -777,6 +777,7 @@ const CAT_IC = {
   ssb:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>`,
   hy:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>`,
   stk:  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M19 9l2 2-2 2M19 15l2 2-2 2" opacity="0"/><circle cx="20" cy="6" r="1.6"/><circle cx="20" cy="12" r="1.6"/></svg>`,
+  bc:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.4 7 21l5-3 5 3-1.5-8.6"/></svg>`,
 };
 const catCard = (href, ic, title, count, desc) => `    <a class="cat" href="${href}"><span class="ci">${CAT_IC[ic]}</span><span style="min-width:0"><span class="ct">${title}${count!=null?`<span class="cn">${count}</span>`:''}</span><span class="cd">${desc}</span></span></a>`;
 const trCard = (c) => {
@@ -803,6 +804,7 @@ function homepage(listed, index, hub, upcoming) {
   }).join('');
   const cards = [
     catCard('/stocks/', 'stk', 'All Singapore stocks', hub.stockCount, 'Every SGX counter — price, market cap &amp; P/E.'),
+    catCard('/blue-chips/', 'bc', 'Blue-chip stocks', null, 'The biggest SGX companies — the STI heavyweights.'),
     catCard('/dividends/', 'div', 'Best dividend stocks', hub.divCount, 'Every SGX payer ranked by dividend yield.'),
     catCard('/reits/', 'reit', 'Best REITs to buy', hub.reitCount, 'S-REITs &amp; trusts by distribution yield.'),
     catCard('/etfs/', 'etf', 'Best ETFs', hub.etfCount, 'SGX ETFs ranked by distribution yield.'),
@@ -1090,7 +1092,7 @@ ${sorted.map(stockRow).join('\n')}
   <div id="none" class="empty" style="display:none">No match.</div>
   <div class="pager" id="lpager"></div>
   <p class="metaline" style="font-size:12px">Market cap, P/E and day change from live market data; last price from the SGX. Updated daily.</p>
-  <div class="intro" style="margin-top:18px">The Singapore Exchange (SGX) is home to around <b>${uniq.length}</b> listed counters — from the big local banks and blue chips to REITs, business trusts and ETFs. Above is every one of them with live price, day change, market cap and P/E. Use the filters for Stocks, REITs or ETFs, sort by name / market cap / day change, or search any name or ticker. Tap any counter for its full page — price, dividends, ex-dates, fundamentals and news.</div>
+  <div class="intro" style="margin-top:18px">The Singapore Exchange (SGX) is home to around <b>${uniq.length}</b> listed counters — from the big local banks and <a href="/blue-chips/">blue chips</a> to REITs, business trusts and ETFs. Above is every one of them with live price, day change, market cap and P/E. Use the filters for Stocks, REITs or ETFs, sort by name / market cap / day change, or search any name or ticker. Tap any counter for its full page — price, dividends, ex-dates, fundamentals and news.</div>
   ${faqHTML}
   ${jsonLd}`;
   const script = `<script>
@@ -1131,6 +1133,86 @@ sortBy('n');
   return shell('All Singapore Stocks — Every SGX-Listed Company | StockKaki',
     `Browse all ~${list.length} SGX-listed Singapore stocks, REITs and ETFs — with live price, day change, market cap and P/E. Search, filter and sort. Free, updated daily.`,
     SITE + '/stocks/', body, script, '/og/screener.png');
+}
+
+// ---------- Singapore blue-chip stocks — the largest, most established SGX companies (an STI proxy), by market cap ----------
+function blueChipsPage(list) {
+  // de-dupe currency twins the same way the stocks hub does, so DBS / OCBC etc. appear once
+  const stripCur = (n) => n.replace(/\s*(?:S\$|US\$|U\$|SGD|USD|HKD|CNY|RMB|GBP|EUR|JPY|YEN\s?1k|CNY\s?1k|1k|10|100)\s*$/i,'').replace(/\s{2,}/g,' ').trim().toLowerCase();
+  const score = (c) => (c.cur==='SGD'?1e15:0) + (((c.fund&&c.fund.vol)||c.vol||0) * (c.price||0));
+  const bestBy = new Map();
+  for (const c of list) { const k = stripCur(c.name); const prev = bestBy.get(k); if (!prev || score(c) > score(prev)) bestBy.set(k, c); }
+  // second pass: collapse counters that share a ticker but have name variants (e.g. "Keppel Ltd." + "Keppel Corporation Ltd" = BN4)
+  const byTicker = new Map();
+  for (const c of bestBy.values()) { const k = c.ticker ? c.ticker.toUpperCase() : 'n:' + stripCur(c.name); const prev = byTicker.get(k); if (!prev || score(c) > score(prev)) byTicker.set(k, c); }
+  const uniq = [...byTicker.values()];
+  // blue chips = biggest, most established companies & trusts — exclude ETFs, require a market cap
+  const pool = uniq.filter(c => c.secType!=='etfs' && c.fund && c.fund.mktCap);
+  const N = 30;
+  const sorted = [...pool].sort((a,b) => capSGD(b.fund.cur||b.cur, b.fund.mktCap) - capSGD(a.fund.cur||a.cur, a.fund.mktCap)).slice(0, N);
+  const top5 = sorted.slice(0, 5).map(c => c.name);
+  const top5Txt = top5.length >= 5 ? `${top5.slice(0, 4).join(', ')} and ${top5[4]}` : top5.join(', ');
+  const faqs = [
+    { q: 'What are the blue-chip stocks in Singapore?', a: `Blue chips are the largest, most established and financially sound companies listed on the SGX — the heavyweights that anchor the Straits Times Index (STI). By market capitalisation the biggest right now are ${top5Txt}. This page ranks the top ${sorted.length} by market cap, updated daily.` },
+    { q: 'Are Singapore blue-chip stocks a good investment?', a: 'Blue chips are prized for stability, steady dividends and staying power through downturns rather than explosive growth. Many local blue chips — the banks, Singtel, ST Engineering — are popular income holdings because Singapore has no tax on dividends. As always, diversify and check each company’s fundamentals.' },
+    { q: 'What is the Straits Times Index (STI)?', a: 'The STI tracks the 30 largest and most liquid companies on the SGX — effectively Singapore’s blue-chip benchmark. This list closely mirrors it, ranked by market capitalisation. You can also buy the whole basket in a single trade via an STI ETF.' },
+    { q: 'How do I buy Singapore blue-chip stocks?', a: 'Through any SGX brokerage (DBS Vickers, moomoo, Tiger, Interactive Brokers and others), or with SRS funds. Many investors dollar-cost average into blue chips via a monthly regular-savings plan (RSP).' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 4px">Singapore blue-chip stocks — ${YEAR}</h1>
+    <p class="sub" style="margin-bottom:2px">The ${sorted.length} largest SGX-listed companies and trusts, ranked by market capitalisation — updated daily.</p>
+  </section>
+  <div class="intro" style="margin-top:14px">Blue chips are the biggest, most established companies on the SGX — the heavyweights that anchor the <b>Straits Times Index (STI)</b>: the local banks, Singtel, the exchange itself and other household names. They are prized for stability and steady, tax-free <a href="/dividends/">dividends</a> rather than explosive growth. Below are the <b>${sorted.length}</b> largest by market cap; tap any for its full page, or browse <a href="/stocks/">all SGX counters</a>.</div>
+  <div class="search" id="alltop" style="margin-top:16px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter blue chips…"></div>
+  <div class="lsort"><button data-sort="mc" class="on">Market cap</button><button data-sort="chg">% change</button><button data-sort="n">A–Z</button></div>
+  <div class="ltable cols-stocks" style="margin-top:12px">
+    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-chg" data-sort="chg">Change</span><span class="lr-mc" data-sort="mc">Market cap</span><span class="lr-pe" data-sort="pe">P/E</span></div>
+    <div id="tb">
+${sorted.map(stockRow).join('\n')}
+    </div>
+  </div>
+  <div id="none" class="empty" style="display:none">No match.</div>
+  <div class="pager" id="lpager"></div>
+  <p class="metaline" style="font-size:12px">Ranked by market capitalisation from live market data; last price from the SGX. A close proxy for the STI — updated daily.</p>
+  ${faqHTML}
+  ${jsonLd}`;
+  const script = `<script>
+const PER=30;
+const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
+let matches=[],page=1;
+function collect(){const v=q.value.trim().toLowerCase();
+ matches=[...tb.querySelectorAll('.lrow')].filter(r=>(!v||r.dataset.s.includes(v)));}
+function pageBtns(total){var out=[],add=function(p){out.push('<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>');};
+ add(1); if(page>3)out.push('<span class="pg-dots">…</span>');
+ for(var p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++)add(p);
+ if(page<total-2)out.push('<span class="pg-dots">…</span>');
+ if(total>1)add(total); return out.join('');}
+function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if(page>total)page=total;if(page<1)page=1;
+ tb.querySelectorAll('.lrow').forEach(r=>r.style.display='none');
+ matches.slice((page-1)*PER,page*PER).forEach(r=>r.style.display='');
+ none.style.display=matches.length?'none':'block';
+ if(total<2){pager.innerHTML='';}else{pager.innerHTML='<button class="pg" data-d="-1"'+(page===1?' disabled':'')+'>←</button>'+pageBtns(total)+'<button class="pg" data-d="1"'+(page===total?' disabled':'')+'>→</button>';}
+ if(scroll&&alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});}
+function apply(){collect();page=1;render(false);}
+q.addEventListener('input',apply);
+pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
+let sk='',sd=-1;
+function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n')?1:-1;}
+ const rows=[...tb.querySelectorAll('.lrow')];
+ rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
+ rows.forEach(r=>tb.appendChild(r));
+ document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
+ document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));
+ apply();}
+document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
+document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
+sortBy('mc');
+</script>`;
+  return shell(`Singapore Blue-Chip Stocks ${YEAR} — Largest SGX Companies (STI) | StockKaki`,
+    `The ${sorted.length} largest SGX-listed companies by market cap — Singapore's blue-chip stocks and STI heavyweights. Live price, market cap, P/E and yield. Free, updated daily.`,
+    SITE + '/blue-chips/', body, script, '/og/screener.png');
 }
 
 // ---------- dividend calendar (upcoming ex-dates, chronological) ----------
@@ -2208,6 +2290,8 @@ for (const c of companies) {
 }
 mkdirSync(new URL('stocks/', out), { recursive: true });
 writeFileSync(new URL('stocks/index.html', out), stocksPage(listed));
+mkdirSync(new URL('blue-chips/', out), { recursive: true });
+writeFileSync(new URL('blue-chips/index.html', out), blueChipsPage(listed));
 mkdirSync(new URL('dividends/', out), { recursive: true });
 writeFileSync(new URL('dividends/index.html', out), listPage({
   title: `Best Dividend Stocks in Singapore ${YEAR} — Highest SGX Dividend Yields | StockKaki`,
@@ -2273,7 +2357,7 @@ writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r =
 writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
 if (ssb && ssb.current) writeFileSync(new URL('api/ssb.json', out), JSON.stringify({ code: ssb.current.code, y1: ssb.current.y1, y10: ssb.current.y10, applyFmt: ssb.current.applyFmt, issueFmt: ssb.current.issueFmt }));   // for new-SSB alerts
 
-const urls = [SITE + '/', SITE + '/stocks/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
