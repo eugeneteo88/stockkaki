@@ -1,0 +1,103 @@
+// StockKaki daily growth report — GSC indexing/queries + GA organic.
+//   node daily-report.mjs            → print to console
+//   (with RESEND_API_KEY set)        → also email REPORT_TO (default eugeneteo1988@gmail.com)
+import { readFileSync } from 'node:fs';
+import { createSign } from 'node:crypto';
+const KEY = JSON.parse(readFileSync(new URL('./.ga-key.json', import.meta.url), 'utf8'));
+const GA_PROPERTY = '546290038';
+const SITE = 'sc-domain:stockkaki.com';
+const { RESEND_API_KEY, REPORT_TO } = process.env;
+const b64url = (b) => Buffer.from(b).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+
+async function token(scope){
+  const now = Math.floor(Date.now()/1000);
+  const head = b64url(JSON.stringify({alg:'RS256',typ:'JWT'}));
+  const claim = b64url(JSON.stringify({iss:KEY.client_email,scope,aud:KEY.token_uri,iat:now,exp:now+3600}));
+  const s = createSign('RSA-SHA256'); s.update(head+'.'+claim); s.end();
+  const jwt = head+'.'+claim+'.'+b64url(s.sign(KEY.private_key));
+  const tr = await (await fetch(KEY.token_uri,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion:jwt})})).json();
+  if(!tr.access_token) throw new Error('token: '+JSON.stringify(tr));
+  return tr.access_token;
+}
+const iso = d => d.toISOString().slice(0,10);
+const daysAgo = n => { const d=new Date(); d.setUTCDate(d.getUTCDate()-n); return iso(d); };
+const n = x => Number(x||0);
+
+// ---------- Google Search Console ----------
+const gscTok = await token('https://www.googleapis.com/auth/webmasters.readonly');
+const gsc = async (body) => {
+  const r = await (await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(SITE)}/searchAnalytics/query`,{method:'POST',headers:{Authorization:'Bearer '+gscTok,'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  if(r.error) throw new Error('gsc: '+r.error.message); return r.rows||[];
+};
+const START=daysAgo(28), END=daysAgo(1);
+const tot   = (await gsc({startDate:START,endDate:END,dimensions:[],type:'web'}))[0]||{};
+const cur7  = (await gsc({startDate:daysAgo(7), endDate:daysAgo(1), dimensions:[],type:'web'}))[0]||{};
+const prev7 = (await gsc({startDate:daysAgo(14),endDate:daysAgo(8), dimensions:[],type:'web'}))[0]||{};
+const pages   = await gsc({startDate:START,endDate:END,dimensions:['page'],type:'web',rowLimit:1000});
+const queries = await gsc({startDate:START,endDate:END,dimensions:['query'],type:'web',rowLimit:1000});
+const topQ = await gsc({startDate:START,endDate:END,dimensions:['query'],type:'web',rowLimit:8});
+const topP = await gsc({startDate:START,endDate:END,dimensions:['page'],type:'web',rowLimit:8});
+const daily = await gsc({startDate:daysAgo(14),endDate:END,dimensions:['date'],type:'web'});
+
+let submitted='?';
+try{
+  const sm = await (await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(SITE)}/sitemaps`,{headers:{Authorization:'Bearer '+gscTok}})).json();
+  submitted = (sm.sitemap||[]).reduce((a,s)=>a+(s.contents||[]).reduce((b,c)=>b+(+c.submitted||0),0),0) || (sm.sitemap?'listed':'none');
+}catch{}
+
+// ---------- Google Analytics (organic) ----------
+const gaTok = await token('https://www.googleapis.com/auth/analytics.readonly');
+const ga = async (body)=>{const r=await(await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${GA_PROPERTY}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+gaTok,'Content-Type':'application/json'},body:JSON.stringify(body)})).json(); if(r.error)throw new Error('ga: '+r.error.message); return r.rows||[];};
+const ORG={filter:{fieldName:'sessionDefaultChannelGroup',stringFilter:{value:'Organic Search'}}};
+const orgDaily = await ga({dateRanges:[{startDate:'7daysAgo',endDate:'today'}],dimensions:[{name:'date'}],metrics:[{name:'sessions'}],dimensionFilter:ORG,orderBys:[{dimension:{dimensionName:'date'}}]});
+const orgCur = await ga({dateRanges:[{startDate:'7daysAgo',endDate:'today'}],dimensions:[],metrics:[{name:'sessions'},{name:'totalUsers'}],dimensionFilter:ORG});
+const orgPrev= await ga({dateRanges:[{startDate:'14daysAgo',endDate:'8daysAgo'}],dimensions:[],metrics:[{name:'sessions'}],dimensionFilter:ORG});
+const orgCurS = orgCur[0]?n(orgCur[0].metricValues[0].value):0;
+const orgCurU = orgCur[0]?n(orgCur[0].metricValues[1].value):0;
+const orgPrevS= orgPrev[0]?n(orgPrev[0].metricValues[0].value):0;
+
+// ---------- deltas ----------
+const delta = (c,p)=>{ c=n(c);p=n(p); const d=c-p; const arrow=d>0?'▲':d<0?'▼':'–'; return `${arrow}${d>0?'+':''}${d}`; };
+const impΔ = delta(cur7.impressions,prev7.impressions);
+const clkΔ = delta(cur7.clicks,prev7.clicks);
+const orgΔ = delta(orgCurS,orgPrevS);
+
+// ---------- console ----------
+console.log('════════ StockKaki growth · '+iso(new Date())+' ════════');
+console.log(`\n📈 SEARCH (GSC 28d, ${START}→${END})`);
+console.log(`   impressions ${n(tot.impressions)} · clicks ${n(tot.clicks)} · CTR ${(n(tot.ctr)*100).toFixed(1)}% · avg pos ${n(tot.position).toFixed(1)}`);
+console.log(`   indexed & surfacing: ${pages.length} pages of ${submitted} submitted · ${queries.length} distinct queries`);
+console.log(`   week-on-week: impressions ${impΔ} · clicks ${clkΔ} · organic ${orgΔ}`);
+console.log('\n🔎 TOP QUERIES'); topQ.forEach(r=>console.log(`   ${String(n(r.impressions)).padStart(4)} imp pos ${n(r.position).toFixed(0).padStart(3)}  ${r.keys[0]}`));
+console.log('\n📄 TOP PAGES');   topP.forEach(r=>console.log(`   ${String(n(r.impressions)).padStart(4)} imp  ${r.keys[0].replace('https://stockkaki.com','')}`));
+console.log('\n🌱 ORGANIC (7d)  '+orgCurS+' sess · '+orgCurU+' users'); orgDaily.forEach(r=>{const d=r.dimensionValues[0].value;console.log(`   ${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}  ${n(r.metricValues[0].value)} sess`);});
+console.log('\n📅 IMPRESSIONS TREND (14d)'); daily.forEach(r=>console.log(`   ${r.keys[0]}  ${n(r.impressions)} imp / ${n(r.clicks)} clk`));
+
+// ---------- email ----------
+if(RESEND_API_KEY){
+  const to = REPORT_TO || 'eugeneteo1988@gmail.com';
+  const chip=(v)=>`<b style="color:${String(v).startsWith('▲')?'#1a7f4b':String(v).startsWith('▼')?'#b23a44':'#555'}">${v}</b>`;
+  const card=(label,val,sub)=>`<td style="padding:10px 14px;border:1px solid #e6e3dc;border-radius:10px;background:#fff"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a8378">${label}</div><div style="font-size:26px;font-weight:700;color:#1c2430;font-family:Georgia,serif">${val}</div><div style="font-size:12px;color:#6b6459">${sub}</div></td>`;
+  const rowsQ = topQ.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace(/</g,'&lt;').slice(0,70)}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td><td style="padding:4px 8px;text-align:right;color:#2b6cb0">pos ${n(r.position).toFixed(0)}</td></tr>`).join('');
+  const rowsP = topP.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace('https://stockkaki.com','')||'/'}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td></tr>`).join('');
+  const html=`<div style="max-width:600px;margin:0 auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1c2430;background:#faf8f4;padding:22px">
+  <div style="font-size:13px;color:#8a8378;letter-spacing:.06em;text-transform:uppercase">StockKaki · growth</div>
+  <h1 style="font-family:Georgia,serif;font-size:23px;margin:2px 0 14px">Good morning, Eugene ☀️</h1>
+  <table cellspacing="8" style="width:100%;border-collapse:separate"><tr>
+    ${card('Impressions 28d',n(tot.impressions),'wk '+impΔ)}
+    ${card('Indexed & surfacing',pages.length,'of '+submitted+' submitted')}
+    ${card('Organic 7d',orgCurS+' sess',orgCurU+' users · '+orgΔ)}
+  </tr></table>
+  <p style="font-size:13px;color:#6b6459;margin:14px 4px">Clicks 28d: <b>${n(tot.clicks)}</b> · CTR ${(n(tot.ctr)*100).toFixed(1)}% · avg position <b>${n(tot.position).toFixed(1)}</b> · ${queries.length} distinct queries. Week-on-week: impressions ${chip(impΔ)}, clicks ${chip(clkΔ)}, organic ${chip(orgΔ)}.</p>
+  <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🔎 What people Googled to find you</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${rowsQ}</table>
+  <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">📄 Top pages in search</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${rowsP}</table>
+  <p style="font-size:11px;color:#a29b8f;margin-top:20px">Google Search Console + Analytics · ${START} → ${END} · sent by your StockKaki growth job. Search data lags ~2 days.</p>
+  </div>`;
+  const r = await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:'StockKaki <alerts@stockkaki.com>',to,subject:`📈 StockKaki: ${n(tot.impressions)} impressions · ${pages.length} pages indexed · organic ${orgΔ}`,html})});
+  const jr = await r.json();
+  console.log(jr.id?`\n✉️  emailed ${to} (${jr.id})`:`\n✉️  email FAILED: ${JSON.stringify(jr)}`);
+} else {
+  console.log('\n(no RESEND_API_KEY — console only)');
+}

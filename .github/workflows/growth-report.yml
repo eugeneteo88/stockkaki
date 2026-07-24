@@ -1,0 +1,28 @@
+name: StockKaki growth report
+
+# Emails Eugene a morning summary of Search Console indexing + GA organic growth.
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 08:00 SGT (GitHub cron is best-effort; may arrive 1-3h later)
+  workflow_dispatch:       # manual "Run workflow" button for testing
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Write GA/GSC service-account key
+        run: printf '%s' "$GA_KEY_JSON" > .ga-key.json
+        env:
+          GA_KEY_JSON: ${{ secrets.GA_KEY_JSON }}
+      - name: Send growth report email
+        run: node daily-report.mjs
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_TO: eugeneteo1988@gmail.com
