@@ -9,7 +9,12 @@ on:
   schedule:
     # Every ~4h so news (incl. the general Singapore-market feed) stays fresh through the day.
     # GitHub cron is best-effort and can run 1–3h late, so the spread also absorbs those delays.
+    # Morning is deliberately redundant (4 slots 07:00–09:00 SGT): if GitHub throttles one,
+    # another usually fires near time so the morning news is fresh. Builds are idempotent.
+    - cron: '0 23 * * *'    # 07:00 SGT — morning (early)
+    - cron: '0 0 * * *'     # 08:00 SGT — morning
     - cron: '30 0 * * *'    # 08:30 SGT — morning
+    - cron: '0 1 * * *'     # 09:00 SGT — morning (late)
     - cron: '30 4 * * *'    # 12:30 SGT — midday
     - cron: '30 8 * * *'    # 16:30 SGT — before SGX close
     - cron: '30 10 * * 1-5' # 18:30 SGT (Mon–Fri) — after SGX close: capture closing prices
