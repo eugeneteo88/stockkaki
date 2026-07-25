@@ -53,6 +53,11 @@ const topQ = await gsc({startDate:START,endDate:END,dimensions:['query'],type:'w
 const topP = await gsc({startDate:START,endDate:END,dimensions:['page'],type:'web',rowLimit:8});
 const daily = await gsc({startDate:daysAgo(14),endDate:END,dimensions:['date'],type:'web'});
 
+// "Striking distance": queries ranking position 8–20 (bottom of page 1 / top of page 2) — the
+// fastest wins. A page already this close just needs a nudge to reach page one. Ranked by
+// impressions so the highest-traffic opportunities come first.
+const striking = queries.filter(r => { const p=n(r.position); return p>=8 && p<=20; }).sort((a,b)=>n(b.impressions)-n(a.impressions)).slice(0,10);
+
 let submitted='?';
 try{
   const sm = await (await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(SITE)}/sitemaps`,{headers:{Authorization:'Bearer '+gscTok}})).json();
@@ -97,6 +102,7 @@ console.log(`   indexed & surfacing: ${pages.length} pages of ${submitted} submi
 console.log(`   week-on-week: impressions ${impΔ} · clicks ${clkΔ} · organic ${orgΔ}`);
 console.log('\n🔎 TOP QUERIES'); topQ.forEach(r=>console.log(`   ${String(n(r.impressions)).padStart(4)} imp pos ${n(r.position).toFixed(0).padStart(3)}  ${r.keys[0]}`));
 console.log('\n📄 TOP PAGES');   topP.forEach(r=>console.log(`   ${String(n(r.impressions)).padStart(4)} imp  ${r.keys[0].replace('https://stockkaki.com','')}`));
+console.log('\n🪜 STRIKING DISTANCE (pos 8–20 · one push from page 1)'); striking.length ? striking.forEach(r=>console.log(`   ${String(n(r.impressions)).padStart(4)} imp · pos ${n(r.position).toFixed(0).padStart(2)}  ${r.keys[0]}`)) : console.log('   (nothing at position 8–20 yet)');
 console.log('\n🌱 ORGANIC (7d)  '+orgCurS+' sess · '+orgCurU+' users'); orgDaily.forEach(r=>{const d=r.dimensionValues[0].value;console.log(`   ${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}  ${n(r.metricValues[0].value)} sess`);});
 console.log('\n🤖 AI ANSWER ENGINES (AEO 28d)  '+aiTotS+' sess · '+aiTotU+' users · wk '+delta(aiCur7S,aiPrev7S)); aiEngines.length ? aiEngines.forEach(e=>console.log(`   ${String(e.sess).padStart(4)} sess · ${e.users} users  ${e.name}`)) : console.log('   (no AI-engine referrals yet)');
 console.log('\n📅 IMPRESSIONS TREND (14d)'); daily.forEach(r=>console.log(`   ${r.keys[0]}  ${n(r.impressions)} imp / ${n(r.clicks)} clk`));
@@ -108,6 +114,7 @@ if(RESEND_API_KEY){
   const card=(label,val,sub)=>`<td style="padding:10px 14px;border:1px solid #e6e3dc;border-radius:10px;background:#fff"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a8378">${label}</div><div style="font-size:26px;font-weight:700;color:#1c2430;font-family:Georgia,serif">${val}</div><div style="font-size:12px;color:#6b6459">${sub}</div></td>`;
   const rowsQ = topQ.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace(/</g,'&lt;').slice(0,70)}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td><td style="padding:4px 8px;text-align:right;color:#2b6cb0">pos ${n(r.position).toFixed(0)}</td></tr>`).join('');
   const rowsP = topP.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace('https://stockkaki.com','')||'/'}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td></tr>`).join('');
+  const strikeRows = striking.length ? striking.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace(/</g,'&lt;').slice(0,70)}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td><td style="padding:4px 8px;text-align:right;color:#2b6cb0">pos ${n(r.position).toFixed(0)}</td></tr>`).join('') : `<tr><td style="padding:9px 8px;color:#8a8378">Nothing sitting at position 8–20 right now — keep publishing and they'll appear here.</td></tr>`;
   const aiRowsHTML = aiEngines.length ? aiEngines.map(e=>`<tr><td style="padding:4px 8px">${e.name}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${e.sess} sess</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${e.users} users</td></tr>`).join('') : `<tr><td style="padding:9px 8px;color:#8a8378">No AI-engine referrals yet — this is where ChatGPT / Perplexity / Gemini traffic will show as AEO grows.</td></tr>`;
   const html=`<div style="max-width:600px;margin:0 auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1c2430;background:#faf8f4;padding:22px">
   <div style="font-size:13px;color:#8a8378;letter-spacing:.06em;text-transform:uppercase">StockKaki · growth</div>
@@ -118,6 +125,9 @@ if(RESEND_API_KEY){
     ${card('Organic 7d',orgCurS+' sess',orgCurU+' users · '+orgΔ)}
   </tr></table>
   <p style="font-size:13px;color:#6b6459;margin:14px 4px">Clicks 28d: <b>${n(tot.clicks)}</b> · CTR ${(n(tot.ctr)*100).toFixed(1)}% · avg position <b>${n(tot.position).toFixed(1)}</b> · ${queries.length} distinct queries. Week-on-week: impressions ${chip(impΔ)}, clicks ${chip(clkΔ)}, organic ${chip(orgΔ)}.</p>
+  <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🪜 Striking distance — one push from page 1</h3>
+  <p style="font-size:12px;color:#6b6459;margin:0 4px 6px">Searches where StockKaki ranks <b>position 8–20</b> (bottom of page 1 / top of page 2). These pages are the fastest wins — a better title, more content, or a clearer answer nudges them onto page one. Work top-down.</p>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${strikeRows}</table>
   <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🔎 What people Googled to find you</h3>
   <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${rowsQ}</table>
   <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">📄 Top pages in search</h3>
