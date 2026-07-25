@@ -757,7 +757,7 @@ const shell = (title, desc, canon, body, script='', og='/og.png') => `<!DOCTYPE 
 <script>(function(){try{var t=localStorage.getItem('theme');if(!t&&window.matchMedia)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="google-site-verification" content="GP6YGT1x9z7T6QlUkLDTXvfbGlqkocw2RSWOWmKkO1Q">
-<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico?v=3" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=3"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=3"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3">
 <meta name="theme-color" content="#2647DD">
 <!-- Google Analytics (GA4) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-GQWYJ6T6DY"></script>
