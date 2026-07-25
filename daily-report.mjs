@@ -22,6 +22,20 @@ async function token(scope){
 const iso = d => d.toISOString().slice(0,10);
 const daysAgo = n => { const d=new Date(); d.setUTCDate(d.getUTCDate()-n); return iso(d); };
 const n = x => Number(x||0);
+// AI answer-engine referrer → friendly name (AEO)
+const AI_RE = 'chatgpt|openai|perplexity|gemini|copilot|claude|you\\.com|poe\\.com|edgeservices|bard|mistral|deepseek|grok';
+const AI_LABEL = s => { s=(s||'').toLowerCase();
+  if(s.includes('chatgpt')||s.includes('openai')) return 'ChatGPT';
+  if(s.includes('perplexity')) return 'Perplexity';
+  if(s.includes('gemini')||s.includes('bard')) return 'Gemini';
+  if(s.includes('copilot')||s.includes('edgeservices')) return 'Copilot';
+  if(s.includes('claude')) return 'Claude';
+  if(s.includes('deepseek')) return 'DeepSeek';
+  if(s.includes('grok')) return 'Grok';
+  if(s.includes('you.com')) return 'You.com';
+  if(s.includes('poe')) return 'Poe';
+  if(s.includes('mistral')) return 'Mistral';
+  return s; };
 
 // ---------- Google Search Console ----------
 const gscTok = await token('https://www.googleapis.com/auth/webmasters.readonly');
@@ -56,6 +70,19 @@ const orgCurS = orgCur[0]?n(orgCur[0].metricValues[0].value):0;
 const orgCurU = orgCur[0]?n(orgCur[0].metricValues[1].value):0;
 const orgPrevS= orgPrev[0]?n(orgPrev[0].metricValues[0].value):0;
 
+// ---------- AEO: sessions arriving from AI answer engines ----------
+const aiFilter={filter:{fieldName:'sessionSource',stringFilter:{matchType:'PARTIAL_REGEXP',value:AI_RE}}};
+const aiRows = await ga({dateRanges:[{startDate:START,endDate:END}],dimensions:[{name:'sessionSource'}],metrics:[{name:'sessions'},{name:'totalUsers'}],dimensionFilter:aiFilter,orderBys:[{metric:{metricName:'sessions'},desc:true}]});
+const aiEng={};
+for(const r of aiRows){ const name=AI_LABEL(r.dimensionValues[0].value); if(!aiEng[name]) aiEng[name]={s:0,u:0}; aiEng[name].s+=n(r.metricValues[0].value); aiEng[name].u+=n(r.metricValues[1].value); }
+const aiEngines = Object.entries(aiEng).map(([name,v])=>({name,sess:v.s,users:v.u})).sort((a,b)=>b.sess-a.sess);
+const aiTotS = aiEngines.reduce((a,b)=>a+b.sess,0);
+const aiTotU = aiEngines.reduce((a,b)=>a+b.users,0);
+const aiC7 = await ga({dateRanges:[{startDate:daysAgo(7),endDate:END}],dimensions:[],metrics:[{name:'sessions'}],dimensionFilter:aiFilter});
+const aiP7 = await ga({dateRanges:[{startDate:daysAgo(14),endDate:daysAgo(8)}],dimensions:[],metrics:[{name:'sessions'}],dimensionFilter:aiFilter});
+const aiCur7S = aiC7[0]?n(aiC7[0].metricValues[0].value):0;
+const aiPrev7S= aiP7[0]?n(aiP7[0].metricValues[0].value):0;
+
 // ---------- deltas ----------
 const delta = (c,p)=>{ c=n(c);p=n(p); const d=c-p; const arrow=d>0?'▲':d<0?'▼':'–'; return `${arrow}${d>0?'+':''}${d}`; };
 const impΔ = delta(cur7.impressions,prev7.impressions);
@@ -71,6 +98,7 @@ console.log(`   week-on-week: impressions ${impΔ} · clicks ${clkΔ} · organic
 console.log('\n🔎 TOP QUERIES'); topQ.forEach(r=>console.log(`   ${String(n(r.impressions)).padStart(4)} imp pos ${n(r.position).toFixed(0).padStart(3)}  ${r.keys[0]}`));
 console.log('\n📄 TOP PAGES');   topP.forEach(r=>console.log(`   ${String(n(r.impressions)).padStart(4)} imp  ${r.keys[0].replace('https://stockkaki.com','')}`));
 console.log('\n🌱 ORGANIC (7d)  '+orgCurS+' sess · '+orgCurU+' users'); orgDaily.forEach(r=>{const d=r.dimensionValues[0].value;console.log(`   ${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}  ${n(r.metricValues[0].value)} sess`);});
+console.log('\n🤖 AI ANSWER ENGINES (AEO 28d)  '+aiTotS+' sess · '+aiTotU+' users · wk '+delta(aiCur7S,aiPrev7S)); aiEngines.length ? aiEngines.forEach(e=>console.log(`   ${String(e.sess).padStart(4)} sess · ${e.users} users  ${e.name}`)) : console.log('   (no AI-engine referrals yet)');
 console.log('\n📅 IMPRESSIONS TREND (14d)'); daily.forEach(r=>console.log(`   ${r.keys[0]}  ${n(r.impressions)} imp / ${n(r.clicks)} clk`));
 
 // ---------- email ----------
@@ -80,6 +108,7 @@ if(RESEND_API_KEY){
   const card=(label,val,sub)=>`<td style="padding:10px 14px;border:1px solid #e6e3dc;border-radius:10px;background:#fff"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a8378">${label}</div><div style="font-size:26px;font-weight:700;color:#1c2430;font-family:Georgia,serif">${val}</div><div style="font-size:12px;color:#6b6459">${sub}</div></td>`;
   const rowsQ = topQ.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace(/</g,'&lt;').slice(0,70)}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td><td style="padding:4px 8px;text-align:right;color:#2b6cb0">pos ${n(r.position).toFixed(0)}</td></tr>`).join('');
   const rowsP = topP.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace('https://stockkaki.com','')||'/'}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td></tr>`).join('');
+  const aiRowsHTML = aiEngines.length ? aiEngines.map(e=>`<tr><td style="padding:4px 8px">${e.name}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${e.sess} sess</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${e.users} users</td></tr>`).join('') : `<tr><td style="padding:9px 8px;color:#8a8378">No AI-engine referrals yet — this is where ChatGPT / Perplexity / Gemini traffic will show as AEO grows.</td></tr>`;
   const html=`<div style="max-width:600px;margin:0 auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1c2430;background:#faf8f4;padding:22px">
   <div style="font-size:13px;color:#8a8378;letter-spacing:.06em;text-transform:uppercase">StockKaki · growth</div>
   <h1 style="font-family:Georgia,serif;font-size:23px;margin:2px 0 14px">Good morning, Eugene ☀️</h1>
@@ -93,6 +122,9 @@ if(RESEND_API_KEY){
   <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${rowsQ}</table>
   <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">📄 Top pages in search</h3>
   <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${rowsP}</table>
+  <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🤖 Found via AI answer engines (AEO)</h3>
+  <p style="font-size:12px;color:#6b6459;margin:0 4px 6px">People who arrived from an AI tool in the last 28 days${aiTotS?` — <b>${aiTotS}</b> sessions, ${aiTotU} users, week-on-week ${chip(delta(aiCur7S,aiPrev7S))}`:''}.</p>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${aiRowsHTML}</table>
   <p style="font-size:11px;color:#a29b8f;margin-top:20px">Google Search Console + Analytics · ${START} → ${END} · sent by your StockKaki growth job. Search data lags ~2 days.</p>
   </div>`;
   const r = await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:'StockKaki <alerts@stockkaki.com>',to,subject:`📈 StockKaki: ${n(tot.impressions)} impressions · ${pages.length} pages indexed · organic ${orgΔ}`,html})});
