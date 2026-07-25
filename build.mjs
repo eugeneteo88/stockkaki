@@ -1054,6 +1054,75 @@ sortBy('y');
   return shell(title, desc, canon, body, script, og);
 }
 
+// ---------- Best performing REITs (ranked by real 1-year price return; 52-week-range fallback on fast builds) ----------
+// 1-year price return from the weekly-close series (Yahoo). Returns null unless there is ~a full
+// year of history, so we never overstate a newly-listed REIT's gain. Distributions are excluded
+// (shown separately as yield) — this is price performance, honestly labelled.
+const reitRet1y = (c) => {
+  const p = c.prices;
+  if (!Array.isArray(p) || p.length < 20) return null;
+  const lastPt = p[p.length - 1];
+  const last = c.price || lastPt.c;
+  if (!last) return null;
+  const target = lastPt.t - 365 * 86400;            // ~1 year ago (timestamps are Unix seconds)
+  if (p[0].t > target + 40 * 86400) return null;    // <~11 months of history — skip rather than mislead
+  let base = null;
+  for (const pt of p) { if (pt.t >= target) { base = pt.c; break; } }
+  if (base == null || base <= 0) return null;
+  return (last - base) / base * 100;
+};
+// Position in the 52-week range (0 = at low, 100 = at high). Always available from cached Yahoo
+// fundamentals, so it's the fallback ranking when the live price series isn't present (push builds).
+const reitRangePos = (c) => {
+  const f = c.fund;
+  if (!f || f.w52lo == null || f.w52hi == null || !(c.price > 0) || !(f.w52hi > f.w52lo)) return null;
+  return Math.max(0, Math.min(100, (c.price - f.w52lo) / (f.w52hi - f.w52lo) * 100));
+};
+function bestPerfReitsPage(reitList) {
+  const rows = reitList.map(c => ({ c, ret: reitRet1y(c), pos: reitRangePos(c) }));
+  const useReturn = rows.filter(r => r.ret != null).length >= 5;   // full build → real returns; fast build → range fallback
+  const ranked = (useReturn ? rows.filter(r => r.ret != null) : rows.filter(r => r.pos != null))
+    .sort((a, b) => useReturn ? b.ret - a.ret : b.pos - a.pos);
+  const metricLabel = useReturn ? '1-year return' : '52-week range';
+  const card = (r, i) => {
+    const c = r.c, CS = csym(c.cur);
+    const val = useReturn ? `${r.ret >= 0 ? '+' : ''}${r.ret.toFixed(1)}%` : `${r.pos.toFixed(0)}%`;
+    const neg = useReturn && r.ret < 0;
+    const yld = c.yieldPct != null ? `${c.yieldPct.toFixed(2)}% yield` : (c.divIncomplete ? 'scrip payer' : 'no dividend');
+    return `      <a class="t10${i < 3 ? ' gold' : ''}" href="/stock/${c.slug}/"><span class="rk">${i + 1}</span><span class="ti"><span class="tn">${c.name}${c.ticker ? `<span class="tick">${c.ticker}</span>` : ''}</span><span class="ts">REIT · ${yld}</span></span><span class="ty"><span class="tyv${neg ? ' mut' : ''}">${val}</span>${c.price ? `<span class="tp">${pxf(CS, c.price)}</span>` : ''}</span></a>`;
+  };
+  const h1 = `Best performing REITs in Singapore — ${YEAR}`;
+  const sub = useReturn
+    ? `All ${ranked.length} SGX-listed REITs &amp; business trusts, ranked by 1-year share-price return. Updated ${prettyShort(TODAY)}.`
+    : `All ${ranked.length} SGX-listed REITs &amp; business trusts, ranked by where they trade in their 52-week range. Updated ${prettyShort(TODAY)}.`;
+  const intro = `&ldquo;Best performing&rdquo; here means <b>price performance</b>, not yield &mdash; ${useReturn
+    ? `each S-REIT below is ranked by its <b>share-price return over the last 12 months</b>, with distributions paid on top (the yield column shows the income you'd also have earned).`
+    : `each S-REIT below is ranked by where its price sits in its <b>52-week range</b> &mdash; near the top means it has been one of the year's stronger performers.`} Want income instead? See our <a href="/reits/">best REITs by dividend yield</a>. Figures refresh daily and are for information only, not advice.`;
+  const faqs = [
+    { q: `What is the best performing REIT in Singapore in ${YEAR}?`, a: `This page ranks every SGX-listed S-REIT and business trust by ${useReturn ? '12-month share-price return' : 'position in its 52-week price range'}, updated daily. Past performance doesn't guarantee future results, so always check a REIT's sector, gearing and outlook before investing.` },
+    { q: 'Does "best performing" mean the highest dividend yield?', a: 'No. Yield measures income; performance here measures share-price gain over the past year. A REIT can have a high yield but a falling price, or a rising price with a modest yield. This page ranks by price performance and shows the yield beside each one so you see both.' },
+    { q: 'Are the best performing REITs a good buy?', a: 'Not automatically. A REIT that has already risen strongly may be fully valued, while a laggard could be a recovery play or a value trap. Use this ranking as a starting point, then weigh each REIT’s fundamentals, sector and interest-rate sensitivity.' },
+    { q: 'How often is this ranking updated?', a: 'Daily. Prices come from the Singapore Exchange (SGX) and Yahoo Finance, and the ranking is recomputed on every scheduled build.' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
+    <p class="sub" style="margin-bottom:2px">${sub}</p>
+  </section>
+  <div class="hub-h" style="margin:14px 0 12px">Ranked by ${metricLabel} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">best first</span></div>
+  <div class="top10">
+${ranked.map(card).join('\n')}
+  </div>
+  <p class="metaline" style="font-size:12px;margin-top:14px">${useReturn ? '1-year return = change in share price over the last ~52 weeks, from weekly closing prices; it excludes distributions (shown separately as yield).' : 'Ranked by position in the 52-week price range while the full price history refreshes on the next scheduled build.'} Prices from SGX &amp; Yahoo Finance, updated daily. Not investment advice.</p>
+  <div class="intro" style="margin-top:18px">${intro}</div>
+  ${faqHTML}
+  ${jsonLd}`;
+  const title = `Best Performing REITs in Singapore ${YEAR} — S-REITs by 1-Year Return | StockKaki`;
+  const desc = `SGX-listed REITs ranked by 1-year share-price return for ${YEAR} — see which Singapore S-REITs and business trusts have performed best, with dividend yields alongside. Updated daily, free.`;
+  return shell(title, desc, SITE + '/best-performing-reits/', body, '', '/og/reits.png');
+}
+
 // ---------- all Singapore stocks (full SGX universe) — same concept as the dividend page, ranked by market cap ----------
 const stockRow = (c) => {
   const f = c.fund || {};
@@ -2464,7 +2533,7 @@ writeFileSync(new URL('reits/index.html', out), listPage({
   title: `Best REITs to Buy in Singapore ${YEAR} — S-REIT Dividend Yields | StockKaki`,
   desc: `All SGX-listed REITs and business trusts ranked by distribution yield for ${YEAR} — CapitaLand, Mapletree, Keppel, Frasers and more. Live, clean, updated daily.`,
   h1: `Best REITs to buy in Singapore — ${YEAR}`, sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
-  intro: `Singapore REITs (S-REITs) are among the most popular income investments here — they must distribute at least 90% of income, so yields are typically higher than ordinary stocks, and distributions are <b>tax-free</b> for individuals. Above are all <b>${reitList.length}</b> SGX-listed REITs and business trusts, ranked by trailing distribution yield and updated daily.`,
+  intro: `Singapore REITs (S-REITs) are among the most popular income investments here — they must distribute at least 90% of income, so yields are typically higher than ordinary stocks, and distributions are <b>tax-free</b> for individuals. Above are all <b>${reitList.length}</b> SGX-listed REITs and business trusts, ranked by trailing distribution yield and updated daily. Looking for price gains rather than income? See the <a href="/best-performing-reits/">best performing S-REITs by 1-year return</a>.`,
   faqs: [
     { q: `What is the best REIT to buy in Singapore in ${YEAR}?`, a: 'There is no single best REIT — it depends on your goals. This page ranks all SGX-listed S-REITs and business trusts by trailing distribution yield so you can compare income; also weigh the sector, gearing and track record before deciding.' },
     { q: 'What is the average dividend yield of Singapore REITs?', a: 'S-REITs typically yield around 5–7%. They must distribute at least 90% of taxable income, which is why their yields are usually higher than ordinary shares.' },
@@ -2472,6 +2541,8 @@ writeFileSync(new URL('reits/index.html', out), listPage({
     { q: 'How are Singapore REIT distributions taxed?', a: 'Distributions from S-REITs are generally tax-exempt for individual investors.' },
   ],
   list: reitList, canon: SITE + '/reits/', typeChips: false, og: '/og/reits.png' }));
+mkdirSync(new URL('best-performing-reits/', out), { recursive: true });
+writeFileSync(new URL('best-performing-reits/index.html', out), bestPerfReitsPage(reitList));
 mkdirSync(new URL('etfs/', out), { recursive: true });
 const etfList = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete));
 writeFileSync(new URL('etfs/index.html', out), listPage({
@@ -2509,7 +2580,7 @@ writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r =
 writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
 if (ssb && ssb.current) writeFileSync(new URL('api/ssb.json', out), JSON.stringify({ code: ssb.current.code, y1: ssb.current.y1, y10: ssb.current.y10, applyFmt: ssb.current.applyFmt, issueFmt: ssb.current.issueFmt }));   // for new-SSB alerts
 
-const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/best-performing-reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
@@ -2521,6 +2592,7 @@ writeFileSync(new URL('llms.txt', out), `# StockKaki — Singapore dividend & st
 - Upcoming SGX dividends & ex-dates: ${SITE}/
 - Best dividend stocks (ranked by yield): ${SITE}/dividends/
 - Singapore REITs by distribution yield: ${SITE}/reits/
+- Best performing S-REITs (ranked by 1-year share-price return): ${SITE}/best-performing-reits/
 - Singapore Savings Bonds (SSB) rates, step-up schedule & returns calculator: ${SITE}/ssb/
 - SGX corporate actions / announcements: ${SITE}/announcements/
 - Per-stock pages (price, dividend history, yield, ex-dates) for all ${all.length} SGX counters: ${SITE}/stock/<slug>/ — full list in ${SITE}/sitemap.xml
