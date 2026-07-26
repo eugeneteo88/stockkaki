@@ -2076,6 +2076,61 @@ if(swOld&&SWAP_OLD.length){
 // ---------- Evergreen guides (top-of-funnel content; internal-linked to the tools) ----------
 const GUIDES = [
   {
+    slug: 'how-to-read-fixed-deposit-rates-singapore',
+    title: 'How to Read Singapore Fixed Deposit Rates (Without Getting Fooled) | StockKaki',
+    desc: 'A plain-English guide to reading Singapore fixed deposit rates — headline vs effective rate, fresh funds, tenure, minimums and customer tiers. Know what you’ll really earn.',
+    h1: 'How to read Singapore fixed deposit rates',
+    blurb: 'Headline vs effective rate, fresh funds, tenures and tiers — how to know what you’ll actually earn.',
+    body: `<p>A Singapore fixed deposit rate looks simple &mdash; one number, "% p.a." &mdash; but the figure in the ad often isn't what lands in your pocket. Here's how to read it properly, in plain English.</p>
+<h2>Headline rate vs effective rate</h2>
+<p>This is the big one. Many promotions advertise an "up to" rate that's higher than what you'll really earn. It usually means the rate <strong>steps up</strong> over the term &mdash; lower at the start, reaching the headline only near the end. Average it across the whole period and you get the <strong>effective rate</strong>, which is what you actually take home.</p>
+<p>For example, a bank might headline <strong>1.65%</strong> for 12 months, but the effective rate works out to <strong>1.50%</strong>. On our <a href="/fixed-deposits/">fixed deposit comparison</a> we rank by the effective rate, so every number is what you'd genuinely get.</p>
+<h2>Fresh funds only</h2>
+<p>Most of the best rates apply only to <strong>new money</strong> brought into the bank &mdash; cash already sitting in an account with them usually won't qualify. If you're moving an existing deposit around, check whether it counts as "fresh funds" first.</p>
+<h2>Tenure &mdash; how long you lock it up</h2>
+<p>The rate is tied to the term, usually 6 or 12 months. Longer isn't automatically higher; banks push whichever tenure their current promotion favours. And note the catch: withdraw early and you often forfeit most or all of the interest.</p>
+<h2>Minimum deposit</h2>
+<p>Entry points range from as little as <strong>S$500</strong> (Bank of China) up to <strong>S$25,000</strong>. A brilliant rate you can't meet the minimum for isn't a brilliant rate for you.</p>
+<h2>Customer tier</h2>
+<p>Some of the flashiest numbers are only for <strong>Priority</strong> or <strong>Private</strong> banking clients. A headline "1.60%" can be 1.30% for an ordinary customer &mdash; always check which tier a rate is for.</p>
+<h2>The one number that matters</h2>
+<p>Cut through all of it by looking at the <strong>effective rate for the tenure, minimum and tier you actually qualify for</strong>. That's the honest comparison, and it's exactly how our <a href="/fixed-deposits/">Singapore fixed deposit comparison</a> is built. Want more flexibility, or a shot at a higher rate with conditions? Compare <a href="/savings-accounts/">high-interest savings accounts</a> or the government-backed <a href="/ssb/">Singapore Savings Bonds</a>.</p>`,
+    faqs: [
+      { q: 'What is the effective interest rate on a fixed deposit?', a: 'The effective rate is the average rate you actually earn across the whole term, after any step-ups. Banks often advertise a higher "up to" headline rate that you only touch near the end, so the effective rate is the honest figure to compare.' },
+      { q: 'Do fixed deposit promotional rates apply to money already in the bank?', a: 'Usually not. Most top promotions are for "fresh funds" — new money brought into the bank. Cash already sitting with them typically earns the lower board rate. Always check the fresh-funds condition.' },
+      { q: 'Is my fixed deposit safe in Singapore?', a: 'Yes. SGD deposits with a Singapore bank or finance company are insured by the Singapore Deposit Insurance Corporation (SDIC) up to S$100,000 per depositor per bank.' },
+    ],
+  },
+  {
+    slug: 'where-to-park-cash-singapore',
+    title: 'Where to Park Your Cash in Singapore: FD vs Savings vs SSB vs T-bills | StockKaki',
+    desc: 'Fixed deposit, high-interest savings account, Singapore Savings Bond or T-bill? A plain-English comparison of the four safe places to park cash in Singapore, and who each suits.',
+    h1: 'Where to park your cash in Singapore',
+    blurb: 'FD vs savings account vs SSB vs T-bills — the four safe options compared, and who each one suits.',
+    body: `<p>You've got some cash you won't need for a while. In Singapore you have four safe, popular homes for it &mdash; a fixed deposit, a high-interest savings account, Singapore Savings Bonds, and Treasury bills. Here's how they compare, and who each one suits.</p>
+<h2>Fixed deposit</h2>
+<p>Lock a lump sum away for a set term (usually 6&ndash;12 months) at a <strong>guaranteed</strong> rate. Simple, no hoops. The trade-off: your money's tied up, and pulling it out early usually forfeits the interest. <strong>Best if</strong> you have a sum you won't touch and you want certainty. See current <a href="/fixed-deposits/">fixed deposit rates</a>.</p>
+<h2>High-interest savings account</h2>
+<p>Accounts like DBS Multiplier, UOB One and OCBC 360 can pay <strong>more</strong> than a fixed deposit &mdash; but only if you meet conditions: credit your salary, spend on a card, sometimes insure and invest too. Your money stays fully accessible. <strong>Best if</strong> you can meet the conditions and want flexibility. We break down exactly what each one needs on the <a href="/savings-accounts/">savings accounts page</a>. Prefer no hoops? The digital banks (GXS, Trust) pay a simpler flat rate.</p>
+<h2>Singapore Savings Bonds (SSB)</h2>
+<p>Government-backed, so about as safe as it gets. You can <strong>redeem in any month with no penalty</strong>, and the interest <strong>steps up the longer you hold</strong> (up to 10 years). <strong>Best if</strong> you want maximum safety plus full flexibility and don't need a flashy headline rate. See the latest <a href="/ssb/">SSB rates</a>.</p>
+<h2>Treasury bills (T-bills)</h2>
+<p>Short-term government debt (6-month or 1-year), bought at auction. The rate is the auction's cut-off yield, so it can land higher or lower than expected, and your money's locked until it matures. <strong>Best if</strong> you're comfortable with the auction process and want a short, government-backed parking spot. See recent <a href="/t-bills/">T-bill yields</a>.</p>
+<h2>Quick guide</h2>
+<ul>
+<li><strong>Want certainty, no hoops?</strong> Fixed deposit.</li>
+<li><strong>Can meet salary + spend conditions, want flexibility?</strong> Savings account.</li>
+<li><strong>Want maximum safety and to withdraw anytime?</strong> Singapore Savings Bond.</li>
+<li><strong>Comfortable with auctions, short horizon?</strong> T-bill.</li>
+</ul>
+<p>All four are capital-safe &mdash; either government-backed or SDIC-insured up to S$100,000 per bank. There's no single "best"; it comes down to how long you can set the money aside and how much flexibility you want. Compare them side by side on our <a href="/savings/">savings hub</a>.</p>`,
+    faqs: [
+      { q: 'What is the safest place to put money in Singapore?', a: 'Singapore Savings Bonds are among the safest — fully backed by the Singapore Government and redeemable any month with no penalty. Bank fixed deposits and savings accounts are also very safe, insured by SDIC up to S$100,000 per bank.' },
+      { q: 'Fixed deposit or Singapore Savings Bond — which is better?', a: 'A fixed deposit gives a guaranteed rate but locks your money for the term. An SSB is government-backed, lets you withdraw any month with no penalty, and steps up the longer you hold. Choose the FD for a fixed term and certainty; the SSB for safety plus flexibility.' },
+      { q: 'Where can I get high interest with no conditions in Singapore?', a: 'The digital banks — GXS and Trust — pay a flat rate (around 2.4–2.8%) with almost no conditions, no salary credit or card spend required. It’s the simplest way to earn a high rate without juggling requirements.' },
+    ],
+  },
+  {
     slug: 'how-is-dividend-yield-calculated',
     title: 'How Is Dividend Yield Calculated? (With Singapore Examples) | StockKaki',
     desc: 'Dividend yield explained simply — the formula, a worked SGX example, trailing vs forward yield, and what actually counts as a good yield in Singapore. Free, no jargon.',
@@ -2283,15 +2338,24 @@ function guidePage(g) {
   const faqHTML = (g.faqs && g.faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${g.faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
   const ld = { "@context":"https://schema.org","@graph":[
     { "@type":"BreadcrumbList","itemListElement":[ { "@type":"ListItem","position":1,"name":"Guides","item":`${SITE}/guides/` }, { "@type":"ListItem","position":2,"name":g.h1,"item":`${SITE}/guides/${g.slug}/` } ] },
-    { "@type":"Article","headline":g.h1,"description":g.desc,"author":{ "@type":"Organization","name":"StockKaki" },"publisher":{ "@type":"Organization","name":"StockKaki" },"mainEntityOfPage":`${SITE}/guides/${g.slug}/` },
+    { "@type":"Article","headline":g.h1,"description":g.desc,"author":{ "@type":"Person","name":"Eugene","description":"Writes StockKaki's plain-English guides to money in Singapore." },"publisher":{ "@type":"Organization","name":"StockKaki" },"mainEntityOfPage":`${SITE}/guides/${g.slug}/` },
     ...(g.faqs && g.faqs.length ? [{ "@type":"FAQPage","mainEntity":g.faqs.map(f => ({ "@type":"Question","name":f.q,"acceptedAnswer":{ "@type":"Answer","text":f.a } })) }] : []),
   ] };
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
+  // Author byline + bio — Eugene as StockKaki's plain-English guide writer (E-E-A-T signal).
+  // Avatar is a lettered circle for now; swap the <span>E</span> for <img src="/eugene.jpg"> once the photo is added to assets/.
+  const byline = `<div style="display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13px;color:var(--muted)"><span style="width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:inline-flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:14px">E</span>By <b style="color:var(--ink)">Eugene</b></div>`;
+  const authorCard = `<div style="display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:28px 0 8px">
+    <span style="flex:0 0 auto;width:52px;height:52px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:22px">E</span>
+    <div><div style="font-weight:700;font-size:15px">Eugene</div><div style="font-size:13px;color:var(--muted);line-height:1.55;margin-top:3px">Eugene got tired of cluttered, confusing finance sites and built a clearer one. He writes StockKaki's guides in plain English &mdash; stocks, dividends, and where to park your cash in Singapore. Not financial advice, just the facts made simple.</div></div>
+  </div>`;
   const body = `  <section class="hero" style="padding:22px 0 6px">
     <div class="crumb"><a href="/guides/">Guides</a> › ${g.h1}</div>
     <h1 class="serif" style="font-size:30px;max-width:22ch;line-height:1.12">${g.h1}</h1>
+    ${byline}
   </section>
   <article class="prose">${g.body}</article>
+  ${authorCard}
   ${faqHTML}
   ${jsonLd}`;
   return shell(g.title, g.desc, `${SITE}/guides/${g.slug}/`, body);
