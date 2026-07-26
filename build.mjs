@@ -220,26 +220,8 @@ const NEWS_JUNK = /^(price to (book|sales|earnings|cash|free cash)|enterprise va
 // only if a significant word from the company name actually appears in the title.
 const _nameTokens = (name) => cleanCoName(name).toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length >= 3);
 const titleHasCo = (title, name) => { const toks = _nameTokens(name); if (!toks.length) return true; const t = ' ' + (title||'').toLowerCase() + ' '; return toks.some(tok => new RegExp('\\b' + tok.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b').test(t)); };
-function fetchGoogleNews(name) {
-  const q = encodeURIComponent(`"${cleanCoName(name)}" (SGX OR Singapore OR dividend)`);
-  let xml; try { xml = execFileSync('curl', ['-s','-m','15','-A',UA, `https://news.google.com/rss/search?q=${q}&hl=en-SG&gl=SG&ceid=SG:en`], { maxBuffer: 12*1024*1024 }).toString('utf8'); } catch { return []; }
-  const good = [], rest = [];
-  for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
-    const it = m[1];
-    let title = decodeEntities((it.match(/<title>([\s\S]*?)<\/title>/)||[])[1] || '');
-    const link = ((it.match(/<link>([\s\S]*?)<\/link>/)||[])[1] || '').trim();
-    const source = decodeEntities((it.match(/<source[^>]*>([\s\S]*?)<\/source>/)||[])[1] || '').trim();
-    const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
-    if (!title || !link) continue;
-    title = title.replace(new RegExp('\\s*-\\s*' + source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*$'), '').trim();   // Google appends " - Source"
-    if (NEWS_JUNK.test(title)) continue;                                  // skip auto-generated metric pages
-    let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
-    const item = { title, link, dateISO, source, desc: '' };
-    (NEWS_OK.has(source) ? good : rest).push(item);
-  }
-  const merged = [...good, ...rest.slice(0, Math.max(0, 3 - good.length))];   // prefer quality outlets; backfill lightly so it's never empty
-  return merged.slice(0, 6);
-}
+// (Google News per-company fetch REMOVED — Google serves stale results to datacenter IPs. Per-company
+// news now comes from Yahoo per-ticker RSS; the /news/ feed comes from direct ST + BT RSS.)
 // General Singapore-market news — a single broad, recency-biased query so the /news/ feed always has fresh
 // daily market headlines even when no individual tracked counter published news. Quality outlets ONLY.
 // Parse a standard RSS feed. We use DIRECT outlet feeds (below) rather than Google News, because
@@ -2665,16 +2647,12 @@ for (const c of yTargets) {                                                // 2)
     const ydivs = y.divs.filter(d => d.exISO <= TODAY).map(d => ({ exISO: d.exISO, ccy: cur, amt: num(d.amount), amtNum: d.amount, rec: null, pay: null, annc: null }));
     if (ydivs.length) { rec.cur = cur; rec.ydivs = ydivs; yFixed++; }
   }
-  let news = fetchYahooNews(c.ticker);                                     // Yahoo RSS — title + summary + mixed financial sources
+  const news = fetchYahooNews(c.ticker);                                   // Yahoo per-ticker RSS (Google News dropped — it serves stale results to datacenter IPs)
   await ySleep(130);
-  const gnews = fetchGoogleNews(c.name);                                   // Google News — breadth (BT / Edge / ST / CNA …)
-  await ySleep(130);
-  const seenT = new Set(news.map(n => (n.title||'').toLowerCase().slice(0,55)));
-  for (const g of gnews) { const k = (g.title||'').toLowerCase().slice(0,55); if (!seenT.has(k)) { news.push(g); seenT.add(k); } }   // merge, Yahoo (summaries) first
   if (news.length) { rec.news = news.slice(0, 8); yNews++; }
   if (Object.keys(rec).length) { applyY(c, rec); fresh[c.slug] = { ...(cache[c.slug]||{}), ...rec }; }
 }
-if (!SKIP_YAHOO) console.log(`Enrichment: dividends ${yFixed}/${yTargets.length} · news ${yNews} (Google→Yahoo)`);
+if (!SKIP_YAHOO) console.log(`Enrichment: dividends ${yFixed}/${yTargets.length} · news ${yNews} (Yahoo per-ticker)`);
 
 // General Singapore-market news feed (cached like everything else so push builds keep it).
 let marketNews = Array.isArray(cache.__market) ? cache.__market : [];
