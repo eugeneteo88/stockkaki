@@ -1146,6 +1146,7 @@ function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
     ex: `At ${r.rate.toFixed(2)}% p.a., every S$10,000 earns about S$${Math.round(r.rate * 100)} a year${r.tenure ? '' : ' — at the full rate, once you meet the conditions'}.`,
     watch: r.watch || '',
     suits: r.suits || '',
+    steps: r.steps || [],
   }]));
   const detailJSON = JSON.stringify(detailMap).replace(/</g, '\\u003c');
   const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
@@ -1177,6 +1178,8 @@ function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
 .sksec{margin-bottom:14px}
 .sklabel{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:3px}
 .sksecv{font-size:14px;line-height:1.55}
+.sksteps{margin:0;padding-left:20px;font-size:14px;line-height:1.5}
+.sksteps li{margin-bottom:5px}
 .sklink{display:inline-block;background:var(--accent);color:#fff;border-radius:11px;padding:11px 18px;text-decoration:none;font-weight:600;font-size:14px;margin-top:2px}
 </style>`;
   const sheet = `<div class="skscrim" id="skscrim" onclick="closeSheet()"></div>
@@ -1187,6 +1190,7 @@ function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
     <div class="skmeta" id="skm"></div>
     <div class="sknote" id="skn"></div>
     <div class="sksec" id="skex"><div class="sklabel">What it means for you</div><div class="sksecv" id="skexv"></div></div>
+    <div class="sksec" id="sksteps"><div class="sklabel">How to reach the top rate</div><ol class="sksteps" id="skstepsv"></ol></div>
     <div class="sksec" id="skwatch"><div class="sklabel">Things to note</div><div class="sksecv" id="skwatchv"></div></div>
     <div class="sksec" id="sksuits"><div class="sklabel">Who it suits</div><div class="sksecv" id="sksuitsv"></div></div>
     <a class="sklink" id="skl" target="_blank" rel="noopener nofollow">View the bank&rsquo;s official page &rarr;</a>
@@ -1196,6 +1200,7 @@ function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
 window.RATEDETAIL=${detailJSON};
 function openSheet(el){var g=function(id){return document.getElementById(id)};g('skb').textContent=el.dataset.bank;g('skr').innerHTML=el.querySelector('.rc-rate').innerHTML;g('skm').textContent=el.querySelector('.rc-metatext').textContent;g('skn').textContent=el.querySelector('.rc-detail').textContent;g('skl').href=el.dataset.url;
 var d=(window.RATEDETAIL||{})[el.dataset.bank]||{};var sec=function(box,val,vEl){if(val){document.getElementById(vEl).textContent=val;document.getElementById(box).style.display='';}else{document.getElementById(box).style.display='none';}};sec('skex',d.ex,'skexv');sec('skwatch',d.watch,'skwatchv');sec('sksuits',d.suits,'sksuitsv');
+var st=document.getElementById('skstepsv');if(d.steps&&d.steps.length){st.innerHTML=d.steps.map(function(s){return '<li>'+s.replace(/</g,'&lt;')+'</li>'}).join('');document.getElementById('sksteps').style.display='';}else{document.getElementById('sksteps').style.display='none';}
 g('skscrim').classList.add('on');g('sksheet').classList.add('on');document.body.style.overflow='hidden';}
 function closeSheet(){document.getElementById('skscrim').classList.remove('on');document.getElementById('sksheet').classList.remove('on');document.body.style.overflow='';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();});
