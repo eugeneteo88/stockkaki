@@ -1650,6 +1650,41 @@ function relatedStocks(c) {
 ${picks.map(x => `    <a class="rel" href="/stock/${x.slug}/"><span class="rel-n">${esc(x.name)}${x.ticker?`<span class="rel-t">${x.ticker}</span>`:''}</span><span class="rel-y">${x.yieldPct!=null?x.yieldPct.toFixed(2)+'%':'—'}</span></a>`).join('\n')}
   </div>`;
 }
+// ---------- Plain-English metric explainers (ⓘ) — glossary served from a script object (not indexed) ----------
+const GLOSS = {
+  'market-cap': { t: 'Market cap', w: "The total value of all the company's shares — share price × number of shares.", r: "It tells you the company's size. Large-cap (in the billions) is usually established and steadier; small-cap has more room to grow but tends to carry more risk." },
+  'pe': { t: 'P/E ratio', w: "Price ÷ earnings per share — roughly how many years of profit you're paying for one share.", r: "Lower can mean cheaper; higher often means investors expect growth. Only compare within the same industry. Many Singapore stocks sit around 8–20." },
+  'pb': { t: 'P/B ratio', w: "Price ÷ the company's net asset value per share (its 'book value').", r: "Below 1 means it trades for less than its assets on paper. Most useful for asset-heavy businesses, banks and REITs." },
+  'eps': { t: 'EPS — earnings per share', w: "The company's profit divided by its number of shares.", r: "How much profit each share earns. Rising EPS over the years is a good sign. Compare it against the price and you get the P/E." },
+  'yield': { t: 'Dividend yield', w: "The yearly dividend as a percentage of the share price.", r: "Your income return if the dividend holds. A very high yield (say above 8–10%) can be a warning — check whether the company can keep paying it." },
+  'volume': { t: 'Volume', w: "How many shares changed hands, usually over the latest trading day.", r: "Higher volume means it's easier to buy and sell at a fair price. Very low volume can mean a wide gap between buyers' and sellers' prices." },
+  'range52': { t: '52-week range', w: "The highest and lowest price over the past year, and where today's price sits between them.", r: "Near the high = strong momentum (but pricier); near the low = out of favour (a bargain, or a warning). Use it as context, not a signal on its own." },
+};
+const infoIcon = (k) => `<button class="tinfo" type="button" onclick="openTerm('${k}')" aria-label="Explain this">i</button>`;
+const TERM_STYLE = `<style>
+.tinfo{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font:italic 700 10px/1 Georgia,serif;background:none;cursor:pointer;margin-left:5px;padding:0;vertical-align:middle}
+.tinfo:hover,.tinfo:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+.tscrim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .25s;z-index:60}
+.tscrim.on{opacity:1;visibility:visible}
+.tsheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:6px 20px 30px;max-width:640px;margin:0 auto;transform:translateY(101%);transition:transform .28s cubic-bezier(.32,.72,0,1);box-shadow:0 -12px 40px rgba(0,0,0,.18)}
+.tsheet.on{transform:translateY(0)}
+.tgrab{width:40px;height:4px;border-radius:3px;background:var(--line);margin:8px auto 16px}
+.tstitle{font-family:'Playfair Display',serif;font-weight:700;font-size:20px;margin-bottom:14px}
+.tssec{margin-bottom:14px}
+.tslabel{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:3px}
+.tssec .tsv{font-size:14.5px;line-height:1.6}
+</style>`;
+const TERM_SHEET = `<div class="tscrim" id="tscrim" onclick="closeTerm()"></div>
+  <div class="tsheet" id="tsheet" role="dialog" aria-modal="true" aria-label="Explainer">
+    <div class="tgrab"></div>
+    <div class="tstitle" id="tst"></div>
+    <div class="tssec"><div class="tslabel">What it is</div><div class="tsv" id="tswhat"></div></div>
+    <div class="tssec"><div class="tslabel">How to read it</div><div class="tsv" id="tsread"></div></div>
+  </div>`;
+const TERM_JS = `window.GLOSS=${JSON.stringify(GLOSS).replace(/</g, '\\u003c')};
+function openTerm(k){var d=(window.GLOSS||{})[k];if(!d)return;document.getElementById('tst').textContent=d.t;document.getElementById('tswhat').textContent=d.w;document.getElementById('tsread').textContent=d.r;document.getElementById('tscrim').classList.add('on');document.getElementById('tsheet').classList.add('on');document.body.style.overflow='hidden';}
+function closeTerm(){document.getElementById('tscrim').classList.remove('on');document.getElementById('tsheet').classList.remove('on');document.body.style.overflow='';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeTerm();});`;
 function stockPage(c) {
   const upcoming = c.divs.filter(d => d.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1);
   const next = upcoming[0];
@@ -1719,16 +1754,16 @@ ${c.news.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank"
   const CSf = csym(fcur);
   const rangePos = (f && f.w52lo!=null && f.w52hi!=null && c.price>0 && f.w52hi>f.w52lo) ? Math.max(0, Math.min(100, (c.price-f.w52lo)/(f.w52hi-f.w52lo)*100)) : null;
   const ovStats = f ? [
-    ['Market cap', fmtCap(fcur, f.mktCap)],
-    ['P/E ratio', f.pe!=null ? f.pe.toFixed(1) : null],
-    ['P/B ratio', f.pb!=null ? f.pb.toFixed(2) : null],
-    ['EPS (ttm)', f.eps!=null ? CSf+f.eps.toFixed(2) : null],
-    ['Dividend yield', c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : null],
-    ['Volume', f.vol ? fmtVol(f.vol) : null],
+    ['Market cap', fmtCap(fcur, f.mktCap), 'market-cap'],
+    ['P/E ratio', f.pe!=null ? f.pe.toFixed(1) : null, 'pe'],
+    ['P/B ratio', f.pb!=null ? f.pb.toFixed(2) : null, 'pb'],
+    ['EPS (ttm)', f.eps!=null ? CSf+f.eps.toFixed(2) : null, 'eps'],
+    ['Dividend yield', c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : null, 'yield'],
+    ['Volume', f.vol ? fmtVol(f.vol) : null, 'volume'],
   ].filter(x => x[1]!=null) : [];
   const pchart = priceChart(c.prices, fcur);
-  const overviewSection = (ovStats.length || rangePos!=null || pchart) ? `${pchart ? `<div class="ov-chart-h"><span>Price</span><span>${CSf}${c.price!=null?c.price:'—'}</span></div>${pchart}` : ''}<div class="ovgrid"${pchart?' style="margin-top:18px"':''}>${ovStats.map(s => `<div class="ovstat"><span class="ov-k">${s[0]}</span><span class="ov-v">${s[1]}</span></div>`).join('')}</div>
-  ${rangePos!=null ? `<div class="ov-range"><div class="ov-range-h"><span>52-week range</span></div><div class="ov-bar"><div class="ov-mark" style="left:${rangePos.toFixed(1)}%"></div></div><div class="ov-range-f"><span>${CSf}${f.w52lo}</span><span style="color:var(--ink)">now ${CSf}${c.price}</span><span>${CSf}${f.w52hi}</span></div></div>` : ''}
+  const overviewSection = (ovStats.length || rangePos!=null || pchart) ? `${pchart ? `<div class="ov-chart-h"><span>Price</span><span>${CSf}${c.price!=null?c.price:'—'}</span></div>${pchart}` : ''}<div class="ovgrid"${pchart?' style="margin-top:18px"':''}>${ovStats.map(s => `<div class="ovstat"><span class="ov-k">${s[0]}${s[2]?infoIcon(s[2]):''}</span><span class="ov-v">${s[1]}</span></div>`).join('')}</div>
+  ${rangePos!=null ? `<div class="ov-range"><div class="ov-range-h"><span>52-week range ${infoIcon('range52')}</span></div><div class="ov-bar"><div class="ov-mark" style="left:${rangePos.toFixed(1)}%"></div></div><div class="ov-range-f"><span>${CSf}${f.w52lo}</span><span style="color:var(--ink)">now ${CSf}${c.price}</span><span>${CSf}${f.w52hi}</span></div></div>` : ''}
   ${(f&&f.dayLo!=null&&f.dayHi!=null) ? `<p class="metaline" style="margin-top:16px">Day range <b>${CSf}${f.dayLo} – ${CSf}${f.dayHi}</b>.</p>` : ''}` : `<p class="metaline">Company fundamentals aren't available for this counter yet.</p>`;
   // ---- Announcements tab: this stock's SGX corporate actions ----
   const annSection = (c.anns && c.anns.length) ? `
@@ -1752,7 +1787,8 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
     <div class="kbox"><div class="kl">Mkt cap</div><div class="kv">${fmtCap(fcur, f&&f.mktCap)||'—'}</div></div>
     <div class="kbox"><div class="kl">52-wk high</div><div class="kv">${(f&&f.w52hi!=null)?CSf+f.w52hi:'—'}</div></div>
   </div>` : '';
-  const body = `  <section class="hero" style="padding-bottom:4px">
+  const body = `${TERM_STYLE}
+  <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/dividends/">Dividends</a> › ${c.name}</div>
     <div class="st-head">
       <div style="min-width:0">
@@ -1770,8 +1806,10 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
   ${relatedStocks(c)}
   ${faqHTML}
   <div class="st-toast" id="stToast"></div>
+  ${TERM_SHEET}
   ${jsonLd}`;
-  const tabScript = `<script>document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.tabpane').forEach(function(p){p.hidden=true;});var e=document.getElementById('t-'+t.dataset.tab);if(e)e.hidden=false;});});
+  const tabScript = `<script>${TERM_JS}
+document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.tabpane').forEach(function(p){p.hidden=true;});var e=document.getElementById('t-'+t.dataset.tab);if(e)e.hidden=false;});});
 (function(){
 var to=document.getElementById('stToast');
 function toast(m){if(!to)return;to.textContent=m;to.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){to.classList.remove('on');},3400);}
