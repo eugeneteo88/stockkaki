@@ -2344,9 +2344,9 @@ function guidePage(g) {
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
   // Author byline + bio — Eugene as StockKaki's plain-English guide writer (E-E-A-T signal).
   // Avatar is a lettered circle for now; swap the <span>E</span> for <img src="/eugene.jpg"> once the photo is added to assets/.
-  const byline = `<div style="display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13px;color:var(--muted)"><span style="width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:inline-flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:14px">E</span>By <b style="color:var(--ink)">Eugene</b></div>`;
+  const byline = `<div style="display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13px;color:var(--muted)"><img src="/eugene.jpg" alt="Eugene" width="30" height="30" loading="lazy" style="width:30px;height:30px;border-radius:50%;object-fit:cover">By <b style="color:var(--ink)">Eugene</b></div>`;
   const authorCard = `<div style="display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:28px 0 8px">
-    <span style="flex:0 0 auto;width:52px;height:52px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:22px">E</span>
+    <img src="/eugene.jpg" alt="Eugene" width="52" height="52" loading="lazy" style="flex:0 0 auto;width:52px;height:52px;border-radius:50%;object-fit:cover">
     <div><div style="font-weight:700;font-size:15px">Eugene</div><div style="font-size:13px;color:var(--muted);line-height:1.55;margin-top:3px">Eugene got tired of cluttered, confusing finance sites and built a clearer one. He writes StockKaki's guides in plain English &mdash; stocks, dividends, and where to park your cash in Singapore. Not financial advice, just the facts made simple.</div></div>
   </div>`;
   const body = `  <section class="hero" style="padding:22px 0 6px">
@@ -2695,7 +2695,7 @@ const out = new URL('./dist/', import.meta.url);
 // held (Explorer window, Defender, indexer) causing EBUSY on rmdir even when children are deletable.
 mkdirSync(out, { recursive: true });
 for (const entry of readdirSync(out)) rmSync(new URL(entry, out), { recursive: true, force: true, maxRetries: 12, retryDelay: 300 });
-for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png', 'moomoo.png']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
+for (const f of ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'favicon.ico', 'og.png', 'moomoo.png', 'eugene.jpg']) copyFileSync(new URL(`assets/${f}`, import.meta.url), new URL(f, out));
 mkdirSync(new URL('og/', out), { recursive: true });   // per-page social cards (assets/og/*.png → /og/*.png)
 try { const ogDir = new URL('assets/og/', import.meta.url); for (const f of readdirSync(ogDir)) if (f.endsWith('.png')) copyFileSync(new URL(f, ogDir), new URL(`og/${f}`, out)); } catch {}
 try { const sd = new URL('assets/og/stock/', import.meta.url); mkdirSync(new URL('og/stock/', out), { recursive: true }); for (const f of readdirSync(sd)) if (f.endsWith('.png')) copyFileSync(new URL(f, sd), new URL(`og/stock/${f}`, out)); } catch {}   // per-stock share cards
