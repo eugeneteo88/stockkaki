@@ -242,25 +242,40 @@ function fetchGoogleNews(name) {
 }
 // General Singapore-market news — a single broad, recency-biased query so the /news/ feed always has fresh
 // daily market headlines even when no individual tracked counter published news. Quality outlets ONLY.
-function fetchMarketNews() {
-  const q = encodeURIComponent('(SGX OR "Straits Times Index" OR "Singapore shares" OR "Singapore stocks" OR "Singapore market") when:4d');
-  let xml; try { xml = execFileSync('curl', ['-s','-m','20','-A',UA, `https://news.google.com/rss/search?q=${q}&hl=en-SG&gl=SG&ceid=SG:en`], { maxBuffer: 12*1024*1024 }).toString('utf8'); } catch { return []; }
+// Parse a standard RSS feed. We use DIRECT outlet feeds (below) rather than Google News, because
+// Google News serves STALE results (~1 day behind) to datacenter IPs like GitHub Actions — so the
+// feed was permanently a day old. Direct outlet RSS serves fresh content to any IP.
+function fetchRss(url, source) {
+  let xml; try { xml = execFileSync('curl', ['-s','-m','20','-A',UA,'--compressed', url], { maxBuffer: 16*1024*1024 }).toString('utf8'); } catch { return []; }
+  const strip = s => decodeEntities((s || '').replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '').trim());
   const out = [];
   for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
     const it = m[1];
-    let title = decodeEntities((it.match(/<title>([\s\S]*?)<\/title>/)||[])[1] || '');
-    const link = ((it.match(/<link>([\s\S]*?)<\/link>/)||[])[1] || '').trim();
-    const source = decodeEntities((it.match(/<source[^>]*>([\s\S]*?)<\/source>/)||[])[1] || '').trim();
-    const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)||[])[1];
-    if (!title || !link) continue;
-    title = title.replace(new RegExp('\\s*-\\s*' + source.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*$'), '').trim();
-    if (NEWS_JUNK.test(title)) continue;
-    if (!NEWS_OK.has(source)) continue;                       // general feed = reputable outlets only
-    let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0,10); } catch {}
+    const title = strip((it.match(/<title>([\s\S]*?)<\/title>/) || [])[1]);
+    let link = strip((it.match(/<link>([\s\S]*?)<\/link>/) || [])[1]);
+    if (!link) link = strip((it.match(/<guid[^>]*>([\s\S]*?)<\/guid>/) || [])[1]);
+    const pub = (it.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1];
+    if (!title || !link || NEWS_JUNK.test(title)) continue;
+    let dateISO = null; try { if (pub) dateISO = new Date(pub).toISOString().slice(0, 10); } catch {}
     if (!dateISO) continue;
     out.push({ title, link, dateISO, source, name: 'Singapore market' });
   }
-  return out.slice(0, 25);
+  return out;
+}
+// General Singapore-market news — merged from direct outlet RSS feeds (reputable + market-focused + fresh).
+function fetchMarketNews() {
+  const feeds = [
+    ['https://www.straitstimes.com/news/business/rss.xml', 'The Straits Times'],
+    ['https://www.businesstimes.com.sg/rss/companies-markets', 'The Business Times'],
+  ];
+  const seen = new Set(), all = [];
+  for (const [url, src] of feeds) for (const it of fetchRss(url, src)) {
+    const k = it.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
+    if (!k || seen.has(k)) continue; seen.add(k);
+    all.push(it);
+  }
+  all.sort((a, b) => a.dateISO < b.dateISO ? 1 : -1);
+  return all.slice(0, 25);
 }
 // ---------- Singapore Savings Bonds (MAS) ----------
 function getMAS(path) {
