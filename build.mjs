@@ -1547,7 +1547,7 @@ function calendarPage(upcoming) {
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Calendar — ${cm}</h1>
     <p class="sub" style="margin-bottom:0">Every upcoming SGX ex-dividend and pay date for ${cm} and beyond, in order — updated daily.</p>
   </section>
-  <div class="intro">Buy a stock <b>before its ex-date</b> to receive the upcoming dividend. Below are the next <b>${upcoming.length}</b> SGX ex-dividend dates from <b>${cm}</b> onwards, with their amounts and pay dates, newest first. For the full picture on any counter, tap through to its page.</div>
+  <div class="intro">Buy a stock <b>before its ex-date</b> to receive the upcoming dividend. Below are the next <b>${upcoming.length}</b> SGX ex-dividend dates from <b>${cm}</b> onwards, with their amounts and pay dates, newest first. Want to know exactly when the cash lands? See the <a href="/dividend-payout-dates/">dividend payment dates</a>. For the full picture on any counter, tap through to its page.</div>
   <div class="ltable cols-home" style="margin-top:12px">
     <div class="lrow lhead"><span>Company</span><span class="lr-exd">Ex-date</span><span class="lr-amt">Amount</span><span class="lr-ex">Pay date</span></div>
     <div id="tb">
@@ -1560,6 +1560,46 @@ ${rows}
   return shell(`Singapore Dividend Calendar ${cm} — Upcoming SGX Ex-Dividend & Pay Dates | StockKaki`,
     `Singapore dividend calendar for ${cm}: every upcoming SGX ex-dividend and pay date in order, updated daily. Never miss a payout.`,
     SITE + '/dividend-calendar/', body, '', '/og/dividend-calendar.png');
+}
+
+// ---------- dividend payment (pay) dates — "when the cash lands", ordered by pay date (a distinct door from the ex-date calendar) ----------
+function payoutDatesPage(upcoming) {
+  const paid = upcoming.filter(r => r.pay && r.pay >= TODAY).sort((a, b) => a.pay < b.pay ? -1 : 1);
+  const rows = paid.map(r => {
+    const amt = r.divIncomplete ? 'scrip' : money(r.ccy, r.amt);
+    return `        <a class="lrow" href="/stock/${r.slug}/" data-s="${esc((r.name + ' ' + (r.ticker || '')).toLowerCase())}">
+          <span class="lr-name"><span class="lr-co">${r.name}</span>${r.ticker ? `<span class="tick">${r.ticker}</span>` : ''}</span>
+          <span class="lr-exd">${pretty(r.pay)}</span>
+          <span class="lr-amt">${amt}</span>
+          <span class="lr-ex">${pretty(r.exISO)}</span>
+          <span class="lr-meta">Pay ${prettyShort(r.pay)}  &middot;  ${amt}  &middot;  Ex ${prettyShort(r.exISO)}</span>
+        </a>`;
+  }).join('\n');
+  const faqs = [
+    { q: 'When will I receive my dividend in Singapore?', a: 'The pay date is when the cash is credited to your account — usually two to four weeks after the ex-dividend date. The table above lists upcoming SGX dividends by pay date, so you can see exactly when each payout lands.' },
+    { q: "What's the difference between the ex-date and the payment date?", a: 'The ex-date is the cut-off to qualify — you must own the shares before it. The payment (pay) date is when the money actually reaches your account, a few weeks later. This page is ordered by pay date; the ex-date view is on the dividend calendar.' },
+    { q: 'Do I need to still hold the shares on the payment date?', a: 'No. Once you owned the shares before the ex-date, you are entitled to the dividend even if you sell afterwards — you will still be paid on the pay date.' },
+    { q: 'How often are these dividend payment dates updated?', a: 'Daily. Pay dates come from SGX corporate-action filings and are refreshed every day.' },
+  ];
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Payment Dates</h1>
+    <p class="sub" style="margin-bottom:0">When upcoming SGX dividends actually land in your account &mdash; ordered by pay date, updated daily.</p>
+  </section>
+  <div class="intro">The <b>payment date</b> (or pay date) is when a dividend is credited to your account &mdash; usually a few weeks after the ex-date. Below are the next <b>${paid.length}</b> SGX dividend payouts, soonest first. Looking for the cut-off to qualify instead? See the <a href="/dividend-calendar/">ex-dividend calendar</a>, or browse every payer on <a href="/dividends/">best dividend stocks</a>.</div>
+  <div class="ltable cols-home" style="margin-top:12px">
+    <div class="lrow lhead"><span>Company</span><span class="lr-exd">Pay date</span><span class="lr-amt">Amount</span><span class="lr-ex">Ex-date</span></div>
+    <div id="tb">
+${rows}
+    </div>
+  </div>
+  <p class="metaline" style="font-size:12px">Pay dates &amp; amounts from SGX filings; <b>scrip</b> = a reinvestment-option distribution (cash amount not in the free feed).</p>
+  ${faqHTML}
+  ${jsonLd}`;
+  return shell(`Singapore Dividend Payment Dates — When SGX Dividends Are Paid | StockKaki`,
+    `Upcoming Singapore dividend payment (pay) dates: when each SGX dividend is actually credited to your account, ordered by pay date and updated daily.`,
+    SITE + '/dividend-payout-dates/', body, '', '/og/dividend-calendar.png');
 }
 
 // ---------- announcements ----------
@@ -2780,6 +2820,8 @@ writeFileSync(new URL('etfs/index.html', out), listPage({
   list: etfList, canon: SITE + '/etfs/', typeChips: false, og: '/og/etfs.png' }));
 mkdirSync(new URL('dividend-calendar/', out), { recursive: true });
 writeFileSync(new URL('dividend-calendar/index.html', out), calendarPage(upcoming));
+mkdirSync(new URL('dividend-payout-dates/', out), { recursive: true });
+writeFileSync(new URL('dividend-payout-dates/index.html', out), payoutDatesPage(upcoming));
 mkdirSync(new URL('announcements/', out), { recursive: true });
 writeFileSync(new URL('announcements/index.html', out), announcementsPage(anns));
 mkdirSync(new URL('news/', out), { recursive: true });
@@ -2847,7 +2889,7 @@ writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r =
 writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
 if (ssb && ssb.current) writeFileSync(new URL('api/ssb.json', out), JSON.stringify({ code: ssb.current.code, y1: ssb.current.y1, y10: ssb.current.y10, applyFmt: ssb.current.applyFmt, issueFmt: ssb.current.issueFmt }));   // for new-SSB alerts
 
-const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/best-performing-reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/savings/', SITE + '/fixed-deposits/', SITE + '/savings-accounts/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/best-performing-reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/dividend-payout-dates/', SITE + '/savings/', SITE + '/fixed-deposits/', SITE + '/savings-accounts/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
@@ -2863,6 +2905,7 @@ writeFileSync(new URL('llms.txt', out), `# StockKaki — Singapore dividend & st
 - Where to park cash (fixed deposits, savings accounts, SSB, T-bills) compared: ${SITE}/savings/
 - Best fixed deposit rates in Singapore (verified against each bank): ${SITE}/fixed-deposits/
 - Best high-interest savings accounts in Singapore (with real conditions): ${SITE}/savings-accounts/
+- Dividend payment (pay) dates — when SGX dividends land in your account: ${SITE}/dividend-payout-dates/
 - Singapore Savings Bonds (SSB) rates, step-up schedule & returns calculator: ${SITE}/ssb/
 - SGX corporate actions / announcements: ${SITE}/announcements/
 - Per-stock pages (price, dividend history, yield, ex-dates) for all ${all.length} SGX counters: ${SITE}/stock/<slug>/ — full list in ${SITE}/sitemap.xml
