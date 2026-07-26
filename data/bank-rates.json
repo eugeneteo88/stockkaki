@@ -1,0 +1,23 @@
+{
+  "updated": "2026-07-26",
+  "note": "Every rate here is verified against the bank's own official page on the 'updated' date. Refresh monthly via scratchpad/bank-rates verify (headless Chrome render of each bank page). Add banks only once verified.",
+  "fd": [
+    { "bank": "RHB", "rate": 1.55, "tenure": "12 months", "min": 20000, "fresh": false, "verified": false, "note": "As published by RHB (rates on their PDF sheet); verifying. Min S$20,000, 3–36 month terms.", "url": "https://www.rhbgroup.com.sg/rhb/personal/deposits/fixed-deposit-account" },
+    { "bank": "Bank of China", "rate": 1.55, "tenure": "6–12 months", "min": 500, "fresh": false, "verified": false, "note": "Lowest entry of the higher-rate banks — just S$500. Rate as published; verifying.", "url": "https://www.moneysmart.sg/fixed-deposit/boc" },
+    { "bank": "Maybank", "rate": 1.50, "tenure": "12 months", "min": 20000, "fresh": true, "verified": true, "note": "The rate steps up over the 12-month term; the effective (average) rate you earn is 1.50% p.a.", "url": "https://www.maybank2u.com.sg/en/promotions/deposits/sgd-time-deposit.page" },
+    { "bank": "Hong Leong Finance", "rate": 1.50, "tenure": "4–5 months", "min": 10000, "fresh": true, "verified": true, "note": "1.50% on 4–5 month fresh funds; 1.45% for 12 months at S$20,000.", "url": "https://www.hlf.com.sg/personal/promotions/fixed-deposits-promotion-singapore.php" },
+    { "bank": "CIMB", "rate": 1.45, "tenure": "9 months", "min": 10000, "fresh": true, "verified": true, "note": "1.45% Personal Banking (online); 1.50% for Preferred clients.", "url": "https://www.cimb.com.sg/en/personal/help-support/rates-charges/rates/sgd-fixed-deposit-rates.html" },
+    { "bank": "ICBC", "rate": 1.40, "tenure": "up to 12 months", "min": 500, "fresh": true, "verified": false, "note": "1.40% via e-banking (min S$500 online / S$20,000 at branch). Verifying exact tenor.", "url": "https://singapore.icbc.com.cn/en/page/721854535525236736.html" },
+    { "bank": "UOB", "rate": 1.30, "tenure": "12 months", "min": 10000, "fresh": true, "verified": true, "note": "1.35% p.a. if you also hold eligible wealth products.", "url": "https://www.uob.com.sg/personal/save/fixed-deposits/singapore-dollar-fixed-deposit.page" },
+    { "bank": "OCBC", "rate": 1.30, "tenure": "12 months", "min": 20000, "fresh": true, "verified": true, "note": "1.30% online / 1.25% at a branch.", "url": "https://www.ocbc.com/personal-banking/deposits/fixed-deposit-account" },
+    { "bank": "Standard Chartered", "rate": 1.30, "tenure": "6 months", "min": 25000, "fresh": true, "verified": true, "note": "By customer tier: 1.30% standard, 1.40% Priority, 1.60% Priority Private.", "url": "https://www.sc.com/sg/save/time-deposits/singapore-dollar-time-deposit/" },
+    { "bank": "DBS / POSB", "rate": 1.00, "tenure": "8–12 months", "min": 1000, "fresh": false, "verified": true, "note": "The easiest to start — just S$1,000, and no fresh-funds condition.", "url": "https://www.dbs.com.sg/personal/rates-online/fixed-deposit-rate-singapore-dollar.page" }
+  ],
+  "savings": [
+    { "bank": "DBS Multiplier", "rate": 4.10, "verified": true, "note": "Top rate needs salary credit + transactions across several categories (cards, loans, insurance).", "url": "https://www.dbs.com.sg/personal/deposits/bank-earn/multiplier-account" },
+    { "bank": "UOB One", "rate": 3.40, "verified": true, "note": "Credit salary / GIRO + spend S$500 on an eligible card.", "url": "https://www.uob.com.sg/personal/save/savings/one-account.page" },
+    { "bank": "GXS Savings", "rate": 2.82, "verified": true, "note": "Digital bank — no salary, spend or hoops. Simplest high rate.", "url": "https://www.gxs.com.sg/" },
+    { "bank": "Trust Bank", "rate": 2.40, "verified": true, "note": "Digital bank — spend-linked, minimal conditions.", "url": "https://trustbank.sg/" },
+    { "bank": "OCBC 360", "rate": 1.95, "verified": true, "note": "About 1.95% on salary + save + spend; reaches 4.45% when you also insure and invest.", "url": "https://www.ocbc.com/personal-banking/deposits/360-savings-account" }
+  ]
+}

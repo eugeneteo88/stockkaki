@@ -374,7 +374,7 @@ const WA = `<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d=
 const ACCT_IC = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 // TODO(Eugene): paste your WhatsApp channel/community invite link here to activate the "Join channel" button.
 const WHATSAPP_URL = 'https://whatsapp.com/channel/';
-const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/ssb/">SSB</a><a href="/t-bills/">T-bills</a><a href="/news/">News</a><a href="/guides/">Guides</a>`;
+const NAVLINKS = `<a href="/stocks/">Stocks</a><a href="/dividends/">Dividends</a><a href="/reits/">REITs</a><a href="/etfs/">ETFs</a><a href="/dividend-calendar/">Calendar</a><a href="/savings/">Savings</a><a href="/news/">News</a><a href="/guides/">Guides</a>`;
 const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/">StockKaki<span class="bdot">.</span></a>
@@ -1121,6 +1121,56 @@ ${ranked.map(card).join('\n')}
   const title = `Best Performing REITs in Singapore ${YEAR} — S-REITs by 1-Year Return | StockKaki`;
   const desc = `SGX-listed REITs ranked by 1-year share-price return for ${YEAR} — see which Singapore S-REITs and business trusts have performed best, with dividend yields alongside. Updated daily, free.`;
   return shell(title, desc, SITE + '/best-performing-reits/', body, '', '/og/reits.png');
+}
+
+// ---------- Bank rates: Fixed Deposits + Savings Accounts (verified monthly against each bank's own page) ----------
+const rateCard = (r, i) => `      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px">
+        <span class="rk"${i < 3 ? ' style="background:var(--accent);color:#fff"' : ''}>${i + 1}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+            <span style="font-weight:600">${esc(r.bank)}${r.verified ? ' <span style="font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--up)">&#10003; verified</span>' : ' <span style="font-size:10px;color:var(--muted)">listed</span>'}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;color:var(--accent-dk);white-space:nowrap">${r.rate.toFixed(2)}<span style="font-size:11px;color:var(--muted);font-weight:600"> % p.a.</span></span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">${[r.tenure ? esc(r.tenure) : null, r.min ? 'min S$' + r.min.toLocaleString() : null].filter(Boolean).join(' &middot; ')}</div>
+          <div style="font-size:13px;margin-top:5px;opacity:.9">${esc(r.note || '')} <a href="${esc(r.url)}" target="_blank" rel="noopener nofollow" style="color:var(--accent-dk);white-space:nowrap">bank page &rarr;</a></div>
+        </div>
+      </div>`;
+function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
+  const sorted = [...list].sort((a, b) => b.rate - a.rate);
+  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
+    <p class="sub" style="margin-bottom:2px">${sub}</p>
+  </section>
+  <div class="hub-h" style="margin:14px 0 12px">${tag} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">verified ${prettyShort(BANK.updated)}</span></div>
+  ${sorted.map(rateCard).join('\n')}
+  <p class="metaline" style="font-size:12px;margin-top:14px">Every rate here is checked against the bank&rsquo;s own website, last verified ${pretty(BANK.updated)}. Promotional rates can change at any time &mdash; always confirm with the bank before placing funds. Not financial advice.</p>
+  <div class="intro" style="margin-top:18px">${intro}</div>
+  ${faqHTML}
+  ${jsonLd}`;
+  return shell(title, desc, canon, body, '', '/og/home.png');
+}
+function savingsHubPage() {
+  const fdBest = Math.max(...BANK.fd.map(r => r.rate)), svBest = Math.max(...BANK.savings.map(r => r.rate));
+  const card = (name, href, blurb) => `    <a href="${href}" style="display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px;text-decoration:none">
+      <div style="font-weight:600;color:var(--ink);font-size:16px">${name} <span style="color:var(--accent-dk)">&rarr;</span></div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px">${blurb}</div>
+    </a>`;
+  const body = `  <section class="hero" style="padding:22px 0 4px">
+    <h1 class="serif" style="font-size:27px;margin:0 0 4px">Where to park your cash in Singapore</h1>
+    <p class="sub">The safe, interest-earning options compared &mdash; fixed deposits, high-interest savings accounts, Singapore Savings Bonds and T-bills. Rates verified against each provider.</p>
+  </section>
+  <div style="margin-top:16px">
+${card('Fixed Deposits', '/fixed-deposits/', `Lock in a guaranteed rate for a set term. Best verified now: <b>${fdBest.toFixed(2)}% p.a.</b>`)}
+${card('Savings Accounts', '/savings-accounts/', `High-interest accounts that reward salary + spend. Up to <b>${svBest.toFixed(2)}% p.a.</b> (conditions apply).`)}
+${card('Singapore Savings Bonds (SSB)', '/ssb/', 'Government-backed, fully flexible, step-up interest that rises the longer you hold.')}
+${card('Treasury Bills (T-bills)', '/t-bills/', '6-month and 1-year Singapore Government T-bills, by latest auction cut-off yield.')}
+  </div>
+  <div class="intro" style="margin-top:18px">Every option here is capital-safe &mdash; either government-backed or SDIC-insured up to S$100,000 per bank. The best choice depends on how long you can set the money aside and how much flexibility you want; this hub keeps the current rates side by side so you can decide. Rates verified ${pretty(BANK.updated)}.</div>`;
+  return shell(`Best Savings Rates in Singapore ${YEAR} — FD, Savings Accounts, SSB & T-bills | StockKaki`,
+    `Compare where to park your cash in Singapore for ${YEAR} — fixed deposits, high-interest savings accounts, Singapore Savings Bonds and T-bills, with current verified rates. Free, updated.`,
+    SITE + '/savings/', body, '', '/og/home.png');
 }
 
 // ---------- all Singapore stocks (full SGX universe) — same concept as the dividend page, ranked by market cap ----------
@@ -2313,6 +2363,7 @@ for (const s of secList) { const k = secNorm(s.name); if (k && !secByNorm.has(k)
 const ssb = fetchSSB();           // Singapore Savings Bonds (MAS)
 const sgs = fetchSGSYields();     // SGS benchmark yields → project the next SSB issue
 const tbills = fetchTBills();     // Singapore Treasury Bill auction cut-off yields (MAS)
+const BANK = JSON.parse(readFileSync(new URL('./data/bank-rates.json', import.meta.url), 'utf8'));   // FD + savings rates, verified monthly against each bank's page
 const raw = await fetchRaw(50);   // ~5-6 years of history
 SCRIP = collectScrip(raw);        // stocks whose trailing distributions hide the amount (scrip/DRP)
 const rows = parseDividends(raw);
@@ -2568,6 +2619,51 @@ mkdirSync(new URL('ssb/', out), { recursive: true });
 writeFileSync(new URL('ssb/index.html', out), ssbPage(ssb, sgs));
 mkdirSync(new URL('t-bills/', out), { recursive: true });
 writeFileSync(new URL('t-bills/index.html', out), tbillsPage(tbills));
+// --- Savings hub + Fixed Deposits + Savings Accounts (bank rates) ---
+mkdirSync(new URL('savings/', out), { recursive: true });
+writeFileSync(new URL('savings/index.html', out), savingsHubPage());
+mkdirSync(new URL('fixed-deposits/', out), { recursive: true });
+writeFileSync(new URL('fixed-deposits/index.html', out), ratePage({
+  canon: SITE + '/fixed-deposits/', tag: 'Ranked by rate',
+  title: `Best Fixed Deposit Rates in Singapore ${YEAR} — Verified Bank Comparison | StockKaki`,
+  desc: `Singapore fixed deposit (FD) rates compared and verified against each bank's own page for ${YEAR} — DBS, UOB, OCBC, Standard Chartered and more. See the real rate, not the headline.`,
+  h1: `Best fixed deposit rates in Singapore — ${YEAR}`,
+  sub: `SGD fixed deposit rates, ranked and checked against each bank's official page.`,
+  list: BANK.fd,
+  intro: `<p style="margin:0 0 12px">A fixed deposit locks your money away for a set term in return for a <b>guaranteed</b> rate &mdash; you know exactly what you'll earn, and it doesn't depend on how you spend. The list above is ranked by the <b>effective rate</b> (what you actually earn), each figure checked against the bank's own page. Every FD here is SDIC-insured up to S$100,000 per bank.</p>
+  <div style="background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:0 0 12px">
+    <div style="font-weight:600;margin-bottom:6px">How to read these rates &mdash; in plain English</div>
+    <div style="font-size:13px;line-height:1.7"><b>Effective rate</b> is what lands in your pocket. When a bank shows a higher &ldquo;up to&rdquo; number, the rate usually <b>steps up</b> over the term &mdash; you only reach the top rate near the end, so the average you earn is a bit lower. We rank by the effective rate so it's a fair, like-for-like comparison.<br><b>Fresh funds</b> &mdash; many of the best rates are for new money, not cash already sitting with the bank.<br><b>Tenure</b> &mdash; the rate depends on how long you lock it up (usually 6 or 12 months).<br><b>Minimum</b> &mdash; how much you need to start, from S$500 to S$25,000.<br><b>Tier</b> &mdash; a few of the top rates are for Priority or Private banking clients.</div>
+  </div>
+  <p style="margin:0">Prefer to keep your money flexible, or chase a higher rate with some conditions? Compare <a href="/savings-accounts/">high-interest savings accounts</a> or <a href="/ssb/">Singapore Savings Bonds</a>.</p>`,
+  faqs: [
+    { q: `What is the best fixed deposit rate in Singapore in ${YEAR}?`, a: `The highest SGD fixed deposit rates are around 1.50–1.55% p.a. — from Maybank (1.50% effective), Hong Leong Finance, RHB and Bank of China (which needs just S$500). The three local banks (UOB, OCBC 1.30%; DBS/POSB 1.00%) sit lower. Rates are verified against each bank's own page and change with promotions.` },
+    { q: `Why is the advertised rate sometimes higher than what I actually earn?`, a: `Two common reasons, both perfectly normal. First, many promotions "step up" — the rate rises over the term, so you touch the top number only near the end and the effective (average) rate is a little lower. Second, the highest rate can be for a specific customer tier — for example Standard Chartered shows 1.30% standard, 1.40% Priority and 1.60% Priority Private. The number that matters is the effective rate for the tier you're in, which is what we rank by.` },
+    { q: `Is my fixed deposit safe in Singapore?`, a: `Yes. SGD deposits with a Singapore bank or finance company are insured by the Singapore Deposit Insurance Corporation (SDIC) up to S$100,000 per depositor per bank.` },
+    { q: `Fixed deposit or high-interest savings account — which is better?`, a: `A fixed deposit gives a guaranteed rate with no hoops but locks your money for the term. A savings account can pay more but only if you credit your salary and spend on a card. If you value certainty and simplicity, choose an FD; if you can meet the conditions, a savings account may pay more.` },
+  ],
+}));
+mkdirSync(new URL('savings-accounts/', out), { recursive: true });
+writeFileSync(new URL('savings-accounts/index.html', out), ratePage({
+  canon: SITE + '/savings-accounts/', tag: 'Ranked by max rate',
+  title: `Best Savings Accounts in Singapore ${YEAR} — Highest Interest Compared | StockKaki`,
+  desc: `Singapore's highest-interest savings accounts for ${YEAR} — DBS Multiplier, UOB One, OCBC 360 and the digital banks — with the real conditions behind each rate. Verified, free.`,
+  h1: `Best savings accounts in Singapore — ${YEAR}`,
+  sub: `High-interest savings accounts, ranked by headline rate &mdash; with the conditions spelled out.`,
+  list: BANK.savings,
+  intro: `<p style="margin:0 0 12px">A high-interest savings account can pay more than a fixed deposit &mdash; the top rates are &ldquo;bonus interest&rdquo; you unlock by doing things: crediting your salary, spending on a card, sometimes insuring and investing too. The list above is ranked by headline rate, each figure verified against the bank's page, with the conditions shown plainly.</p>
+  <div style="background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:0 0 12px">
+    <div style="font-weight:600;margin-bottom:6px">How to read these rates &mdash; in plain English</div>
+    <div style="font-size:13px;line-height:1.7"><b>Bonus interest stacks.</b> You earn a small base rate on everything, plus extra for each thing you do (salary, spend, insure, invest). The headline &ldquo;up to&rdquo; number is what you'd earn only if you tick every box &mdash; OCBC 360, for example, is about 1.95% on salary + save + spend, and reaches 4.45% when you also insure and invest.<br><b>There's usually a cap</b> &mdash; the bonus interest applies only up to a limit, often the first S$100,000.<br><b>The no-hoops option</b> &mdash; the digital banks (GXS, Trust) pay a flat 2.4&ndash;2.8% with almost no conditions, the simplest choice if you'd rather not juggle requirements.</div>
+  </div>
+  <p style="margin:0">Want a guaranteed rate with no conditions at all? See <a href="/fixed-deposits/">fixed deposits</a>.</p>`,
+  faqs: [
+    { q: `Which savings account has the highest interest in Singapore in ${YEAR}?`, a: `DBS Multiplier and UOB One advertise the highest headline rates (up to ~4.1% and ~3.4%), but only if you meet several salary and spending conditions. For an easy high rate with almost no conditions, the digital banks GXS (up to 2.82%) and Trust (2.4%) are hard to beat.` },
+    { q: `Do I actually get the advertised savings rate?`, a: `You earn the base rate on your whole balance, plus bonus interest for each condition you meet — so you'd reach the headline "up to" number only if you tick every box (salary, spend, insure, invest). The practical tip: look at the rate for the conditions you'll realistically meet, not the maximum. If you'd rather keep it simple, the digital banks pay a flat rate with almost no conditions.` },
+    { q: `Are digital bank savings accounts (GXS, Trust) safe?`, a: `Yes. GXS and Trust are licensed Singapore banks and deposits are SDIC-insured up to S$100,000 per bank, the same protection as DBS, UOB or OCBC.` },
+    { q: `Savings account or fixed deposit?`, a: `A savings account keeps your money fully accessible and can pay more if you meet the conditions; a fixed deposit gives a guaranteed rate but locks the funds for the term. Match it to whether you need flexibility or certainty.` },
+  ],
+}));
 mkdirSync(new URL('account/', out), { recursive: true });
 writeFileSync(new URL('account/index.html', out), accountPage());
 mkdirSync(new URL('confirm/', out), { recursive: true });
@@ -2580,7 +2676,7 @@ writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r =
 writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
 if (ssb && ssb.current) writeFileSync(new URL('api/ssb.json', out), JSON.stringify({ code: ssb.current.code, y1: ssb.current.y1, y10: ssb.current.y10, applyFmt: ssb.current.applyFmt, issueFmt: ssb.current.issueFmt }));   // for new-SSB alerts
 
-const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/best-performing-reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
+const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/best-performing-reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/savings/', SITE + '/fixed-deposits/', SITE + '/savings-accounts/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
 writeFileSync(new URL('sitemap.xml', out),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   urls.map(u => `  <url><loc>${u}</loc><lastmod>${TODAY}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
@@ -2593,6 +2689,9 @@ writeFileSync(new URL('llms.txt', out), `# StockKaki — Singapore dividend & st
 - Best dividend stocks (ranked by yield): ${SITE}/dividends/
 - Singapore REITs by distribution yield: ${SITE}/reits/
 - Best performing S-REITs (ranked by 1-year share-price return): ${SITE}/best-performing-reits/
+- Where to park cash (fixed deposits, savings accounts, SSB, T-bills) compared: ${SITE}/savings/
+- Best fixed deposit rates in Singapore (verified against each bank): ${SITE}/fixed-deposits/
+- Best high-interest savings accounts in Singapore (with real conditions): ${SITE}/savings-accounts/
 - Singapore Savings Bonds (SSB) rates, step-up schedule & returns calculator: ${SITE}/ssb/
 - SGX corporate actions / announcements: ${SITE}/announcements/
 - Per-stock pages (price, dividend history, yield, ex-dates) for all ${all.length} SGX counters: ${SITE}/stock/<slug>/ — full list in ${SITE}/sitemap.xml
