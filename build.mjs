@@ -1124,32 +1124,96 @@ ${ranked.map(card).join('\n')}
 }
 
 // ---------- Bank rates: Fixed Deposits + Savings Accounts (verified monthly against each bank's own page) ----------
-const rateCard = (r, i) => `      <div style="display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px">
+// Compact card: essentials always visible; full detail lives in .rc-detail (in the HTML for SEO,
+// display:none) and is revealed in the bottom-sheet drawer on tap.
+const rateCard = (r, i) => {
+  const badge = r.verified ? ` <span style="font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--up)">&#10003;</span>` : ` <span style="font-size:10px;color:var(--muted)">listed</span>`;
+  const meta = [r.tenure ? esc(r.tenure) : null, r.min ? 'min S$' + r.min.toLocaleString() : null].filter(Boolean).join(' &middot; ');
+  return `      <div class="rcard" role="button" tabindex="0" data-bank="${esc(r.bank)}" data-url="${esc(r.url)}" onclick="openSheet(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSheet(this)}">
         <span class="rk"${i < 3 ? ' style="background:var(--accent);color:#fff"' : ''}>${i + 1}</span>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-            <span style="font-weight:600">${esc(r.bank)}${r.verified ? ' <span style="font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--up)">&#10003; verified</span>' : ' <span style="font-size:10px;color:var(--muted)">listed</span>'}</span>
-            <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;color:var(--accent-dk);white-space:nowrap">${r.rate.toFixed(2)}<span style="font-size:11px;color:var(--muted);font-weight:600"> % p.a.</span></span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);margin-top:3px">${[r.tenure ? esc(r.tenure) : null, r.min ? 'min S$' + r.min.toLocaleString() : null].filter(Boolean).join(' &middot; ')}</div>
-          <div style="font-size:13px;margin-top:5px;opacity:.9">${esc(r.note || '')} <a href="${esc(r.url)}" target="_blank" rel="noopener nofollow" style="color:var(--accent-dk);white-space:nowrap">bank page &rarr;</a></div>
+        <div class="rc-main">
+          <div class="rc-top"><span class="rc-bank">${esc(r.bank)}${badge}</span><span class="rc-rate">${r.rate.toFixed(2)}<span> % p.a.</span></span></div>
+          <div class="rc-meta"><span class="rc-metatext">${meta}</span><span class="rc-more">details &rsaquo;</span></div>
         </div>
+        <div class="rc-detail">${esc(r.note || '')}</div>
       </div>`;
+};
 function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
   const sorted = [...list].sort((a, b) => b.rate - a.rate);
+  // Deep "help you understand" layer — served from a script object, NOT the indexed HTML (keeps the
+  // page lean and doesn't dilute SEO; its job is to help the reader, not to rank).
+  const detailMap = Object.fromEntries(list.map(r => [r.bank, {
+    ex: `At ${r.rate.toFixed(2)}% p.a., every S$10,000 earns about S$${Math.round(r.rate * 100)} a year${r.tenure ? '' : ' — at the full rate, once you meet the conditions'}.`,
+    watch: r.watch || '',
+    suits: r.suits || '',
+  }]));
+  const detailJSON = JSON.stringify(detailMap).replace(/</g, '\\u003c');
   const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
-  const body = `  <section class="hero" style="padding:22px 0 4px">
+  const topR = sorted[0];
+  const lowMin = [...list].filter(r => r.min).sort((a, b) => a.min - b.min)[0];
+  const summary = `<div style="background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13px"><b>Quick answer:</b> top rate &mdash; ${esc(topR.bank)} <b>${topR.rate.toFixed(2)}%</b>${lowMin ? `; lowest entry &mdash; ${esc(lowMin.bank)} at <b>S$${lowMin.min.toLocaleString()}</b>` : ''}. Tap any bank for the details.</div>`;
+  const style = `<style>
+.rcard{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.rcard:hover,.rcard:focus-visible{border-color:var(--accent);outline:none}
+.rc-main{flex:1;min-width:0}
+.rc-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.rc-bank{font-weight:600}
+.rc-rate{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;color:var(--accent-dk);white-space:nowrap}
+.rc-rate span{font-size:11px;color:var(--muted);font-weight:600}
+.rc-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:3px}
+.rc-more{color:var(--accent-dk);white-space:nowrap;font-weight:600}
+.rc-detail{display:none}
+.skscrim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .25s;z-index:60}
+.skscrim.on{opacity:1;visibility:visible}
+.sksheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:6px 20px 28px;max-width:640px;margin:0 auto;transform:translateY(101%);transition:transform .28s cubic-bezier(.32,.72,0,1);box-shadow:0 -12px 40px rgba(0,0,0,.18)}
+.sksheet.on{transform:translateY(0)}
+.skgrab{width:40px;height:4px;border-radius:3px;background:var(--line);margin:8px auto 16px}
+.skbank{font-family:'Playfair Display',serif;font-weight:700;font-size:19px}
+.skrate{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:24px;color:var(--accent-dk);margin:4px 0 1px}
+.skrate span{font-size:12px;color:var(--muted)}
+.skmeta{font-size:13px;color:var(--muted);margin-bottom:14px}
+.sknote{font-size:14.5px;line-height:1.6;margin-bottom:16px}
+.sksec{margin-bottom:14px}
+.sklabel{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:3px}
+.sksecv{font-size:14px;line-height:1.55}
+.sklink{display:inline-block;background:var(--accent);color:#fff;border-radius:11px;padding:11px 18px;text-decoration:none;font-weight:600;font-size:14px;margin-top:2px}
+</style>`;
+  const sheet = `<div class="skscrim" id="skscrim" onclick="closeSheet()"></div>
+  <div class="sksheet" id="sksheet" role="dialog" aria-modal="true" aria-label="Rate details">
+    <div class="skgrab"></div>
+    <div class="skbank" id="skb"></div>
+    <div class="skrate" id="skr"></div>
+    <div class="skmeta" id="skm"></div>
+    <div class="sknote" id="skn"></div>
+    <div class="sksec" id="skex"><div class="sklabel">What it means for you</div><div class="sksecv" id="skexv"></div></div>
+    <div class="sksec" id="skwatch"><div class="sklabel">Things to note</div><div class="sksecv" id="skwatchv"></div></div>
+    <div class="sksec" id="sksuits"><div class="sklabel">Who it suits</div><div class="sksecv" id="sksuitsv"></div></div>
+    <a class="sklink" id="skl" target="_blank" rel="noopener nofollow">View the bank&rsquo;s official page &rarr;</a>
+    <div style="font-size:11px;color:var(--muted);margin-top:12px">Verified against the bank&rsquo;s own page &middot; always confirm before placing funds.</div>
+  </div>`;
+  const drawerJS = `<script>
+window.RATEDETAIL=${detailJSON};
+function openSheet(el){var g=function(id){return document.getElementById(id)};g('skb').textContent=el.dataset.bank;g('skr').innerHTML=el.querySelector('.rc-rate').innerHTML;g('skm').textContent=el.querySelector('.rc-metatext').textContent;g('skn').textContent=el.querySelector('.rc-detail').textContent;g('skl').href=el.dataset.url;
+var d=(window.RATEDETAIL||{})[el.dataset.bank]||{};var sec=function(box,val,vEl){if(val){document.getElementById(vEl).textContent=val;document.getElementById(box).style.display='';}else{document.getElementById(box).style.display='none';}};sec('skex',d.ex,'skexv');sec('skwatch',d.watch,'skwatchv');sec('sksuits',d.suits,'sksuitsv');
+g('skscrim').classList.add('on');g('sksheet').classList.add('on');document.body.style.overflow='hidden';}
+function closeSheet(){document.getElementById('skscrim').classList.remove('on');document.getElementById('sksheet').classList.remove('on');document.body.style.overflow='';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();});
+</script>`;
+  const body = `${style}
+  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
     <p class="sub" style="margin-bottom:2px">${sub}</p>
   </section>
-  <div class="hub-h" style="margin:14px 0 12px">${tag} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">verified ${prettyShort(BANK.updated)}</span></div>
+  <div class="hub-h" style="margin:14px 0 10px">${tag} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">verified ${prettyShort(BANK.updated)}</span></div>
+  ${summary}
   ${sorted.map(rateCard).join('\n')}
   <p class="metaline" style="font-size:12px;margin-top:14px">Every rate here is checked against the bank&rsquo;s own website, last verified ${pretty(BANK.updated)}. Promotional rates can change at any time &mdash; always confirm with the bank before placing funds. Not financial advice.</p>
   <div class="intro" style="margin-top:18px">${intro}</div>
   ${faqHTML}
-  ${jsonLd}`;
-  return shell(title, desc, canon, body, '', '/og/home.png');
+  ${jsonLd}
+  ${sheet}`;
+  return shell(title, desc, canon, body, drawerJS, '/og/home.png');
 }
 function savingsHubPage() {
   const fdBest = Math.max(...BANK.fd.map(r => r.rate)), svBest = Math.max(...BANK.savings.map(r => r.rate));
