@@ -94,6 +94,33 @@ const impΔ = delta(cur7.impressions,prev7.impressions);
 const clkΔ = delta(cur7.clicks,prev7.clicks);
 const orgΔ = delta(orgCurS,orgPrevS);
 
+// ---------- "what moved" — period-over-period (daily always · weekly on Sun · monthly on month-end) ----------
+const gSeries = (await gsc({startDate:daysAgo(62),endDate:daysAgo(1),dimensions:['date'],type:'web'}))
+  .map(r=>({d:r.keys[0], impr:n(r.impressions), clk:n(r.clicks), pos:n(r.position)}));
+const aSeries = await ga({dateRanges:[{startDate:'62daysAgo',endDate:'yesterday'}],dimensions:[{name:'date'}],metrics:[{name:'sessions'},{name:'totalUsers'}],dimensionFilter:ORG,orderBys:[{dimension:{dimensionName:'date'}}]});
+const byDate={};
+for(const r of gSeries){ (byDate[r.d]=byDate[r.d]||{}).impr=r.impr; byDate[r.d].clk=r.clk; byDate[r.d].pos=r.pos; }
+for(const r of aSeries){ const v=r.dimensionValues[0].value; const d=v.slice(0,4)+'-'+v.slice(4,6)+'-'+v.slice(6,8); (byDate[d]=byDate[d]||{}).sess=n(r.metricValues[0].value); byDate[d].users=n(r.metricValues[1].value); }
+const rng=(from,to)=>{const a=[];for(let i=from;i>=to;i--)a.push(daysAgo(i));return a;};
+const sumM=(ds,m)=>ds.reduce((a,d)=>a+((byDate[d]||{})[m]||0),0);
+const wposM=ds=>{let i=0,ip=0;for(const d of ds){const o=byDate[d]||{};if(o.impr){i+=o.impr;ip+=o.impr*(o.pos||0);}}return i?ip/i:0;};
+const sgtNow=new Date(Date.now()+288e5), sgtTom=new Date(Date.now()+288e5+864e5);
+const isSun=sgtNow.getUTCDay()===0, isMonthEnd=sgtTom.getUTCMonth()!==sgtNow.getUTCMonth();
+const fmtN=x=>Math.round(n(x)).toLocaleString(), fmtPos=x=>n(x).toFixed(1);
+// GA metrics are real-time (good for daily); GSC search metrics lag ~2 days (only meaningful summed over a week+).
+const METRICS={
+  sess: {label:'Organic visits', m:'sess', better:'up',   fmt:fmtN},
+  users:{label:'Users',          m:'users',better:'up',   fmt:fmtN},
+  impr: {label:'Impressions',    m:'impr', better:'up',   fmt:fmtN},
+  clk:  {label:'Clicks',         m:'clk',  better:'up',   fmt:fmtN},
+  pos:  {label:'Avg position',   pos:true, better:'down', fmt:fmtPos, eps:0.05},
+};
+const moverStat=r=>{const cur=n(r.cur),prev=n(r.prev),dv=cur-prev;const flat=(r.pos&&(cur===0||prev===0))||(prev===0&&cur===0)||Math.abs(dv)<(r.eps||1e-9);const improved=r.better==='up'?dv>0:dv<0;const noBase=!flat&&prev===0;const pct=prev?Math.abs(Math.round((cur-prev)/prev*100)):null;return{...r,cur,prev,dv,flat,improved,noBase,pct};};
+const build=(keys,cur,prev)=>keys.map(k=>{const d=METRICS[k];const c=d.pos?wposM(cur):sumM(cur,d.m);const p=d.pos?wposM(prev):sumM(prev,d.m);return moverStat({...d,cur:c,prev:p});});
+const movDaily=build(['sess','users'],[daysAgo(1)],[daysAgo(2)]);                 // GA real-time → yesterday vs day before
+const movWeek =build(['sess','users','impr','clk','pos'],rng(7,1),rng(14,8));      // full picture, search lag absorbed by the sum
+const movMonth=build(['sess','users','impr','clk','pos'],rng(30,1),rng(60,31));
+
 // ---------- console ----------
 console.log('════════ StockKaki growth · '+iso(new Date())+' ════════');
 console.log(`\n📈 SEARCH (GSC 28d, ${START}→${END})`);
@@ -106,6 +133,10 @@ console.log('\n🪜 STRIKING DISTANCE (pos 8–20 · one push from page 1)'); st
 console.log('\n🌱 ORGANIC (7d)  '+orgCurS+' sess · '+orgCurU+' users'); orgDaily.forEach(r=>{const d=r.dimensionValues[0].value;console.log(`   ${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}  ${n(r.metricValues[0].value)} sess`);});
 console.log('\n🤖 AI ANSWER ENGINES (AEO 28d)  '+aiTotS+' sess · '+aiTotU+' users · wk '+delta(aiCur7S,aiPrev7S)); aiEngines.length ? aiEngines.forEach(e=>console.log(`   ${String(e.sess).padStart(4)} sess · ${e.users} users  ${e.name}`)) : console.log('   (no AI-engine referrals yet)');
 console.log('\n📅 IMPRESSIONS TREND (14d)'); daily.forEach(r=>console.log(`   ${r.keys[0]}  ${n(r.impressions)} imp / ${n(r.clicks)} clk`));
+const printMovers=(title,rows)=>{ console.log('\n'+title); rows.forEach(s=>{const chg=s.flat?'— flat':s.noBase?'▲ new':((s.improved?'▲':'▼')+s.pct+'% '+(s.improved?'better':'softer'));console.log('   '+s.label.padEnd(15)+String(s.fmt(s.cur)).padStart(9)+'  (was '+s.fmt(s.prev)+')   '+chg);}); };
+printMovers('📊 WHAT MOVED — vs yesterday ('+daysAgo(1)+' vs '+daysAgo(2)+', organic traffic)', movDaily);
+if(isSun) printMovers('📅 WEEK vs WEEK (last 7d vs prior 7d)', movWeek);
+if(isMonthEnd) printMovers('🗓️  MONTH vs MONTH (last 30d vs prior 30d)', movMonth);
 
 // ---------- reader feedback (last ~26h) ----------
 let fb=[];
@@ -135,6 +166,13 @@ if(RESEND_API_KEY){
   const rowsP = topP.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace('https://stockkaki.com','')||'/'}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td></tr>`).join('');
   const strikeRows = striking.length ? striking.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace(/</g,'&lt;').slice(0,70)}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td><td style="padding:4px 8px;text-align:right;color:#2b6cb0">pos ${n(r.position).toFixed(0)}</td></tr>`).join('') : `<tr><td style="padding:9px 8px;color:#8a8378">Nothing sitting at position 8–20 right now — keep publishing and they'll appear here.</td></tr>`;
   const aiRowsHTML = aiEngines.length ? aiEngines.map(e=>`<tr><td style="padding:4px 8px">${e.name}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${e.sess} sess</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${e.users} users</td></tr>`).join('') : `<tr><td style="padding:9px 8px;color:#8a8378">No AI-engine referrals yet — this is where ChatGPT / Perplexity / Gemini traffic will show as AEO grows.</td></tr>`;
+  const moverHTML=(title,sub,rows)=>{
+    const up=rows.filter(s=>!s.flat&&s.improved).map(s=>s.label), dn=rows.filter(s=>!s.flat&&!s.improved).map(s=>s.label);
+    const tr=rows.map(s=>{const col=s.flat?'#8a8378':(s.improved?'#1a7f4b':'#b23a44');const chg=s.flat?'—':s.noBase?'▲ new':((s.improved?'▲':'▼')+' '+s.pct+'%');return `<tr><td style="padding:6px 10px">${s.label}</td><td style="padding:6px 10px;text-align:right;font-weight:600">${s.fmt(s.cur)}</td><td style="padding:6px 10px;text-align:right;color:#8a8378">${s.fmt(s.prev)}</td><td style="padding:6px 10px;text-align:right;color:${col};font-weight:700">${chg}</td></tr>`;}).join('');
+    return `<h3 style="font-family:Georgia,serif;font-size:15px;margin:20px 4px 4px">${title}</h3>
+    <p style="font-size:12px;color:#6b6459;margin:0 4px 7px">${sub} &nbsp; <b style="color:#1a7f4b">▲ ${up.join(', ')||'—'}</b> &nbsp;·&nbsp; <b style="color:#b23a44">▼ ${dn.join(', ')||'—'}</b></p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px"><tr style="color:#8a8378;font-size:10px;text-transform:uppercase;letter-spacing:.05em"><td style="padding:5px 10px">Area</td><td style="padding:5px 10px;text-align:right">Now</td><td style="padding:5px 10px;text-align:right">Before</td><td style="padding:5px 10px;text-align:right">Change</td></tr>${tr}</table>`;
+  };
   const html=`<div style="max-width:600px;margin:0 auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1c2430;background:#faf8f4;padding:22px">
   <div style="font-size:13px;color:#8a8378;letter-spacing:.06em;text-transform:uppercase">StockKaki · growth</div>
   <h1 style="font-family:Georgia,serif;font-size:23px;margin:2px 0 14px">Good morning, Eugene ☀️</h1>
@@ -145,6 +183,9 @@ if(RESEND_API_KEY){
     ${card('Organic 7d',orgCurS+' sess',orgCurU+' users · '+orgΔ)}
   </tr></table>
   <p style="font-size:13px;color:#6b6459;margin:14px 4px">Clicks 28d: <b>${n(tot.clicks)}</b> · CTR ${(n(tot.ctr)*100).toFixed(1)}% · avg position <b>${n(tot.position).toFixed(1)}</b> · ${queries.length} distinct queries. Week-on-week: impressions ${chip(impΔ)}, clicks ${chip(clkΔ)}, organic ${chip(orgΔ)}.</p>
+  ${moverHTML('📊 What moved — yesterday vs the day before', 'Organic visits, '+daysAgo(1)+' vs '+daysAgo(2)+' (near-real-time). Single days swing a lot — search stats sit in the weekly view, where the 2-day reporting lag evens out.', movDaily)}
+  ${isSun?moverHTML('📅 This week vs last week', 'Last 7 days vs the 7 before it.', movWeek):''}
+  ${isMonthEnd?moverHTML('🗓️ This month vs last month', 'Last 30 days vs the 30 before it.', movMonth):''}
   <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🪜 Striking distance — one push from page 1</h3>
   <p style="font-size:12px;color:#6b6459;margin:0 4px 6px">Searches where StockKaki ranks <b>position 8–20</b> (bottom of page 1 / top of page 2). These pages are the fastest wins — a better title, more content, or a clearer answer nudges them onto page one. Work top-down.</p>
   <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${strikeRows}</table>
