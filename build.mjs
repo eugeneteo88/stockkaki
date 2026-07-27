@@ -413,7 +413,7 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
     </div>
   </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
-const FOOTER = `<footer><div class="wrap"><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><span>© ${YEAR} StockKaki</span></div></div></footer>`;
+const FOOTER = `<footer><div class="wrap"><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a><span>© ${YEAR} StockKaki</span></div></div></footer>`;
 
 const STYLE = `
   :root{ --ink:#0F1319; --muted:#6B7280; --line:#E6E8EE; --hair-2:#EEF0F4; --bg:#F7F8FA; --card:#FFFFFF; --accent:#2647DD; --accent-soft:#EBEEFF; --accent-dk:#1E3AB8; --up:#0E9E6E; --down:#DA3B3B; --nav-bg:rgba(247,248,250,.85); --row-hover:#F1F3F7; }
@@ -772,8 +772,45 @@ ${NAV}
 ${body}
 </main>
 ${FOOTER}
+<style>
+.fbscrim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .25s;z-index:80}
+.fbscrim.on{opacity:1;visibility:visible}
+.fbsheet{position:fixed;left:0;right:0;bottom:0;z-index:81;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:6px 20px 26px;max-width:560px;margin:0 auto;transform:translateY(101%);transition:transform .28s cubic-bezier(.32,.72,0,1);box-shadow:0 -12px 40px rgba(0,0,0,.18)}
+.fbsheet.on{transform:translateY(0)}
+.fbgrab{width:40px;height:4px;border-radius:3px;background:var(--line);margin:8px auto 14px}
+.fbtitle{font-weight:700;font-size:19px}
+.fbsub{font-size:13px;color:var(--muted);margin:3px 0 13px}
+.fbsheet textarea,.fbsheet input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:inherit;color:var(--ink);margin-bottom:10px;box-sizing:border-box}
+.fbsheet textarea{resize:vertical;min-height:88px}
+.fbhp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0}
+#fbsend{width:100%;background:var(--accent);color:#fff;border:0;border-radius:11px;padding:12px;font-weight:600;font-size:15px;cursor:pointer}
+#fbsend:disabled{opacity:.6}
+.fbnote{font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+</style>
+<div class="fbscrim" id="fbscrim" onclick="closeFb()"></div>
+<div class="fbsheet" id="fbsheet" role="dialog" aria-modal="true" aria-label="Send feedback">
+<div class="fbgrab"></div>
+<div class="fbtitle serif">What would make StockKaki better?</div>
+<div class="fbsub">Bugs, ideas, a feature you wish existed — I read every one.</div>
+<textarea id="fbmsg" rows="4" placeholder="Type your thoughts…"></textarea>
+<input id="fbemail" type="email" placeholder="Your email (optional, only if you'd like a reply)">
+<input class="fbhp" id="fbhp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+<button id="fbsend" onclick="sendFb()">Send</button>
+<div class="fbnote" id="fbnote"></div>
+</div>
 ${script}<script>
-var SBFN='${SUPABASE_URL}/functions/v1',SBK='${SUPABASE_ANON}';
+var SBFN='${SUPABASE_URL}/functions/v1',SBK='${SUPABASE_ANON}',SBURL='${SUPABASE_URL}';
+window.openFb=function(){var s=document.getElementById('fbscrim'),h=document.getElementById('fbsheet');if(!s||!h)return;s.classList.add('on');h.classList.add('on');document.body.style.overflow='hidden';setTimeout(function(){var m=document.getElementById('fbmsg');if(m)m.focus();},220);};
+window.closeFb=function(){var s=document.getElementById('fbscrim'),h=document.getElementById('fbsheet');if(s)s.classList.remove('on');if(h)h.classList.remove('on');document.body.style.overflow='';};
+window.sendFb=function(){var msg=(document.getElementById('fbmsg').value||'').trim(),email=(document.getElementById('fbemail').value||'').trim(),hp=(document.getElementById('fbhp').value||'').trim(),note=document.getElementById('fbnote');
+if(hp){closeFb();return;}
+if(msg.length<5){note.style.color='var(--down)';note.textContent='A few more words, please :)';return;}
+if((msg.split('http').length-1)>=2){note.style.color='var(--down)';note.textContent='Please describe it without links.';return;}
+var last=0;try{last=+localStorage.getItem('fb_last')||0;}catch(e){}
+if(Date.now()-last<60000){note.style.color='var(--muted)';note.textContent='You just sent feedback — thank you!';return;}
+var btn=document.getElementById('fbsend');btn.textContent='Sending…';btn.disabled=true;
+fetch(SBURL+'/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json',apikey:SBK,Authorization:'Bearer '+SBK,Prefer:'return=minimal'},body:JSON.stringify({message:msg,email:email||null,page:location.pathname})}).then(function(r){if(!r.ok)throw 0;try{localStorage.setItem('fb_last',''+Date.now());}catch(e){}note.style.color='var(--up)';note.textContent='Thanks — got it!';document.getElementById('fbmsg').value='';document.getElementById('fbemail').value='';setTimeout(closeFb,1400);}).catch(function(){note.style.color='var(--down)';note.textContent='Hmm, that did not send. Try again?';}).then(function(){btn.textContent='Send';btn.disabled=false;});};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeFb();});
 (function(){
 var b=document.getElementById('themeBtn');if(b)b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('theme',d);}catch(e){}};
 var mt=document.getElementById('mtoggle'),mm=document.getElementById('mmenu'),ms=document.getElementById('mscrim'),mc=document.getElementById('mclose');

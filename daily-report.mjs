@@ -107,9 +107,28 @@ console.log('\n🌱 ORGANIC (7d)  '+orgCurS+' sess · '+orgCurU+' users'); orgDa
 console.log('\n🤖 AI ANSWER ENGINES (AEO 28d)  '+aiTotS+' sess · '+aiTotU+' users · wk '+delta(aiCur7S,aiPrev7S)); aiEngines.length ? aiEngines.forEach(e=>console.log(`   ${String(e.sess).padStart(4)} sess · ${e.users} users  ${e.name}`)) : console.log('   (no AI-engine referrals yet)');
 console.log('\n📅 IMPRESSIONS TREND (14d)'); daily.forEach(r=>console.log(`   ${r.keys[0]}  ${n(r.impressions)} imp / ${n(r.clicks)} clk`));
 
+// ---------- reader feedback (last ~26h) ----------
+let fb=[];
+const SB_URL='https://limizehmxnaaqndacynm.supabase.co';
+const SB_SR=process.env.SUPABASE_SERVICE_ROLE_KEY;
+if(SB_SR){
+  try{
+    const since=new Date(Date.now()-26*3600*1000).toISOString();
+    const fr=await fetch(`${SB_URL}/rest/v1/feedback?created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&select=created_at,message,email,page`,{headers:{apikey:SB_SR,Authorization:'Bearer '+SB_SR}});
+    if(fr.ok) fb=await fr.json(); else console.log('feedback fetch HTTP '+fr.status);
+  }catch(e){ console.log('feedback fetch failed:',e.message); }
+}
+console.log('\n💬 READER FEEDBACK (last 26h): '+fb.length);
+fb.forEach(f=>console.log(`   "${(f.message||'').slice(0,90)}"${f.email?' — '+f.email:''}  [${f.page||'/'}]`));
+
 // ---------- email ----------
 if(RESEND_API_KEY){
   const to = REPORT_TO || 'eugeneteo1988@gmail.com';
+  const esc=(s)=>String(s==null?'':s).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fbHTML = fb.length ? `<div style="background:#fff;border:1px solid #e6e3dc;border-left:4px solid #2647DD;border-radius:10px;padding:14px 16px;margin:6px 0 16px">
+    <div style="font-family:Georgia,serif;font-size:16px;margin-bottom:6px">💬 ${fb.length} new ${fb.length===1?'message':'messages'} from readers</div>
+    ${fb.map(f=>`<div style="border-top:1px solid #f0ede6;padding:9px 0"><div style="font-size:14px;color:#1c2430;white-space:pre-wrap">${esc(f.message)}</div><div style="font-size:11px;color:#a29b8f;margin-top:4px">${f.email?'✉️ '+esc(f.email)+' · ':'(no email) · '}${esc(f.page||'/')}</div></div>`).join('')}
+  </div>` : '';
   const chip=(v)=>`<b style="color:${String(v).startsWith('▲')?'#1a7f4b':String(v).startsWith('▼')?'#b23a44':'#555'}">${v}</b>`;
   const card=(label,val,sub)=>`<td style="padding:10px 14px;border:1px solid #e6e3dc;border-radius:10px;background:#fff"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a8378">${label}</div><div style="font-size:26px;font-weight:700;color:#1c2430;font-family:Georgia,serif">${val}</div><div style="font-size:12px;color:#6b6459">${sub}</div></td>`;
   const rowsQ = topQ.map(r=>`<tr><td style="padding:4px 8px">${r.keys[0].replace(/</g,'&lt;').slice(0,70)}</td><td style="padding:4px 8px;text-align:right;color:#6b6459">${n(r.impressions)} imp</td><td style="padding:4px 8px;text-align:right;color:#2b6cb0">pos ${n(r.position).toFixed(0)}</td></tr>`).join('');
@@ -119,6 +138,7 @@ if(RESEND_API_KEY){
   const html=`<div style="max-width:600px;margin:0 auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1c2430;background:#faf8f4;padding:22px">
   <div style="font-size:13px;color:#8a8378;letter-spacing:.06em;text-transform:uppercase">StockKaki · growth</div>
   <h1 style="font-family:Georgia,serif;font-size:23px;margin:2px 0 14px">Good morning, Eugene ☀️</h1>
+  ${fbHTML}
   <table cellspacing="8" style="width:100%;border-collapse:separate"><tr>
     ${card('Impressions 28d',n(tot.impressions),'wk '+impΔ)}
     ${card('Indexed & surfacing',pages.length,'of '+submitted+' submitted')}
