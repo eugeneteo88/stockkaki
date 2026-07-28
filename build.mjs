@@ -2701,6 +2701,12 @@ if (!SKIP_YAHOO) {
   console.log(`Market news: ${mn.length} items fetched (${marketNews.length} in feed)`);
 }
 
+// Data sanity guard — these mega-caps ALWAYS have a market cap. If any is blank after enrichment, Yahoo returned
+// junk this run (throttle/omit) and the whole fetch is suspect. Used below to refuse to persist a degraded cache
+// and to fail a full build (so the deploy keeps the last-good site) rather than publish blank caps. See
+// stockkaki-build-gotchas. Keyed by slug (cache is slug-keyed).
+const SENTINELS = [['dbs-group-holdings-ltd','DBS'],['oversea-chinese-banking-corp','OCBC'],['united-overseas-bank-ltd','UOB'],['singtel','Singtel'],['singapore-exchange-ltd','SGX']];
+const capGuardMisses = () => SENTINELS.filter(([slug]) => { const c = companies.find(x => x.slug === slug); return !(c && c.fund && c.fund.mktCap); }).map(([,n]) => n);
 // Fundamentals (market cap, P/E, P/B, EPS, 52-week) for ALL listed counters — batched, ~15 calls.
 if (!SKIP_YAHOO) {
   const cr = yahooCrumb();
@@ -2712,6 +2718,15 @@ if (!SKIP_YAHOO) {
   const defined = o => Object.fromEntries(Object.entries(o).filter(([,v]) => v != null && !Number.isNaN(v)));
   for (const c of companies) { if (c.ticker && Q[c.ticker]) { c.fund = { ...(c.fund||{}), ...defined(Q[c.ticker]) }; fresh[c.slug] = { ...(cache[c.slug]||{}), ...(fresh[c.slug]||{}), fund: c.fund }; yFund++; } }
   console.log(`Yahoo fundamentals: ${yFund} counters${cr ? '' : ' (crumb failed — 52-week only)'}`);
+  const misses = capGuardMisses();
+  if (misses.length) {
+    // A full build that lost a mega-cap = Yahoo throttle/omit. Don't persist the degraded cache, and exit
+    // non-zero so the workflow's deploy + cache-commit steps are skipped and the last-good site stays live.
+    console.error(`\n🚨 DATA GUARD FAILED — mega-cap(s) missing market cap: ${misses.join(', ')}.`);
+    console.error('   Yahoo likely throttled/omitted them. Cache NOT overwritten and build FAILED so the current live');
+    console.error('   site is preserved. It self-heals on the next scheduled build once Yahoo recovers.\n');
+    process.exit(1);
+  }
   // persist merged last-good cache (fund + news + dividends) for the next run / a throttled build
   try {
     const merged = { ...cache, ...fresh };
@@ -2719,6 +2734,11 @@ if (!SKIP_YAHOO) {
     writeFileSync(CACHE_URL, JSON.stringify(merged));
     console.log(`Cache saved: ${Object.keys(merged).length} counters → data/yahoo-cache.json`);
   } catch (e) { console.log('Cache save failed:', e.message); }
+} else {
+  // Fast build reads the committed cache. If it's degraded (a sentinel lost its cap), warn loudly but don't block
+  // the push — the full-build guard above is what prevents a bad cache from being committed in the first place.
+  const misses = capGuardMisses();
+  if (misses.length) console.error(`⚠️  DATA GUARD (fast build): committed cache is missing market cap for ${misses.join(', ')} — run a full \`node build.mjs\` to heal it.`);
 }
 
 const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO?-1:1)
