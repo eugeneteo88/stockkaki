@@ -2036,8 +2036,11 @@ function ssbPage(ssb, sgs) {
 
   const faqs = [
     { q: `What is the Singapore Savings Bond interest rate for ${tm}?`, a: `The ${tm} issue (${c.code}, issued ${c.issueFmt||pretty(c.issueISO)}) pays ${c.y1.toFixed(2)}% in the first year and a ${c.y10.toFixed(2)}% average return per year if held for the full 10 years.` },
+    { q: 'What is the SSB interest rate right now?', a: `Right now the latest Singapore Savings Bond (${c.code}, for ${tm}) pays ${c.y1.toFixed(2)}% if you hold for one year, stepping up to a ${c.y10.toFixed(2)}% average return per year if you hold the full 10 years. This page updates automatically with every new MAS issue, so it always shows the current rate.` },
+    { q: 'Is there a cap on how much SSB I can hold?', a: 'Yes. Each individual can hold up to S$200,000 of Singapore Savings Bonds in total across all issues. You apply in multiples of S$500 (minimum S$500), and since you can redeem any amount early with no penalty, the S$200,000 limit is the only real cap.' },
     { q: 'How does the SSB step-up interest work?', a: `SSB interest "steps up" the longer you hold. This issue starts at ${c.coupons[0].toFixed(2)}% in year 1 and rises to ${c.coupons[9].toFixed(2)}% in year 10, so your average return grows from ${c.returns[0].toFixed(2)}% to ${c.returns[9].toFixed(2)}% per year over the 10 years.` },
     { q: 'How do I buy Singapore Savings Bonds?', a: 'Apply through DBS/POSB, OCBC or UOB internet banking or ATM, or with your SRS funds. Minimum S$500, in multiples of S$500, up to the individual holding cap of S$200,000 in total. Applications usually close on the 4th-last business day of the month.' },
+    { q: 'Is SSB better than a T-bill or fixed deposit?', a: 'It depends on your timeframe. SSBs are the most flexible — redeem in any month with no penalty and the rate steps up the longer you hold — which suits money you may need back. A Singapore T-bill or a bank fixed deposit usually locks a higher rate for a fixed 6–12 months, but your money is tied up. If you want the highest guaranteed short-term rate and can commit, compare T-bills and fixed deposits; if you want flexibility, SSB wins.' },
     { q: 'Can I withdraw my Savings Bond early?', a: 'Yes. You can redeem in any month with no penalty and get your full principal back plus any accrued interest — one reason SSBs are considered very low risk. They are fully backed by the Singapore Government.' },
     { q: 'How is SSB interest paid?', a: 'Interest is paid every 6 months into your bank account, starting six months from the issue date.' },
   ];
@@ -2062,12 +2065,12 @@ function ssbPage(ssb, sgs) {
     </div>
     <div class="facts">
       <span class="fact">Min <b>S$500</b></span>
-      <span class="fact">Max <b>S$200,000</b></span>
+      <span class="fact">Max <b>S$200,000</b> cap</span>
       <span class="fact"><b>Redeem anytime</b>, no penalty</span>
       <span class="fact"><b>SG-Government</b> backed</span>
       <span class="fact">Interest paid <b>every 6 months</b></span>
     </div>
-    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds. Rates are the same at every bank — they're set by MAS. Prefer a fixed 6–12 month rate you can also buy with CPF? Compare the latest <a href="/t-bills/">Singapore T-bill rates</a>.</p>
+    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds. Rates are the same at every bank — they're set by MAS. Prefer a fixed 6–12 month rate you can also buy with CPF? Compare the latest <a href="/t-bills/">Singapore T-bill rates</a> or bank <a href="/fixed-deposits/">fixed deposit rates</a>.</p>
   </div>
 ${projCard(ssb, sgs)}
   <div class="h2">How much you'd earn</div>
