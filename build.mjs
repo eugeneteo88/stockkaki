@@ -1297,12 +1297,9 @@ const stockRow = (c) => {
         </a>`;
 };
 function stocksPage(list) {
-  // collapse dual-currency / secondary twins — the SAME security listed twice (e.g. "AEM SGD" + "AEM USD",
-  // "CSOP … S$" + "US$", "Singtel" + "Singtel 10"). Keep one per name-group, preferring the SGD / most-traded line.
-  const stripCur = (n) => n.replace(/\s*(?:S\$|US\$|U\$|SGD|USD|HKD|CNY|RMB|GBP|EUR|JPY|YEN\s?1k|CNY\s?1k|1k|10|100)\s*$/i,'').replace(/\s{2,}/g,' ').trim().toLowerCase();
-  const bestBy = new Map();
-  for (const c of list) { const k = stripCur(c.name); const score = (c.cur==='SGD'?1e15:0) + (((c.fund&&c.fund.vol)||c.vol||0) * (c.price||0)); const prev = bestBy.get(k); if (!prev || score > prev.s) bestBy.set(k, { c, s:score }); }
-  const uniq = [...bestBy.values()].map(x => x.c);
+  // collapse dual-currency / secondary twins via the shared top-level helper, so this page's counts match the
+  // homepage / dividends / reits numbers exactly (one source of truth for the de-duplicated universe).
+  const uniq = dedupeTwins(list);
   const sorted = [...uniq].sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);   // A–Z default (reliable; market-cap data can be patchy)
   const nStock = uniq.filter(c => !c.isReit && c.secType!=='etfs').length;
   const nReit = uniq.filter(c => c.isReit).length;
@@ -2726,13 +2723,20 @@ const upcoming = rows.filter(r => r.exISO >= TODAY).sort((a,b)=> a.exISO<b.exISO
 const index = companies.map(c => ({ n: c.name, t: c.ticker||'', s: c.slug })).sort((a,b)=> a.n<b.n?-1:1);
 const all = companies;
 const listed = all.filter(c => c.ticker);                                   // currently trading on SGX (has a live counter)
+// Collapse dual-currency / secondary twins — the SAME security listed twice (e.g. "AEM SGD" + "AEM USD",
+// "Singtel" + "Singtel 10") — to one line per security, preferring the SGD / most-traded line. Hoisted to the
+// top level so EVERY "how many stocks/REITs" count across the site is derived from the same de-duplicated set
+// (previously the All Stocks page collapsed twins → 672 while the homepage counted raw → 705).
+const _stripCur = (n) => n.replace(/\s*(?:S\$|US\$|U\$|SGD|USD|HKD|CNY|RMB|GBP|EUR|JPY|YEN\s?1k|CNY\s?1k|1k|10|100)\s*$/i,'').replace(/\s{2,}/g,' ').trim().toLowerCase();
+const dedupeTwins = (list) => { const bestBy = new Map(); for (const c of list) { const k = _stripCur(c.name); const s = (c.cur==='SGD'?1e15:0) + (((c.fund&&c.fund.vol)||c.vol||0) * (c.price||0)); const prev = bestBy.get(k); if (!prev || s > prev.s) bestBy.set(k, { c, s }); } return [...bestBy.values()].map(x => x.c); };
+const listedUniq = dedupeTwins(listed);                                     // canonical distinct-security universe
 // Dividend payers = listed counters paying NOW (trailing distribution or a REIT scrip payer) — every row has a real number.
 const dividendStocks = listed.filter(c => c.ttm > 0 || c.divIncomplete);
 const exWeekCount = dividendStocks.filter(c => { const nx = c.divs.find(d => d.exISO >= TODAY); return nx && daysTo(nx.exISO) <= 7; }).length;
 
 // ---- home-hub data: counts, trending (biggest names), latest news, SSB rate range ----
-const reitCountH = listed.filter(c => c.isReit).length;
-const etfCountH = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete)).length;
+const reitCountH = listedUniq.filter(c => c.isReit).length;
+const etfCountH = listedUniq.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete)).length;
 const hyCount = dividendStocks.filter(c => c.yieldPct!=null && c.yieldPct>=6 && c.yieldPct<=20).length;
 // Trending = most actively traded SGX counters by VALUE traded (volume × price) — a real "trending" signal.
 const _turnover = (c) => (((c.fund && c.fund.vol) || c.vol || 0) * (c.price || 0));
@@ -2761,7 +2765,7 @@ const newsFeed = _dedupe([
   ...companies.filter(c => c.news && c.news.length)
     .flatMap(c => c.news.filter(n => n.dateISO && NEWS_OK.has(n.source) && titleHasCo(n.title, c.name) && !NEWS_JUNK.test(n.title)).map(n => ({ title: n.title, link: n.link, dateISO: n.dateISO, source: n.source || '', name: c.name, slug: c.slug }))),
 ].sort((a,b) => a.dateISO < b.dateISO ? 1 : -1)).slice(0, 60);
-const hub = { stockCount: listed.length, divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
+const hub = { stockCount: listedUniq.length, divCount: dividendStocks.length, reitCount: reitCountH, etfCount: etfCountH, hyCount,
   ssbLo: ssb && ssb.current ? ssb.current.y1 : null, ssbHi: ssb && ssb.current ? ssb.current.y10 : null,
   tb6: tbills && tbills.l6 ? tbills.l6.cutoff_yield : null,
   trending, trendingCount: trending.length, news: hubNews };
@@ -2835,7 +2839,7 @@ mkdirSync(new URL('dividends/', out), { recursive: true });
 writeFileSync(new URL('dividends/index.html', out), listPage({
   title: `Best Dividend Stocks in Singapore ${YEAR} — Highest SGX Dividend Yields | StockKaki`,
   desc: `The highest-yielding SGX dividend stocks and REITs for ${YEAR}, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.`,
-  h1: `Best dividend stocks in Singapore — ${YEAR}`, sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listed.length} listed stocks above.)`,
+  h1: `Best dividend stocks in Singapore — ${YEAR}`, sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listedUniq.length} listed stocks above.)`,
   intro: `Singapore is one of the world's best places for dividend investors — there is <b>no tax on dividends and no capital-gains tax</b>. Above are all <b>${dividendStocks.length}</b> SGX counters currently paying a dividend, ranked by trailing 12-month yield and updated daily. Use the filters for Stocks, REITs or ETFs — and note that an unusually high yield can signal a one-off special dividend or higher risk.`,
   faqs: [
     { q: `What are the best dividend stocks in Singapore in ${YEAR}?`, a: 'This page ranks every SGX counter currently paying a dividend by trailing 12-month yield — the leaders are usually high-yield REITs, trusts and selected blue chips. Filter by Stocks, REITs or ETFs above; a very high yield may include a one-off special or reflect higher risk.' },
@@ -2848,7 +2852,7 @@ writeFileSync(new URL('dividends/index.html', out), listPage({
 mkdirSync(new URL('screener/', out), { recursive: true });
 writeFileSync(new URL('screener/index.html', out), `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Best Dividend Stocks in Singapore | StockKaki</title><link rel="canonical" href="${SITE}/dividends/"><meta http-equiv="refresh" content="0; url=/dividends/"><meta name="robots" content="noindex,follow"></head><body>Redirecting to <a href="/dividends/">Best dividend stocks in Singapore</a>…</body></html>`);
 mkdirSync(new URL('reits/', out), { recursive: true });
-const reitList = listed.filter(c => c.isReit);
+const reitList = listedUniq.filter(c => c.isReit);
 writeFileSync(new URL('reits/index.html', out), listPage({
   title: `Best REITs to Buy in Singapore ${YEAR} — S-REIT Dividend Yields | StockKaki`,
   desc: `All SGX-listed REITs and business trusts ranked by distribution yield for ${YEAR} — CapitaLand, Mapletree, Keppel, Frasers and more. Live, clean, updated daily.`,
@@ -2864,7 +2868,7 @@ writeFileSync(new URL('reits/index.html', out), listPage({
 mkdirSync(new URL('best-performing-reits/', out), { recursive: true });
 writeFileSync(new URL('best-performing-reits/index.html', out), bestPerfReitsPage(reitList));
 mkdirSync(new URL('etfs/', out), { recursive: true });
-const etfList = listed.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete));
+const etfList = listedUniq.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIncomplete));
 writeFileSync(new URL('etfs/index.html', out), listPage({
   title: `Best Singapore ETFs ${YEAR} — Top SGX ETFs by Dividend Yield | StockKaki`,
   desc: `SGX-listed ETFs ranked by distribution yield for ${YEAR} — STI, bond, REIT and dividend ETFs. Compare Singapore ETFs, clean and updated daily.`,
