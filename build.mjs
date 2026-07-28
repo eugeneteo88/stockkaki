@@ -2687,7 +2687,9 @@ for (const c of yTargets) {                                                // 2)
   const news = fetchYahooNews(c.ticker);                                   // Yahoo per-ticker RSS (Google News dropped — it serves stale results to datacenter IPs)
   await ySleep(130);
   if (news.length) { rec.news = news.slice(0, 8); yNews++; }
-  if (Object.keys(rec).length) { applyY(c, rec); fresh[c.slug] = { ...(cache[c.slug]||{}), ...rec }; }
+  // Deep-merge fund: rec.fund (from the chart endpoint) carries price/52-week/volume but NOT mktCap/pe/pb — so
+  // keep the cached fundamentals underneath instead of replacing the whole fund object (which would strip mktCap).
+  if (Object.keys(rec).length) { applyY(c, rec); fresh[c.slug] = { ...(cache[c.slug]||{}), ...rec, fund: { ...((cache[c.slug]||{}).fund||{}), ...(rec.fund||{}) } }; }
 }
 if (!SKIP_YAHOO) console.log(`Enrichment: dividends ${yFixed}/${yTargets.length} · news ${yNews} (Yahoo per-ticker)`);
 
@@ -2704,7 +2706,11 @@ if (!SKIP_YAHOO) {
   const cr = yahooCrumb();
   const Q = fetchYahooQuotes(companies.filter(c => c.ticker).map(c => c.ticker), cr);
   let yFund = 0;
-  for (const c of companies) { if (c.ticker && Q[c.ticker]) { c.fund = { ...(c.fund||{}), ...Q[c.ticker] }; fresh[c.slug] = { ...(cache[c.slug]||{}), ...(fresh[c.slug]||{}), fund: c.fund }; yFund++; } }
+  // Merge only fields Yahoo actually returned this run. Yahoo intermittently omits marketCap (and other
+  // fields) for a symbol; blindly spreading {...Q} would write `undefined` over a good cached value and
+  // silently drop big counters (DBS/UOB) off the market-cap-ranked lists. Never clobber good data with a blank.
+  const defined = o => Object.fromEntries(Object.entries(o).filter(([,v]) => v != null && !Number.isNaN(v)));
+  for (const c of companies) { if (c.ticker && Q[c.ticker]) { c.fund = { ...(c.fund||{}), ...defined(Q[c.ticker]) }; fresh[c.slug] = { ...(cache[c.slug]||{}), ...(fresh[c.slug]||{}), fund: c.fund }; yFund++; } }
   console.log(`Yahoo fundamentals: ${yFund} counters${cr ? '' : ' (crumb failed — 52-week only)'}`);
   // persist merged last-good cache (fund + news + dividends) for the next run / a throttled build
   try {
@@ -2771,6 +2777,28 @@ try { const ogDir = new URL('assets/og/', import.meta.url); for (const f of read
 try { const sd = new URL('assets/og/stock/', import.meta.url); mkdirSync(new URL('og/stock/', out), { recursive: true }); for (const f of readdirSync(sd)) if (f.endsWith('.png')) copyFileSync(new URL(f, sd), new URL(`og/stock/${f}`, out)); } catch {}   // per-stock share cards
 writeFileSync(new URL('index.html', out), homepage(listed, index, hub, upcoming));
 writeFileSync(new URL('CNAME', out), 'stockkaki.com\n');
+// Branded 404 — GitHub Pages serves /404.html for any unknown path. Route lost visitors back into the site.
+{
+  const nfBody = `  <section class="hero" style="padding:60px 0 20px;text-align:center">
+    <div class="kicker" style="justify-content:center">ERROR 404</div>
+    <h1 class="serif" style="font-size:32px;margin:10px 0 8px">Page not found</h1>
+    <p class="sub" style="max-width:440px;margin:0 auto 22px">That page has moved or never existed. Try searching for a stock, or jump to one of the pages below.</p>
+    <div class="search" id="alltop" style="max-width:460px;margin:0 auto"><a href="/" style="display:flex;align-items:center;gap:8px;width:100%;color:var(--muted);text-decoration:none">${SEARCH_IC}<span>Search any SGX stock or ticker…</span></a></div>
+  </section>
+  <div class="chips" style="justify-content:center;margin-top:8px">
+    <a class="chip" href="/">Home</a>
+    <a class="chip" href="/dividends/">Dividend stocks</a>
+    <a class="chip" href="/reits/">REITs</a>
+    <a class="chip" href="/blue-chips/">Blue chips</a>
+    <a class="chip" href="/stocks/">All stocks</a>
+    <a class="chip" href="/calendar/">Ex-date calendar</a>
+    <a class="chip" href="/news/">News</a>
+    <a class="chip" href="/guides/">Guides</a>
+  </div>`;
+  const nf = shell('Page not found (404) | StockKaki', 'That page could not be found. Search StockKaki for any SGX stock, or browse dividends, REITs and blue chips.', SITE + '/404.html', nfBody)
+    .replace('<meta name="description"', '<meta name="robots" content="noindex">\n<meta name="description"');
+  writeFileSync(new URL('404.html', out), nf);
+}
 mkdirSync(new URL('disclaimer/', out), { recursive: true });
 writeFileSync(new URL('disclaimer/index.html', out), disclaimerPage());
 mkdirSync(new URL('guides/', out), { recursive: true });
