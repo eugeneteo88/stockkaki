@@ -413,7 +413,7 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
     </div>
   </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
-const FOOTER = `<footer><div class="wrap"><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a><span>© ${YEAR} StockKaki</span></div></div></footer>`;
+const FOOTER = `<footer><div class="wrap"><div class="foot-brand"><span class="brand">StockKaki<span class="bdot">.</span></span><p class="foot-tag">Your money kaki.</p><p class="foot-desc">Every SGX counter, dividend and yield — plus rates, bonds and more to come. Clean, free, updated daily.</p></div><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a><span>© ${YEAR} StockKaki</span></div></div></footer>`;
 
 const STYLE = `
   :root{ --ink:#0F1319; --muted:#6B7280; --line:#E6E8EE; --hair-2:#EEF0F4; --bg:#F7F8FA; --card:#FFFFFF; --accent:#2647DD; --accent-soft:#EBEEFF; --accent-dk:#1E3AB8; --up:#0E9E6E; --down:#DA3B3B; --nav-bg:rgba(247,248,250,.85); --row-hover:#F1F3F7; }
@@ -580,6 +580,7 @@ const STYLE = `
   .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
   .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
   footer{flex-shrink:0;margin-top:36px;padding-bottom:34px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  footer .foot-brand{margin-bottom:16px} footer .foot-tag{color:var(--ink);font-size:15px;margin-top:6px} footer .foot-desc{color:var(--muted);font-size:12.5px;margin-top:3px;max-width:520px}
   .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:22px;max-width:820px}
   .ssb-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:6px 13px;border-radius:999px}
   .ssb-status .pulse{width:7px;height:7px;border-radius:50%;background:currentColor}
