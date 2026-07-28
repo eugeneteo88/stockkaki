@@ -1300,7 +1300,10 @@ function stocksPage(list) {
   // collapse dual-currency / secondary twins via the shared top-level helper, so this page's counts match the
   // homepage / dividends / reits numbers exactly (one source of truth for the de-duplicated universe).
   const uniq = dedupeTwins(list);
-  const sorted = [...uniq].sort((a,b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);   // A–Z default (reliable; market-cap data can be patchy)
+  // Default order: largest market cap first — opens on familiar names (DBS, OCBC, UOB, Singtel…) instead of
+  // A–Z, which floated obscure counters and no-data "—" rows to the top. Counters with no cap sink to the bottom.
+  const _cap = (c) => capSGD((c.fund&&c.fund.cur)||c.cur, (c.fund&&c.fund.mktCap)||0);
+  const sorted = [...uniq].sort((a,b) => _cap(b) - _cap(a) || (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
   const nStock = uniq.filter(c => !c.isReit && c.secType!=='etfs').length;
   const nReit = uniq.filter(c => c.isReit).length;
   const nEtf = uniq.filter(c => c.secType==='etfs').length;
@@ -1324,7 +1327,7 @@ function stocksPage(list) {
   </section>
   <div class="search" id="alltop" style="margin-top:16px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker…"></div>
   ${chips}
-  <div class="lsort"><button data-sort="n" class="on">A–Z</button><button data-sort="mc">Market cap</button><button data-sort="chg">% change</button></div>
+  <div class="lsort"><button data-sort="mc" class="on">Market cap</button><button data-sort="n">A–Z</button><button data-sort="chg">% change</button></div>
   <div class="ltable cols-stocks" style="margin-top:12px">
     <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-chg" data-sort="chg">Change</span><span class="lr-mc" data-sort="mc">Market cap</span><span class="lr-pe" data-sort="pe">P/E</span></div>
     <div id="tb">
@@ -1370,7 +1373,7 @@ function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n')?1:-1;}
  apply();}
 document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
 document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
-sortBy('n');
+sortBy('mc');
 </script>`;
   return shell('All Singapore Stocks — Every SGX-Listed Company | StockKaki',
     `Browse all ~${list.length} SGX-listed Singapore stocks, REITs and ETFs — with live price, day change, market cap and P/E. Search, filter and sort. Free, updated daily.`,
