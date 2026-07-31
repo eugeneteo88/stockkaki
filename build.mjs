@@ -376,14 +376,17 @@ const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/">StockKaki<span class="bdot">.</span></a>
   <nav>${NAVLINKS}</nav>
-  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="tbtn" href="/account/" aria-label="Account" title="Your account">${ACCT_IC}</a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="loginbtn" href="/account/" aria-label="Log in" title="Log in or sign up">${ACCT_IC}<span>Log in</span></a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
 </header>
 <div id="mscrim" class="mscrim"></div>
 <aside id="mmenu" class="mmenu" aria-hidden="true">
   <div class="mmenu-head"><a class="brand" href="/">StockKaki<span class="bdot">.</span></a><button id="mclose" class="tbtn" aria-label="Close menu">${CLOSE}</button></div>
-  <nav class="mmenu-links">${NAVLINKS}<a href="/account/">Account</a></nav>
-  <div class="mmenu-cta"><span class="btn wa soon" title="Coming soon">${WA} Join channel <span class="soon-tag">Soon</span></span></div>
+  <nav class="mmenu-links">${NAVLINKS}</nav>
+  <div class="mmenu-foot">
+    <a class="mmenu-login" href="/account/">${ACCT_IC}<span>Log in</span></a>
+    <span class="btn wa soon" title="Coming soon">${WA} Join channel <span class="soon-tag">Soon</span></span>
+  </div>
 </aside>`;
 const ALERT = `<section class="alert">
     <div class="txt"><h3 class="serif">Never miss an ex-date again.</h3><p>Free email or Telegram alerts a few days before every dividend you follow goes ex.</p></div>
@@ -446,6 +449,11 @@ const STYLE = `
   .btn.wa{display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff} .btn.wa:hover{background:#1fb857}
   .btn.wa.soon,.btn.wa.soon:hover{background:var(--line);color:var(--muted);cursor:default;pointer-events:none}
   .soon-tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--muted);color:var(--card);border-radius:999px;padding:2px 6px;line-height:1;opacity:.85}
+  .loginbtn{display:inline-flex;align-items:center;gap:7px;margin-left:10px;padding:7px 13px;border:1px solid var(--accent);color:var(--accent-dk);border-radius:999px;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none} .loginbtn:hover{background:var(--accent);color:#fff}
+  .loginbtn span{display:none} @media(min-width:820px){ .loginbtn span{display:inline} }
+  .mmenu-foot{margin-top:auto;display:flex;flex-direction:column;gap:12px;padding:18px 20px 26px;border-top:1px solid var(--line)}
+  .mmenu-foot .mmenu-login{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1px solid var(--accent);color:var(--accent-dk);border-radius:999px;font-weight:600;font-size:15px;text-decoration:none} .mmenu-foot .mmenu-login:hover{background:var(--accent);color:#fff}
+  .mmenu-foot .btn.wa{display:flex;width:100%;justify-content:center;padding:13px}
   @media(min-width:820px){ .mmenu,.mscrim{display:none!important} }
   @media(min-width:820px){ .nav nav{display:flex} }
   .hero{padding:30px 0 4px} .kicker{color:var(--accent-dk);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
