@@ -400,7 +400,7 @@ const BROKERS = [
   { n: 'Interactive Brokers', u: 'https://www.interactivebrokers.com',   d: 'Global markets, low cost' },
 ];
 // moomoo affiliate card — shown only on tradeable stock pages (has a ticker), personalised to the stock. SHIPPED 2026-07.
-const MOOMOO_URL = 'https://j.moomoo.com/0EQpF6';
+const MOOMOO_URL = 'https://j.moomoo.com/0FwlyN';
 const brokerSlot = (c) => (c && c.ticker) ? `  <aside class="mm-card" aria-label="Sponsored — open a brokerage account">
     <div class="mm-top"><span class="mm-eyebrow">Ready to invest?</span><span class="mm-tile"><img src="/moomoo.png" width="38" height="38" alt="moomoo" loading="lazy"></span></div>
     <p class="mm-lede">Open a <b>moomoo</b> account to buy <b>${esc(c.name)}</b> and 970+ SGX stocks — plus US, HK &amp; China markets, all in one app.</p>
@@ -714,6 +714,30 @@ const STYLE = `
   .kbox{background:var(--card);border:0;border-right:1px solid var(--line);border-radius:0;padding:13px 16px} .kbox:last-child{border-right:0} @media(max-width:560px){.kbox:nth-child(2n){border-right:0} .kbox:nth-child(-n+2){border-bottom:1px solid var(--line)}}
   .kbox .kl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
   .kbox .kv{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;margin-top:3px} .kbox .kv.acc{color:var(--accent-dk)}
+  /* --- stock detail redesign: full-width tiles + main/sidebar --- */
+  .st-kpi{grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:12px;border:0;border-radius:0;overflow:visible}
+  .st-kpi .kbox{border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+  .st-kpi .kv{font-size:20px}
+  @media(max-width:640px){ .st-kpi{grid-template-columns:1fr 1fr} }
+  .st-cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:34px;align-items:start;margin-top:22px}
+  .st-main{min-width:0}
+  .st-main .card{max-width:none}
+  .st-main table td,.st-main table th{padding:14px 20px}
+  .st-main .h2{font-family:'IBM Plex Serif',serif;font-size:19px;font-weight:600;padding-left:15px;position:relative;margin:36px 0 14px}
+  .st-main .h2::before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;width:4px;border-radius:3px;background:var(--accent)}
+  .st-main .h2:first-child{margin-top:8px}
+  .showmore{text-align:center;padding:14px;font-size:13.5px;color:var(--accent-dk);font-weight:600;cursor:pointer;border-top:1px solid var(--line)}
+  .showmore:hover{background:var(--row-hover)}
+  .sm-n{color:var(--muted);font-weight:400}
+  .st-side{position:sticky;top:78px;display:flex;flex-direction:column;gap:16px;min-width:0}
+  .scard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .s-t{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .s-fact{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .s-fact:last-child{border-bottom:0}
+  .s-l{color:var(--muted)}.s-v{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+  .st-side .h2{font-size:15px;margin:2px 0 8px}
+  .st-side .related{grid-template-columns:minmax(0,1fr);gap:2px}
+  @media(max-width:820px){ .st-cols{grid-template-columns:minmax(0,1fr);gap:26px} .st-side{position:static} }
   .kicker,thead th,.lhead,.kbox .kl,.bigstat .k,.nextcard .k,.lsort{font-family:'JetBrains Mono',monospace}
   .st-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);font-size:13px;font-weight:500;padding:11px 18px;border-radius:999px;box-shadow:0 12px 30px -12px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.25s ease;z-index:60} .st-toast.on{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   .st-save.on{background:var(--accent);color:#fff}
@@ -1818,7 +1842,9 @@ function stockPage(c) {
 ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">${CS}${num(byYear[y])}</td><td class="r yld">${c.price>0?(byYear[y]/c.price*100).toFixed(2)+'%':'—'}</td></tr>`).join('\n')}
     </tbody>
   </table></div>` : '';
-  const hist = c.divs.map(d => `        <tr><td class="date">${pretty(d.exISO)}${d.exISO>TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td></tr>`).join('\n');
+  const HIST_N = 8;   // show the most recent 8 payouts; the rest expand via "Show more"
+  const hist = c.divs.map((d,i) => `        <tr${i>=HIST_N?' class="histmore" hidden':''}><td class="date">${pretty(d.exISO)}${d.exISO>TODAY?' <span class="tag soon">upcoming</span>':''}</td><td class="r amt">${money(d.ccy,d.amt)}</td></tr>`).join('\n');
+  const histMore = c.divs.length > HIST_N ? `  <div class="showmore" role="button" tabindex="0" onclick="this.closest('.card').querySelectorAll('.histmore').forEach(function(r){r.hidden=false});this.remove()">Show more &darr; <span class="sm-n">(${HIST_N} of ${c.divs.length})</span></div>` : '';
   const divSection = c.divs.length ? `
   ${next ? `<div class="nextcard"><div><div class="k">Next ex-date</div><div class="v">${pretty(next.exISO)}</div></div><div><div class="k">Amount</div><div class="v">${inc?'<span style="font-size:14px;color:var(--muted)">scrip</span>':money(next.ccy,next.amt)}</div></div><div><div class="k">Pay date</div><div class="v">${pretty(next.pay)}</div></div>${c.yieldPct?`<div><div class="k">Indicative yield</div><div class="v">${c.yieldPct.toFixed(2)}%</div></div>`:''}</div>` : `<p class="metaline">No upcoming ex-date announced yet.</p>`}
   ${inc ? scripNote : ''}
@@ -1831,7 +1857,7 @@ ${years.map(y => `        <tr><td class="date">${y}</td><td class="r amt">${CS}$
     <tbody>
 ${hist}
     </tbody>
-  </table></div>
+  </table>${histMore}</div>
   <p class="metaline" style="font-size:12px">*Yield uses the current last price (${CS}${c.price||'—'}) against each year's total — indicative only.</p>` : `<p class="metaline">No dividends recorded for ${c.name} in the last ~6 years — shown here for price &amp; reference. If it starts paying, dividends will appear automatically.</p>`;
   const faqs = [];
   if (c.price) faqs.push({ q: `What is ${c.name}'s share price?`, a: `${c.name}${c.ticker?` (${c.ticker})`:''} last closed at ${pxf(CS,c.price)} on the SGX.` });
@@ -1882,8 +1908,8 @@ ${c.anns.map(a => `    <div class="annrow"><span class="ann-type"><span class="t
   tabDefs.push(['ov','Overview',overviewSection]);
   if (c.news && c.news.length) tabDefs.push(['news','News',newsSection]);
   if (c.anns && c.anns.length) tabDefs.push(['ann','Announcements',annSection]);
-  const tabsHTML = `<div class="tabs">${tabDefs.map((t,i) => `<button class="tab${i===0?' on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>
-${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden'}>${t[2]}</div>`).join('\n')}`;
+  const tabsBar = `<div class="tabs">${tabDefs.map((t,i) => `<button class="tab${i===0?' on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>`;
+  const tabsPanes = tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden'}>${t[2]}</div>`).join('\n');
   const typeLabel = c.secType==='etfs' ? 'ETF' : c.isReit ? 'REIT' : 'Stock';
   const STAR = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6L18.2 21 12 17l-6.2 4 1.6-6.9L2 9.5 9 9z"/></svg>`;
   const kpi = c.ticker ? `<div class="st-kpi">
@@ -1892,6 +1918,15 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
     <div class="kbox"><div class="kl">Mkt cap</div><div class="kv">${fmtCap(fcur, f&&f.mktCap)||'—'}</div></div>
     <div class="kbox"><div class="kl">52-wk high</div><div class="kv">${(f&&f.w52hi!=null)?CSf+f.w52hi:'—'}</div></div>
   </div>` : '';
+  // ---- sidebar: quick facts (distinct from the top KPI tiles) ----
+  const qf = [];
+  if (freq) qf.push(['Frequency', freq]);
+  if (years.length) qf.push(['Years on record', String(years.length)]);
+  if (c.divs.length) qf.push(['Next ex-date', next ? pretty(next.exISO) : 'Not announced']);
+  if (f && f.w52lo!=null && f.w52hi!=null) qf.push(['52-week range', `${CSf}${f.w52lo} &ndash; ${CSf}${f.w52hi}`]);
+  qf.push(['Currency', c.cur||'SGD']);
+  const quickFacts = (c.ticker && qf.length) ? `<div class="scard"><div class="s-t">Quick facts</div>${qf.map(x=>`<div class="s-fact"><span class="s-l">${x[0]}</span><span class="s-v">${x[1]}</span></div>`).join('')}</div>` : '';
+  const sideHTML = `<aside class="st-side">${quickFacts}${brokerSlot(c)}${relatedStocks(c)}</aside>`;
   const body = `${TERM_STYLE}
   <section class="hero" style="padding-bottom:4px">
     <div class="crumb"><a href="/dividends/">Dividends</a> › ${c.name}</div>
@@ -1906,10 +1941,14 @@ ${tabDefs.map((t,i) => `  <div id="t-${t[0]}" class="tabpane"${i===0?'':' hidden
     ${!c.ticker?`<p class="metaline" style="margin-top:6px">This counter isn’t currently trading on SGX (delisted or renamed) — shown here for its past dividend record.</p>`:''}
     ${kpi}
   </section>
-  ${tabsHTML}
-  ${brokerSlot(c)}
-  ${relatedStocks(c)}
-  ${faqHTML}
+  ${tabsBar}
+  <div class="st-cols">
+    <div class="st-main">
+${tabsPanes}
+      ${faqHTML}
+    </div>
+    ${sideHTML}
+  </div>
   <div class="st-toast" id="stToast"></div>
   ${TERM_SHEET}
   ${jsonLd}`;
