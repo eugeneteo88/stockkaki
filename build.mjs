@@ -468,6 +468,28 @@ const STYLE = `
   .prose a{color:var(--accent-dk);font-weight:500;border-bottom:1px solid var(--line)} .prose a:hover{border-color:var(--accent)}
   .prose strong{font-weight:600} .prose em{font-style:italic}
   .prose .formula{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:15px 18px;margin:0 0 20px;font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1.5}
+  /* --- guide article: centered, airy reading column --- */
+  .guide{max-width:706px;margin:0 auto}
+  .guide .crumb{font-family:'JetBrains Mono',monospace;font-size:12.5px;margin-bottom:18px}
+  .g-eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+  .g-brk{width:11px;height:11px;border-left:2px solid var(--accent);border-top:2px solid var(--accent);display:inline-block}
+  .guide h1.serif{font-size:34px;line-height:1.14;max-width:none;margin:0 0 4px} @media(min-width:820px){ .guide h1.serif{font-size:40px} }
+  .guide .prose{max-width:none;margin-top:26px}
+  .guide .prose>p:first-of-type{font-size:19px;line-height:1.62;color:#2b323d}
+  .guide .prose h2{margin:46px 0 14px;padding-left:16px;position:relative}
+  .guide .prose h2::before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;width:4px;border-radius:3px;background:var(--accent)}
+  .guide .prose ul{list-style:none;margin-left:0}
+  .guide .prose ul li{position:relative;padding-left:28px;margin:12px 0}
+  .guide .prose ul li::before{content:"\\2192";position:absolute;left:2px;top:0;color:var(--accent);font-weight:700}
+  .gnext{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:40px 0 6px;text-decoration:none;color:inherit;transition:border-color .2s,box-shadow .2s}
+  .gnext:hover{border-color:var(--accent);box-shadow:0 3px 12px rgba(38,71,221,.08)}
+  .gnext .t{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .gnext .h{font-family:'IBM Plex Serif',serif;font-weight:600;font-size:17px;margin-top:3px;color:var(--ink)}
+  .gnext .go{color:var(--accent);font-size:22px;flex:0 0 auto}
+  /* guides index: centered + roomier cards */
+  .guideindex{max-width:820px;margin:0 auto}
+  .guidelist{margin-left:auto;margin-right:auto}
+  .gcard{padding:20px 22px;border-radius:12px;transition:border-color .2s,box-shadow .2s} .gcard:hover{box-shadow:0 3px 12px rgba(38,71,221,.07)}
   .guidelist{display:grid;grid-template-columns:1fr;gap:10px;max-width:760px;margin-top:8px} @media(min-width:640px){.guidelist{grid-template-columns:1fr 1fr}}
   .gcard{display:block;border:1px solid var(--line);border-radius:10px;padding:18px 20px;color:inherit} .gcard:hover{border-color:var(--accent);background:var(--row-hover)}
   .gc-t{display:block;font-family:'IBM Plex Serif',serif;font-weight:600;font-size:17px;letter-spacing:-.01em}
@@ -2435,25 +2457,47 @@ function guidePage(g) {
     <img src="/eugene.jpg" alt="Eugene" width="52" height="52" loading="lazy" style="flex:0 0 auto;width:52px;height:52px;border-radius:50%;object-fit:cover">
     <div><div style="font-weight:700;font-size:15px">Eugene <a href="https://www.linkedin.com/in/teoeugene" target="_blank" rel="noopener me" aria-label="Eugene on LinkedIn" title="Eugene on LinkedIn" style="color:var(--muted);margin-left:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg></a></div><div style="font-size:13px;color:var(--muted);line-height:1.55;margin-top:3px">A regular Singaporean dad who got tired of cluttered, confusing finance sites<span class="bio-more" hidden> &mdash; so he started writing clearer ones, in plain English. Not a licensed financial adviser, just someone who digs into the numbers so you don't have to.</span><button type="button" onclick="var m=this.previousElementSibling;m.hidden=false;this.remove()" style="background:none;border:0;padding:0;font:inherit;color:var(--accent-dk);cursor:pointer;font-weight:600">&hellip; Read more</button></div></div>
   </div>`;
-  const body = `  <section class="hero" style="padding:22px 0 6px">
+  const words = (g.body||'').replace(/<[^>]+>/g,' ').split(/\s+/).filter(Boolean).length;
+  const readMins = Math.max(2, Math.round(words/210));
+  // "Put it to use" cross-link → sends the reader from the explainer to the live tool (keeps them on-site + SEO).
+  const CTA = {
+    'singapore-reits-explained': { href:'/reits/', h:'Compare every S-REIT by distribution yield' },
+    'how-is-dividend-yield-calculated': { href:'/dividends/', h:'See every SGX payer ranked by yield' },
+    'what-is-an-ex-dividend-date': { href:'/dividend-calendar/', h:'See upcoming ex-dividend dates' },
+    'how-to-buy-dividend-stocks-in-singapore': { href:'/dividends/', h:'Browse the best SGX dividend stocks' },
+    'how-to-buy-etf-in-singapore': { href:'/etfs/', h:'Browse Singapore ETFs by yield' },
+    'are-dividends-taxed-in-singapore': { href:'/dividends/', h:'Find tax-free SGX dividend stocks' },
+    'how-to-read-fixed-deposit-rates-singapore': { href:'/fixed-deposits/', h:'Compare the latest fixed deposit rates' },
+    'where-to-park-cash-singapore': { href:'/savings/', h:'See where your cash earns the most' },
+    'singapore-savings-bonds-vs-t-bills': { href:'/ssb/', h:"Check this month's SSB rate" },
+  };
+  const c = CTA[g.slug];
+  const ctaCard = c ? `<a class="gnext" href="${c.href}"><div><div class="t">Put it to use</div><div class="h">${c.h}</div></div><span class="go">&rarr;</span></a>` : '';
+  const body = `  <div class="guide">
+  <section class="hero" style="padding:26px 0 4px">
     <div class="crumb"><a href="/guides/">Guides</a> › ${g.h1}</div>
-    <h1 class="serif" style="font-size:30px;max-width:22ch;line-height:1.12">${g.h1}</h1>
+    <span class="g-eyebrow"><i class="g-brk"></i> Guide &middot; ${readMins} min read</span>
+    <h1 class="serif">${g.h1}</h1>
     ${byline}
   </section>
   <article class="prose">${g.body}</article>
+  ${ctaCard}
   ${authorCard}
   ${faqHTML}
+  </div>
   ${jsonLd}`;
   return shell(g.title, g.desc, `${SITE}/guides/${g.slug}/`, body);
 }
 function guidesIndexPage(guides) {
-  const body = `  <section class="hero" style="padding:22px 0 4px">
-    <span class="kicker">Learn</span>
-    <h1 class="serif" style="font-size:30px;margin:6px 0 6px">Guides</h1>
-    <p class="sub" style="margin-bottom:0">Plain-English explainers for Singapore dividend &amp; income investing — no jargon, no fluff.</p>
+  const body = `  <div class="guideindex">
+  <section class="hero" style="padding:26px 0 6px">
+    <span class="g-eyebrow"><i class="g-brk"></i> Learn</span>
+    <h1 class="serif" style="font-size:34px;margin:6px 0 8px">Guides</h1>
+    <p class="sub" style="margin-bottom:0;max-width:52ch">Plain-English explainers for Singapore dividend &amp; income investing — no jargon, no fluff.</p>
   </section>
   <div class="guidelist">
 ${guides.map(g => `    <a class="gcard" href="/guides/${g.slug}/"><span class="gc-t">${g.h1}</span><span class="gc-b">${g.blurb}</span></a>`).join('\n')}
+  </div>
   </div>`;
   return shell('Investing Guides — Singapore Dividends & Income Explained | StockKaki', 'Plain-English guides to dividend investing in Singapore — how dividend yield works, SSB vs T-bills, ex-dividend dates, REITs and more. Free, no jargon.', `${SITE}/guides/`, body);
 }
