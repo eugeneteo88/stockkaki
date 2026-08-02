@@ -768,7 +768,7 @@ const STYLE = `
   .ov-rn{font-weight:600;font-size:14px} .ov-rn .tk{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-left:5px}
   .ov-rs{font-size:12.5px;color:var(--muted);margin-top:1px}
   .ov-pill{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap;flex:0 0 auto}
-  .ov-pill.days{background:var(--accent-soft);color:var(--accent-dk)} .ov-pill.new{background:var(--accent);color:#fff}
+  .ov-pill.days{background:var(--accent-soft);color:var(--accent-dk)} .ov-pill.new{background:var(--accent);color:#fff} .ov-pill.ago{background:var(--line);color:var(--muted)}
   .ov-amt{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;flex:0 0 auto}
   .ov-foot{display:block;padding:12px;text-align:center;font-size:13px;color:var(--accent-dk);font-weight:600;border-top:1px solid var(--line);text-decoration:none} .ov-foot:hover{background:var(--row-hover)}
   .ov-empty{padding:20px 16px;text-align:center;color:var(--muted);font-size:13.5px} .ov-empty a{color:var(--accent-dk);font-weight:600;text-decoration:none}
@@ -2618,7 +2618,8 @@ function accountPage() {
 
     <div class="ac-pane" id="pane-ov">
       <p class="ov-hi">Welcome back<span id="ovHiName"></span>. Here&rsquo;s what&rsquo;s moving on the <b><span id="ovCount">…</span> stock<span id="ovCountS"></span></b> you follow.</p>
-      <div class="ov-sec"><div class="ov-h"><i class="ov-brk"></i> This week</div><div class="ov-card" id="ovWeek"><p class="ov-empty">Loading&hellip;</p></div></div>
+      <div class="ov-sec"><div class="ov-h"><i class="ov-brk"></i> Upcoming ex-dates</div><div class="ov-card" id="ovWeek"><p class="ov-empty">Loading&hellip;</p></div></div>
+      <div class="ov-sec" id="ovMovesSec" hidden><div class="ov-h"><i class="ov-brk"></i> Recent dividend moves</div><div class="ov-card" id="ovMoves"></div></div>
       <div class="ov-sec"><div class="ov-h"><i class="ov-brk"></i> Rates this month</div><div class="ov-card">${ratesHTML}</div></div>
       <div class="ov-strip">You&rsquo;ll be emailed about <b>ex-dates</b>, <b>dividend changes</b> &amp; the <b>new SSB</b>. <a href="#" id="ovManage">Manage alerts &rarr;</a></div>
     </div>
@@ -2723,6 +2724,7 @@ function fillProfile(meta){$('pfFirst').value=meta.first_name||'';$('pfLast').va
 var DEMO=new URLSearchParams(location.search).has('demo');
 document.querySelectorAll('.ac-tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.ac-tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');['ov','wl','pf','al'].forEach(function(k){var p=$('pane-'+k);if(p)p.hidden=(k!==t.dataset.t);});};});
 var OVCAL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+var OVUP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>';
 function fmtExDate(iso){try{return new Date(iso+'T00:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short'});}catch(e){return iso;}}
 (function(){var m=$('ovManage');if(m)m.onclick=function(e){e.preventDefault();var t=document.querySelector('.ac-tab[data-t="al"]');if(t)t.click();};})();
 async function loadOverview(demoSlugs){
@@ -2735,10 +2737,20 @@ async function loadOverview(demoSlugs){
   var today=new Date();today.setHours(0,0,0,0);
   var mine=up.filter(function(u){return slugs[u.slug];}).map(function(u){var d=new Date(u.ex+'T00:00:00');return {u:u,days:Math.round((d-today)/86400000)};}).filter(function(x){return x.days>=0;}).sort(function(a,b){return a.days-b.days;}).slice(0,6);
   var box=$('ovWeek');
-  if(!mine.length){box.innerHTML='<div class="ov-empty">'+(n?'No ex-dividend dates coming up on your watchlist just yet.':'You haven\\'t saved any stocks yet. <a href="/stocks/">Browse stocks →</a>')+'</div>';return;}
-  box.innerHTML=mine.map(function(x){var u=x.u;var when=(x.days===0)?'today':(x.days===1)?'tomorrow':'in '+x.days+' days';
+  if(!mine.length){box.innerHTML='<div class="ov-empty">'+(n?'No ex-dividend dates coming up on your watchlist just yet.':'You haven\\'t saved any stocks yet. <a href="/stocks/">Browse stocks →</a>')+'</div>';}
+  else{box.innerHTML=mine.map(function(x){var u=x.u;var when=(x.days===0)?'today':(x.days===1)?'tomorrow':'in '+x.days+' days';
     return '<div class="ov-row"><span class="ov-ic">'+OVCAL+'</span><div class="ov-rm"><div class="ov-rn">'+u.name+(u.ticker?' <span class="tk">'+u.ticker+'</span>':'')+'</div><div class="ov-rs">Goes ex-dividend '+fmtExDate(u.ex)+' &middot; '+u.amt+'/share</div></div><span class="ov-pill days">'+when+'</span></div>';
-  }).join('')+'<a class="ov-foot" href="/dividend-calendar/">View full ex-dividend calendar &rarr;</a>';
+  }).join('')+'<a class="ov-foot" href="/dividend-calendar/">View full ex-dividend calendar &rarr;</a>';}
+  // recent dividend moves on the watchlist
+  try{var rec=await(await fetch('/api/recent.json')).json();
+    var mv=rec.filter(function(m){return slugs[m.slug];}).slice(0,4);
+    if(mv.length){$('ovMovesSec').hidden=false;
+      $('ovMoves').innerHTML=mv.map(function(m){
+        var sub=m.amt?('Declared '+m.amt+'/share'+(m.ex?' &middot; ex '+fmtExDate(m.ex):'')):('Announced a dividend'+(m.ex?' &middot; ex '+fmtExDate(m.ex):''));
+        var da=Math.round((today-new Date(m.annc+'T00:00:00'))/86400000);var ago=(da<=0)?'today':(da===1)?'1d ago':da+'d ago';
+        return '<div class="ov-row"><span class="ov-ic">'+OVUP+'</span><div class="ov-rm"><div class="ov-rn">'+m.name+(m.ticker?' <span class="tk">'+m.ticker+'</span>':'')+'</div><div class="ov-rs">'+sub+'</div></div><span class="ov-pill ago">'+ago+'</span></div>';
+      }).join('')+'<a class="ov-foot" href="/announcements/">See all dividend activity &rarr;</a>';}
+  }catch(e){}
 }
 document.addEventListener('click',function(e){var s=e.target.closest&&e.target.closest('#pane-al .sw');if(!s)return;s.classList.toggle('on');if(s.id==='alMaster')$('alSubs').classList.toggle('off',!s.classList.contains('on'));});
 $('pfSave').onclick=async function(){var data={first_name:$('pfFirst').value.trim(),last_name:$('pfLast').value.trim(),mobile:$('pfMobile').value.trim()};var btn=$('pfSave');btn.disabled=true;btn.textContent='Saving…';var r=DEMO?{}:await sb.auth.updateUser({data:data});btn.disabled=false;btn.textContent='Save profile';var msg=$('pfMsg');msg.className='ac-saved'+((r&&r.error)?' err':'');msg.textContent=(r&&r.error)?'Could not save':'✓ Saved';setTimeout(function(){msg.textContent='';},2500);var nm=(data.first_name+' '+data.last_name).trim();if(nm){$('acName').textContent=nm;$('acAvatar').textContent=nm[0].toUpperCase();}};
@@ -3191,6 +3203,19 @@ mkdirSync(new URL('api/', out), { recursive: true });
 writeFileSync(new URL('api/upcoming.json', out), JSON.stringify(upcoming.map(r => ({ name: r.name, ticker: r.ticker || null, amt: money(r.ccy, r.amt), ex: r.exISO, slug: r.slug }))));
 // compact slug -> [name, ticker, price, currency, yield] map for the account watchlist to render saved stocks
 writeFileSync(new URL('api/stocks.json', out), JSON.stringify(Object.fromEntries(listed.map(c => [c.slug, [c.name, c.ticker || '', c.price || null, csym(c.cur), c.yieldPct != null ? +c.yieldPct.toFixed(2) : null, c.isReit ? 'reit' : c.secType === 'etfs' ? 'etf' : 'stock']]))));
+// Recent dividend moves feed — dividend announcements filed in the last ~45 days, for the account Overview
+// "Recent dividend moves" card (filtered client-side to the user's watchlist). {slug,name,ticker,ex,annc,amt}.
+{
+  const _recCut = (() => { const d = new Date(TODAY + 'T00:00:00'); d.setDate(d.getDate() - 45); return d.toISOString().slice(0,10); })();
+  const _cBy = new Map(companies.map(c => [c.slug, c]));
+  const recent = anns
+    .filter(a => a.type === 'Dividend' && a.annc && a.annc >= _recCut && a.annc <= TODAY)
+    .sort((a,b) => a.annc < b.annc ? 1 : -1)
+    .slice(0, 80)
+    .map(a => { const c = _cBy.get(a.slug); let amt = ''; if (c && a.ex) { const d = c.divs.find(x => x.exISO === a.ex); if (d) amt = money(d.ccy, d.amt); }
+      return { slug: a.slug, name: a.name, ticker: (c && c.ticker) || null, ex: a.ex || null, annc: a.annc, amt: amt || null }; });
+  writeFileSync(new URL('api/recent.json', out), JSON.stringify(recent));
+}
 if (ssb && ssb.current) writeFileSync(new URL('api/ssb.json', out), JSON.stringify({ code: ssb.current.code, y1: ssb.current.y1, y10: ssb.current.y10, applyFmt: ssb.current.applyFmt, issueFmt: ssb.current.issueFmt }));   // for new-SSB alerts
 
 const urls = [SITE + '/', SITE + '/stocks/', SITE + '/blue-chips/', SITE + '/dividends/', SITE + '/reits/', SITE + '/best-performing-reits/', SITE + '/etfs/', SITE + '/dividend-calendar/', SITE + '/dividend-payout-dates/', SITE + '/savings/', SITE + '/fixed-deposits/', SITE + '/savings-accounts/', SITE + '/ssb/', SITE + '/t-bills/', SITE + '/news/', SITE + '/guides/', SITE + '/trending/', SITE + '/announcements/', SITE + '/disclaimer/', ...GUIDES.map(g => `${SITE}/guides/${g.slug}/`), ...all.map(c => `${SITE}/stock/${c.slug}/`)];
