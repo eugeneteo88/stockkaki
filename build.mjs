@@ -756,6 +756,23 @@ const STYLE = `
   .ac-forgot{text-align:right;margin:-2px 0 2px} .ac-forgot a{font-size:12.5px;color:var(--muted);text-decoration:none} .ac-forgot a:hover{color:var(--accent-dk)}
   .ac-switch{font-size:13.5px;color:var(--muted);text-align:center;margin:14px 0 0} .ac-switch a{color:var(--accent-dk);font-weight:600;text-decoration:none}
   .ac-alt{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:none;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;margin-bottom:10px} .ac-alt:hover{color:var(--ink);border-color:var(--accent)}
+  /* --- account Overview dashboard --- */
+  .ov-hi{font-size:14.5px;color:var(--muted);margin:2px 0 18px} .ov-hi b{color:var(--ink)}
+  .ov-sec{margin-bottom:18px}
+  .ov-h{display:inline-flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+  .ov-brk{width:10px;height:10px;border-left:2px solid var(--accent);border-top:2px solid var(--accent);display:inline-block}
+  .ov-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .ov-row{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--line)} .ov-row:last-child{border-bottom:0}
+  .ov-ic{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;flex:0 0 auto} .ov-ic svg{width:18px;height:18px}
+  .ov-rm{flex:1;min-width:0}
+  .ov-rn{font-weight:600;font-size:14px} .ov-rn .tk{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-left:5px}
+  .ov-rs{font-size:12.5px;color:var(--muted);margin-top:1px}
+  .ov-pill{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap;flex:0 0 auto}
+  .ov-pill.days{background:var(--accent-soft);color:var(--accent-dk)} .ov-pill.new{background:var(--accent);color:#fff}
+  .ov-amt{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .ov-foot{display:block;padding:12px;text-align:center;font-size:13px;color:var(--accent-dk);font-weight:600;border-top:1px solid var(--line);text-decoration:none} .ov-foot:hover{background:var(--row-hover)}
+  .ov-empty{padding:20px 16px;text-align:center;color:var(--muted);font-size:13.5px} .ov-empty a{color:var(--accent-dk);font-weight:600;text-decoration:none}
+  .ov-strip{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--accent-soft);border:1px solid var(--line);border-radius:14px;padding:13px 16px;font-size:13px;color:var(--muted)} .ov-strip b{color:var(--ink)} .ov-strip a{color:var(--accent-dk);font-weight:600;text-decoration:none;white-space:nowrap}
   .ac-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
   .ac-who{display:flex;align-items:center;gap:13px;min-width:0}
   .ac-avatar{width:44px;height:44px;flex:0 0 auto;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;font-family:'IBM Plex Serif',sans-serif}
@@ -2560,6 +2577,13 @@ function disclaimerPage() {
 // ---------- account (login when logged-out, watchlist when logged-in) ----------
 const GOOGLE_G = `<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
 function accountPage() {
+  // Overview "Rates this month" card — baked at build time (same for everyone), self-updates each build.
+  const OV_SHIELD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>`;
+  const OV_GAUGE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M12 15l4-3"/></svg>`;
+  const ratesRows = [];
+  if (ssb && ssb.current) ratesRows.push(`<div class="ov-row"><span class="ov-ic">${OV_SHIELD}</span><div class="ov-rm"><div class="ov-rn">New Savings Bond &mdash; ${fullMonthYr(ssb.current.issueISO)}</div><div class="ov-rs">${ssb.current.y1.toFixed(2)}% first year, up to ${ssb.current.y10.toFixed(2)}% over 10 years</div></div><span class="ov-pill new">NEW</span></div>`);
+  if (tbills && tbills.l6) ratesRows.push(`<div class="ov-row"><span class="ov-ic">${OV_GAUGE}</span><div class="ov-rm"><div class="ov-rn">Latest 6-month T-bill</div><div class="ov-rs">${tbills.l6.cutoff_yield.toFixed(2)}% cut-off${tbills.next?` &middot; next auction ${pretty(tbills.next.auction_date)}`:''}</div></div><span class="ov-amt">${tbills.l6.cutoff_yield.toFixed(2)}%</span></div>`);
+  const ratesHTML = ratesRows.length ? ratesRows.join('') + `<a class="ov-foot" href="/savings/">See all savings rates &rarr;</a>` : '<p class="ov-empty">Rates unavailable right now.</p>';
   const body = `  <section class="hero" style="padding:24px 0 4px"><h1 class="serif" style="font-size:26px" id="acTitle">Your account</h1></section>
   <div id="acLoading" class="ac-note">Loading…</div>
   <div id="acAuth" hidden class="ac-authwrap">
@@ -2586,12 +2610,20 @@ function accountPage() {
     </div>
 
     <div class="ac-tabs" role="tablist">
-      <button class="ac-tab on" data-t="wl">Watchlist</button>
-      <button class="ac-tab" data-t="pf">Profile</button>
+      <button class="ac-tab on" data-t="ov">Overview</button>
+      <button class="ac-tab" data-t="wl">Watchlist</button>
       <button class="ac-tab" data-t="al">Alerts</button>
+      <button class="ac-tab" data-t="pf">Profile</button>
     </div>
 
-    <div class="ac-pane" id="pane-wl">
+    <div class="ac-pane" id="pane-ov">
+      <p class="ov-hi">Welcome back<span id="ovHiName"></span>. Here&rsquo;s what&rsquo;s moving on the <b><span id="ovCount">…</span> stock<span id="ovCountS"></span></b> you follow.</p>
+      <div class="ov-sec"><div class="ov-h"><i class="ov-brk"></i> This week</div><div class="ov-card" id="ovWeek"><p class="ov-empty">Loading&hellip;</p></div></div>
+      <div class="ov-sec"><div class="ov-h"><i class="ov-brk"></i> Rates this month</div><div class="ov-card">${ratesHTML}</div></div>
+      <div class="ov-strip">You&rsquo;ll be emailed about <b>ex-dates</b>, <b>dividend changes</b> &amp; the <b>new SSB</b>. <a href="#" id="ovManage">Manage alerts &rarr;</a></div>
+    </div>
+
+    <div class="ac-pane" id="pane-wl" hidden>
       <div class="ac-sect"><span class="ac-sectc" id="acWlCount"></span></div>
       <div id="acWl"><p class="ac-empty">Loading…</p></div>
     </div>
@@ -2685,21 +2717,39 @@ async function loadWatchlist(){
   var rows=res.data||[];var idx={};try{idx=await(await fetch('/api/stocks.json')).json();}catch(e){}
   paintRows(rows.map(function(r){var d=idx[r.slug]||[r.slug];return {slug:r.slug,name:d[0]||r.slug,tk:d[1]||'',price:d[2],cur:d[3]||'S$',y:d[4],type:d[5]||'stock'};}));
 }
-function fillUser(nm,em){$('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();var e2=$('acEm2');if(e2)e2.textContent=em;var pe=$('pfEmail');if(pe)pe.value=em;}
+function fillUser(nm,em){$('acName').textContent=nm;$('acEm').textContent=em;$('acAvatar').textContent=(nm[0]||'?').toUpperCase();var e2=$('acEm2');if(e2)e2.textContent=em;var pe=$('pfEmail');if(pe)pe.value=em;var hn=$('ovHiName');if(hn)hn.textContent=(nm&&nm!=='You')?(', '+nm.split(' ')[0]):'';}
 function fillProfile(meta){$('pfFirst').value=meta.first_name||'';$('pfLast').value=meta.last_name||'';$('pfMobile').value=meta.mobile||'';
   if(meta.alerts){var a=meta.alerts;var m=$('alMaster');if(m)m.classList.toggle('on',a.master!==false);['exdate','divchange','ssb'].forEach(function(k){var s=document.querySelector('#alSubs .sw[data-k="'+k+'"]');if(s)s.classList.toggle('on',!!a[k]);});$('alSubs').classList.toggle('off',a.master===false);}}
 var DEMO=new URLSearchParams(location.search).has('demo');
-document.querySelectorAll('.ac-tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.ac-tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');['wl','pf','al'].forEach(function(k){var p=$('pane-'+k);if(p)p.hidden=(k!==t.dataset.t);});};});
+document.querySelectorAll('.ac-tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.ac-tab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');['ov','wl','pf','al'].forEach(function(k){var p=$('pane-'+k);if(p)p.hidden=(k!==t.dataset.t);});};});
+var OVCAL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+function fmtExDate(iso){try{return new Date(iso+'T00:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short'});}catch(e){return iso;}}
+(function(){var m=$('ovManage');if(m)m.onclick=function(e){e.preventDefault();var t=document.querySelector('.ac-tab[data-t="al"]');if(t)t.click();};})();
+async function loadOverview(demoSlugs){
+  var wl;
+  if(demoSlugs){wl=demoSlugs.map(function(s){return {slug:s};});}
+  else{var r=await sb.from('watchlist').select('slug');wl=r.data||[];}
+  var n=wl.length;$('ovCount').textContent=n;$('ovCountS').textContent=(n===1)?'':'s';
+  var slugs={};wl.forEach(function(x){slugs[x.slug]=1;});
+  var up=[];try{up=await(await fetch('/api/upcoming.json')).json();}catch(e){}
+  var today=new Date();today.setHours(0,0,0,0);
+  var mine=up.filter(function(u){return slugs[u.slug];}).map(function(u){var d=new Date(u.ex+'T00:00:00');return {u:u,days:Math.round((d-today)/86400000)};}).filter(function(x){return x.days>=0;}).sort(function(a,b){return a.days-b.days;}).slice(0,6);
+  var box=$('ovWeek');
+  if(!mine.length){box.innerHTML='<div class="ov-empty">'+(n?'No ex-dividend dates coming up on your watchlist just yet.':'You haven\\'t saved any stocks yet. <a href="/stocks/">Browse stocks →</a>')+'</div>';return;}
+  box.innerHTML=mine.map(function(x){var u=x.u;var when=(x.days===0)?'today':(x.days===1)?'tomorrow':'in '+x.days+' days';
+    return '<div class="ov-row"><span class="ov-ic">'+OVCAL+'</span><div class="ov-rm"><div class="ov-rn">'+u.name+(u.ticker?' <span class="tk">'+u.ticker+'</span>':'')+'</div><div class="ov-rs">Goes ex-dividend '+fmtExDate(u.ex)+' &middot; '+u.amt+'/share</div></div><span class="ov-pill days">'+when+'</span></div>';
+  }).join('')+'<a class="ov-foot" href="/dividend-calendar/">View full ex-dividend calendar &rarr;</a>';
+}
 document.addEventListener('click',function(e){var s=e.target.closest&&e.target.closest('#pane-al .sw');if(!s)return;s.classList.toggle('on');if(s.id==='alMaster')$('alSubs').classList.toggle('off',!s.classList.contains('on'));});
 $('pfSave').onclick=async function(){var data={first_name:$('pfFirst').value.trim(),last_name:$('pfLast').value.trim(),mobile:$('pfMobile').value.trim()};var btn=$('pfSave');btn.disabled=true;btn.textContent='Saving…';var r=DEMO?{}:await sb.auth.updateUser({data:data});btn.disabled=false;btn.textContent='Save profile';var msg=$('pfMsg');msg.className='ac-saved'+((r&&r.error)?' err':'');msg.textContent=(r&&r.error)?'Could not save':'✓ Saved';setTimeout(function(){msg.textContent='';},2500);var nm=(data.first_name+' '+data.last_name).trim();if(nm){$('acName').textContent=nm;$('acAvatar').textContent=nm[0].toUpperCase();}};
 $('alSave').onclick=async function(){var pref={};document.querySelectorAll('#pane-al .sw').forEach(function(s){pref[s.dataset.k]=s.classList.contains('on');});var btn=$('alSave');btn.disabled=true;btn.textContent='Saving…';var r=DEMO?{}:await sb.auth.updateUser({data:{alerts:pref}});btn.disabled=false;btn.textContent='Save';var n=$('alNote');n.textContent=(r&&r.error)?'Could not save — try again':'✓ Preferences saved';setTimeout(function(){n.textContent='Delivery is rolling out soon — set your preferences now.';},2800);};
 function trackAuth(user){try{if(!window.gtag||!user)return;var method=(user.app_metadata&&user.app_metadata.provider)||'email';var isNew=false;try{isNew=(Date.now()-new Date(user.created_at).getTime())<120000;}catch(e){}var k='sk_su_'+user.id;if(isNew&&!localStorage.getItem(k)){window.gtag('event','sign_up',{method:method});try{localStorage.setItem(k,'1');}catch(e){}}window.gtag('event','login',{method:method});}catch(e){}}
 async function render(){
-  if(DEMO){fillUser('Eugene Teo','eugeneteo1988@gmail.com');fillProfile({first_name:'Eugene',last_name:'Teo',mobile:'+65 9123 4567'});show('acView');paintRows([{slug:'dbs-group-holdings-ltd',name:'DBS Group Holdings',tk:'D05',price:71.9,cur:'S$',y:4.31,type:'stock'},{slug:'singtel',name:'Singtel',tk:'Z74',price:4.46,cur:'S$',y:4.09,type:'stock'},{slug:'capitaland-ascendas-reit',name:'CapLand Ascendas REIT',tk:'A17U',price:2.48,cur:'S$',y:4.93,type:'reit'},{slug:'mapletree-industrial-trust',name:'Mapletree Industrial Trust',tk:'ME8U',price:1.92,cur:'S$',y:6.59,type:'reit'},{slug:'abf-sg-bond-etf',name:'ABF SG Bond ETF',tk:'A35',price:1.115,cur:'S$',y:3.1,type:'etf'}]);return;}
+  if(DEMO){fillUser('Eugene Teo','eugeneteo1988@gmail.com');fillProfile({first_name:'Eugene',last_name:'Teo',mobile:'+65 9123 4567'});show('acView');paintRows([{slug:'dbs-group-holdings-ltd',name:'DBS Group Holdings',tk:'D05',price:71.9,cur:'S$',y:4.31,type:'stock'},{slug:'singtel',name:'Singtel',tk:'Z74',price:4.46,cur:'S$',y:4.09,type:'stock'},{slug:'capitaland-ascendas-reit',name:'CapLand Ascendas REIT',tk:'A17U',price:2.48,cur:'S$',y:4.93,type:'reit'},{slug:'mapletree-industrial-trust',name:'Mapletree Industrial Trust',tk:'ME8U',price:1.92,cur:'S$',y:6.59,type:'reit'},{slug:'abf-sg-bond-etf',name:'ABF SG Bond ETF',tk:'A35',price:1.115,cur:'S$',y:3.1,type:'etf'}]);loadOverview(['dbs-group-holdings-ltd','singtel','capitaland-ascendas-reit','mapletree-industrial-trust','abf-sg-bond-etf']);return;}
   var s=(await sb.auth.getSession()).data.session;
   if(!s){show('acAuth');return;}
   var u=s.user;var em=u.email||'';var meta=u.user_metadata||{};var nm=((meta.first_name||'')+' '+(meta.last_name||'')).trim()||meta.name||meta.full_name||em.split('@')[0]||'You';
-  fillUser(nm,em);fillProfile(meta);show('acView');loadWatchlist();
+  fillUser(nm,em);fillProfile(meta);show('acView');loadWatchlist();loadOverview();
   if(location.hash==='#alerts'){var at=document.querySelector('.ac-tab[data-t="al"]');if(at)at.click();}
   if(nextUrl&&/^\\/stock\\//.test(nextUrl)){history.replaceState({},'',location.pathname);}
 }
