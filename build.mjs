@@ -753,6 +753,9 @@ const STYLE = `
   .ac-emailform{display:flex;flex-direction:column;gap:10px} .ac-emailform input{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;color:var(--ink);text-align:center} .ac-emailform input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   .ac-msg{font-size:13px;margin-top:12px;line-height:1.5} .ac-msg.ok{color:#0c7a4e} html[data-theme="dark"] .ac-msg.ok{color:#5fd39e} .ac-msg.err{color:#c0442e}
   .ac-fine{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+  .ac-forgot{text-align:right;margin:-2px 0 2px} .ac-forgot a{font-size:12.5px;color:var(--muted);text-decoration:none} .ac-forgot a:hover{color:var(--accent-dk)}
+  .ac-switch{font-size:13.5px;color:var(--muted);text-align:center;margin:14px 0 0} .ac-switch a{color:var(--accent-dk);font-weight:600;text-decoration:none}
+  .ac-alt{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:none;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;margin-bottom:10px} .ac-alt:hover{color:var(--ink);border-color:var(--accent)}
   .ac-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
   .ac-who{display:flex;align-items:center;gap:13px;min-width:0}
   .ac-avatar{width:44px;height:44px;flex:0 0 auto;border-radius:50%;background:var(--accent-soft);color:var(--accent-dk);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;font-family:'IBM Plex Serif',sans-serif}
@@ -2561,15 +2564,19 @@ function accountPage() {
   <div id="acLoading" class="ac-note">Loading…</div>
   <div id="acAuth" hidden class="ac-authwrap">
     <div class="ac-card ac-authcard">
-      <p class="ac-lede">Sign in to save stocks to your watchlist and — soon — get ex-date &amp; dividend alerts by email. <b>No password</b> — we email you a secure sign-in link.</p>
-      <form id="emailForm" class="ac-emailform">
+      <p class="ac-lede" id="acLede">Log in to save stocks to your watchlist and get ex-date &amp; dividend alerts by email.</p>
+      <form id="pwForm" class="ac-emailform">
         <input id="acEmail" type="email" autocomplete="email" placeholder="you@email.com" required>
-        <button class="btn" type="submit" style="width:100%;padding:13px;border-radius:12px;font-size:15px">Email me a sign-in link</button>
+        <input id="acPass" type="password" autocomplete="current-password" placeholder="Password" minlength="6" required>
+        <div class="ac-forgot" id="forgotWrap"><a href="#" id="forgotLink">Forgot password?</a></div>
+        <button class="btn" type="submit" id="pwBtn" style="width:100%;padding:13px;border-radius:12px;font-size:15px">Log in</button>
       </form>
       <p id="acMsg" class="ac-msg"></p>
+      <p class="ac-switch" id="acSwitch">New to StockKaki? <a href="#" id="switchLink">Create an account</a></p>
       <div class="ac-or"><span>or</span></div>
+      <button id="magicBtn" type="button" class="ac-alt">&#9993;&nbsp; Email me a sign-in link instead</button>
       <button id="googleBtn" class="ac-google" disabled title="Coming soon">${GOOGLE_G} Continue with Google <span class="soon-tag">Soon</span></button>
-      <p class="ac-fine">We'll only ever email you sign-in links and the alerts you choose — never spam.</p>
+      <p class="ac-fine">We'll only ever email you about your account and the alerts you choose — never spam.</p>
     </div>
   </div>
   <div id="acView" hidden>
@@ -2621,7 +2628,39 @@ const $=function(id){return document.getElementById(id);};
 const nextUrl=new URLSearchParams(location.search).get('next');
 function show(v){['acLoading','acAuth','acView'].forEach(function(x){$(x).hidden=(x!==v);});}
 $('googleBtn').onclick=function(){sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/account/'}});};
-$('emailForm').addEventListener('submit',async function(e){e.preventDefault();var email=$('acEmail').value.trim();if(!email)return;var btn=e.target.querySelector('button');btn.textContent='Sending…';btn.disabled=true;var r=await sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:location.origin+'/account/'}});$('acMsg').className='ac-msg '+(r.error?'err':'ok');$('acMsg').textContent=r.error?('Could not send — '+r.error.message):('✓ Check your inbox — sign-in link sent to '+email);btn.textContent='Email me a sign-in link';btn.disabled=false;});
+function acmsg(ok,t){$('acMsg').className='ac-msg '+(ok?'ok':'err');$('acMsg').textContent=t;}
+var mode='login';
+function bindSwitch(){var l=$('switchLink');if(l)l.onclick=function(e){e.preventDefault();setMode(mode==='login'?'signup':'login');};}
+function setMode(m){mode=m;
+  $('pwBtn').textContent=(m==='signup')?'Create account':'Log in';
+  $('acPass').setAttribute('autocomplete',(m==='signup')?'new-password':'current-password');
+  $('acPass').placeholder=(m==='signup')?'Create a password (min 6 characters)':'Password';
+  $('forgotWrap').hidden=(m==='signup');
+  $('acLede').textContent=(m==='signup')?'Create your StockKaki account to save stocks and get dividend alerts by email.':'Log in to save stocks to your watchlist and get ex-date & dividend alerts by email.';
+  $('acSwitch').innerHTML=(m==='signup')?'Already have an account? <a href="#" id="switchLink">Log in</a>':'New to StockKaki? <a href="#" id="switchLink">Create an account</a>';
+  acmsg(true,'');$('acMsg').textContent='';bindSwitch();}
+bindSwitch();
+$('pwForm').addEventListener('submit',async function(e){e.preventDefault();
+  var email=$('acEmail').value.trim(),pass=$('acPass').value;if(!email||!pass)return;
+  var btn=$('pwBtn'),orig=btn.textContent;btn.disabled=true;btn.textContent=(mode==='signup')?'Creating…':'Logging in…';
+  if(mode==='signup'){var r=await sb.auth.signUp({email:email,password:pass,options:{emailRedirectTo:location.origin+'/account/'}});
+    if(r.error)acmsg(false,r.error.message);
+    else if(r.data&&r.data.session){} // auto-confirm off → onAuthStateChange handles login
+    else acmsg(true,'✓ Almost there — check your inbox to confirm your email, then log in.');
+  }else{var r2=await sb.auth.signInWithPassword({email:email,password:pass});
+    if(r2.error)acmsg(false,/confirm/i.test(r2.error.message)?'Please confirm your email first — check your inbox for the link.':'Wrong email or password. Try again, or use “Forgot password?” above.');
+  }
+  btn.disabled=false;btn.textContent=orig;});
+$('forgotLink').onclick=async function(e){e.preventDefault();var email=$('acEmail').value.trim();
+  if(!email){acmsg(false,'Enter your email above first, then tap Forgot password.');return;}
+  var r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/account/reset/'});
+  acmsg(!r.error,r.error?('Could not send — '+r.error.message):'✓ Check your inbox — a password-reset link is on the way.');};
+$('magicBtn').onclick=async function(){var email=$('acEmail').value.trim();
+  if(!email){acmsg(false,'Enter your email above first.');return;}
+  var b=$('magicBtn');b.disabled=true;b.textContent='Sending…';
+  var r=await sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:location.origin+'/account/'}});
+  acmsg(!r.error,r.error?('Could not send — '+r.error.message):('✓ Sign-in link sent to '+email+' — check your inbox.'));
+  b.disabled=false;b.innerHTML='&#9993;&nbsp; Email me a sign-in link instead';};
 $('signOut').onclick=async function(){await sb.auth.signOut();location.href='/';};
 var TRASH='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>';
 var STARBIG='<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6L18.2 21 12 17l-6.2 4 1.6-6.9L2 9.5 9 9z"/></svg>';
@@ -2668,6 +2707,39 @@ if(!DEMO)sb.auth.onAuthStateChange(function(evt,sess){if(evt==='SIGNED_IN'&&sess
 render();
 </script>`;
   return shell('Your account | StockKaki', 'Sign in to StockKaki to save stocks to your watchlist and get dividend alerts.', SITE + '/account/', body, script);
+}
+// ---------- reset password (landing page for the "Forgot password" email link) ----------
+function resetPage() {
+  const body = `  <section class="hero" style="padding:24px 0 4px"><h1 class="serif" style="font-size:26px">Set a new password</h1></section>
+  <div class="ac-authwrap"><div class="ac-card ac-authcard">
+    <div id="rsLoading" class="ac-note">Checking your link&hellip;</div>
+    <form id="rsForm" hidden class="ac-emailform">
+      <p class="ac-lede">Choose a new password for your StockKaki account.</p>
+      <input id="rsPass" type="password" autocomplete="new-password" placeholder="New password (min 6 characters)" minlength="6" required>
+      <input id="rsPass2" type="password" autocomplete="new-password" placeholder="Confirm new password" minlength="6" required>
+      <button class="btn" type="submit" id="rsBtn" style="width:100%;padding:13px;border-radius:12px;font-size:15px">Update password</button>
+    </form>
+    <p id="rsMsg" class="ac-msg"></p>
+    <div id="rsBad" hidden><p class="ac-lede">This reset link is invalid or has expired.</p><a class="ac-alt" href="/account/">&larr; Back to login</a></div>
+  </div></div>`;
+  const script = `<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const sb=createClient('${SUPABASE_URL}','${SUPABASE_ANON}');
+const $=function(id){return document.getElementById(id);};
+var shown=false;
+function showForm(){if(shown)return;shown=true;$('rsLoading').hidden=true;$('rsForm').hidden=false;}
+sb.auth.onAuthStateChange(function(evt,sess){if(evt==='PASSWORD_RECOVERY'||(evt==='SIGNED_IN'&&sess))showForm();});
+setTimeout(async function(){if(shown)return;var s=(await sb.auth.getSession()).data.session;if(s)showForm();else{$('rsLoading').hidden=true;$('rsBad').hidden=false;}},1800);
+$('rsForm').addEventListener('submit',async function(e){e.preventDefault();
+  var p1=$('rsPass').value,p2=$('rsPass2').value;
+  if(p1!==p2){$('rsMsg').className='ac-msg err';$('rsMsg').textContent='Passwords do not match.';return;}
+  var btn=$('rsBtn');btn.disabled=true;btn.textContent='Updating…';
+  var r=await sb.auth.updateUser({password:p1});
+  if(r.error){$('rsMsg').className='ac-msg err';$('rsMsg').textContent=r.error.message;btn.disabled=false;btn.textContent='Update password';}
+  else{$('rsMsg').className='ac-msg ok';$('rsMsg').textContent='✓ Password updated — taking you to your account…';setTimeout(function(){location.href='/account/';},1400);}
+});
+</script>`;
+  return shell('Reset password | StockKaki', 'Set a new password for your StockKaki account.', SITE + '/account/reset/', body, script);
 }
 
 // ---------- confirm / unsubscribe utility pages ----------
@@ -3059,6 +3131,8 @@ writeFileSync(new URL('savings-accounts/index.html', out), ratePage({
 }));
 mkdirSync(new URL('account/', out), { recursive: true });
 writeFileSync(new URL('account/index.html', out), accountPage());
+mkdirSync(new URL('account/reset/', out), { recursive: true });
+writeFileSync(new URL('account/reset/index.html', out), resetPage());
 mkdirSync(new URL('confirm/', out), { recursive: true });
 writeFileSync(new URL('confirm/index.html', out), utilPage('Confirm your alerts', 'confirm_subscriber', "You're in! 🦁", "You'll get StockKaki dividend & ex-date alerts.", 'Already confirmed (or the link expired).'));
 mkdirSync(new URL('unsubscribe/', out), { recursive: true });
