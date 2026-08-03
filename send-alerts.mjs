@@ -4,7 +4,8 @@
  *   1) EX-DATE REMINDERS  — watchlist stocks going ex-dividend in ~3 days (morning run, fires once)
  *   2) DIVIDEND CHANGES   — a watchlist stock declares/updates a dividend (snapshot diff vs data/alert-state.json)
  *   3) NEW SSB            — a new monthly Savings Bond issue appears (opt-in only)
- * Respects saved preferences (user_metadata.alerts: master / exdate / divchange / ssb).
+ *   4) WEEKLY DIGEST      — Sunday morning: the week's ex-dates on the user's watchlist ("dividend week ahead")
+ * Respects saved preferences (user_metadata.alerts: master / exdate / divchange / ssb / weekly).
  *   DRY_RUN=1        → log only, send nothing, don't touch the snapshot
  *   ALERTS_TEST=you@ → send ONE sample email to that address
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY
@@ -23,6 +24,8 @@ const up = readJSON('./dist/api/upcoming.json', null);
 if (!up) { console.log('alerts: dist/api/upcoming.json missing — run build first.'); process.exit(0); }
 const ssbNow = readJSON('./dist/api/ssb.json', null);
 const state = readJSON('./data/alert-state.json', { divs: {}, ssb: null });
+let exdateLast = state.exdateLast || null;   // guard: ex-date reminders + weekly digest each fire once per day,
+let weeklyLast = state.weeklyLast || null;   // even though several morning cron runs pass the "morning" check.
 
 const sgt = new Date(Date.now() + 8 * 3600 * 1000);
 const today = sgt.toISOString().slice(0, 10);
@@ -92,8 +95,8 @@ async function notify(slugEntries, key, defOn, subjectFn, headingFn, leadFn) {
 let total = 0;
 const todaySigs = {}; for (const d of up) (todaySigs[d.slug] = todaySigs[d.slug] || []).push(d.ex + '|' + d.amt);
 
-// 1) EX-DATE REMINDERS — morning only, exactly 3 days out
-if (DRY || sgt.getUTCHours() < 12) {
+// 1) EX-DATE REMINDERS — morning only, exactly 3 days out, once per day
+if (DRY || (sgt.getUTCHours() < 12 && exdateLast !== today)) {
   const target = dayISO(3);
   const se = {}; for (const d of up) if (d.ex === target) (se[d.slug] = se[d.slug] || []).push(d);
   if (Object.keys(se).length) {
@@ -103,7 +106,8 @@ if (DRY || sgt.getUTCHours() < 12) {
       (s) => `${s.length} stock${s.length > 1 ? 's' : ''} on your watchlist go ex-dividend in about 3 days (${pretty(target)}). Own the shares <b style="color:#3A2A20">before</b> the ex-date to be entitled.`);
     total += n; console.log(`alerts: ex-date reminders — sent ${n} for ${target}.`);
   } else console.log(`alerts: no ex-dates 3 days out (${target}).`);
-} else console.log(`alerts: not morning (SGT ${sgt.getUTCHours()}h) — ex-date reminders skipped.`);
+  if (!DRY) exdateLast = today;
+} else console.log(`alerts: ex-date reminders skipped (not morning, or already ran today).`);
 
 // 2) DIVIDEND CHANGES — new/updated upcoming dividend vs snapshot (baseline on first run, no emails)
 if (state.divs && Object.keys(state.divs).length) {
@@ -141,9 +145,31 @@ if (ssbNow && ssbNow.code) {
   } else console.log(`alerts: SSB unchanged (${ssbNow.code}).`);
 }
 
+// 4) WEEKLY DIGEST — Sunday morning: this week's ex-dates on each user's watchlist ("dividend week ahead")
+if (DRY || (sgt.getUTCDay() === 0 && sgt.getUTCHours() < 12 && weeklyLast !== today)) {
+  const weekEnd = dayISO(7);
+  const weekBySlug = {};
+  for (const d of up) if (d.ex >= today && d.ex <= weekEnd) (weekBySlug[d.slug] = weekBySlug[d.slug] || []).push(d);
+  const perUser = {};
+  for (const slug of Object.keys(weekBySlug)) for (const uid of (watchers[slug] || [])) {
+    if (!allowed(uid, 'weekly', true)) continue; (perUser[uid] = perUser[uid] || []).push(...weekBySlug[slug]);
+  }
+  let wsent = 0;
+  for (const uid of Object.keys(perUser)) {
+    const u = users[uid]; if (!u || !u.email) continue;
+    const s = perUser[uid].sort((a, b) => a.ex < b.ex ? -1 : 1);
+    if (await send(u.email, `📅 Your dividend week ahead — ${s.length} ex-date${s.length > 1 ? 's' : ''}`,
+      emailShell('Your dividend week ahead',
+        `${s.length} stock${s.length > 1 ? 's' : ''} on your watchlist go ex-dividend this week (to ${pretty(weekEnd)}). Own the shares <b style="color:#3A2A20">before</b> each ex-date to be entitled.`,
+        divTable(s), 'View your watchlist →', `${SITE}/account/`))) wsent++;
+  }
+  total += wsent; console.log(`alerts: weekly digest — sent ${wsent} (week to ${weekEnd}).`);
+  if (!DRY) weeklyLast = today;
+} else console.log(`alerts: weekly digest skipped (not Sunday morning, or already ran today).`);
+
 // persist snapshot for next run (skip on dry-run to keep the baseline intact)
 if (!DRY) {
-  try { mkdirSync(new URL('./data/', import.meta.url), { recursive: true }); writeFileSync(new URL('./data/alert-state.json', import.meta.url), JSON.stringify({ divs: todaySigs, ssb: ssbNow ? ssbNow.code : state.ssb })); }
+  try { mkdirSync(new URL('./data/', import.meta.url), { recursive: true }); writeFileSync(new URL('./data/alert-state.json', import.meta.url), JSON.stringify({ divs: todaySigs, ssb: ssbNow ? ssbNow.code : state.ssb, exdateLast, weeklyLast })); }
   catch (e) { console.log('alerts: state save failed', e.message); }
 }
 console.log(`alerts: done — ${total} email(s) ${DRY ? '(dry-run)' : 'sent'}.`);
