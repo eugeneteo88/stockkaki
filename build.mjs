@@ -2480,23 +2480,42 @@ const GUIDES = [
   {
     slug: 'are-dividends-taxed-in-singapore',
     title: `Are Dividends Taxed in Singapore? | StockKaki`,
-    desc: `The short answer is no — Singapore does not tax dividends from local companies, and there is no capital-gains tax. Plus the nuances for REITs and foreign (e.g. US) stocks.`,
+    desc: `Are dividends taxable in Singapore? The short answer is no — Singapore does not tax dividends from local companies, and there's no capital-gains tax. Plus REITs, US withholding (30%) and the Irish-domiciled ETF fix.`,
     h1: `Are dividends taxed in Singapore?`,
-    blurb: `The short answer is no — but there are a few nuances worth knowing (REITs, foreign stocks, when it applies).`,
-    body: `<p><strong>For dividends from Singapore-resident companies, the answer is no — they are tax-free in your hands.</strong> There is also no capital-gains tax, so profits when you sell are yours to keep. This is a big part of why Singapore is such a friendly place for income investors.</p>
+    blurb: `The short answer is no — but there are a few nuances worth knowing (REITs, US stocks, ETFs, and when it applies).`,
+    body: `<p><strong>For dividends from Singapore-resident companies, the answer is no — dividend income is tax-free in your hands.</strong> There is also no capital-gains tax, so profits when you sell are yours to keep. This is a big part of why Singapore is such a friendly place for income investors — the yield you see is very close to the yield you actually keep.</p>
+<div class="ltable" style="margin:20px 0">
+<table>
+<thead><tr><th>What you hold</th><th class="r">Tax on the dividend</th></tr></thead>
+<tbody>
+<tr><td>SGX-listed Singapore company (e.g. DBS, Singtel)</td><td class="r"><strong>0%</strong> &mdash; tax-free</td></tr>
+<tr><td>Singapore REITs (S-REITs), held personally</td><td class="r"><strong>0%</strong> &mdash; tax-exempt</td></tr>
+<tr><td>US-listed shares (e.g. Apple, Coca-Cola)</td><td class="r">30% withheld at source</td></tr>
+<tr><td>US shares via an Irish-domiciled ETF</td><td class="r">~15% at fund level</td></tr>
+<tr><td>Capital gains (selling any of the above)</td><td class="r"><strong>0%</strong> &mdash; no CGT</td></tr>
+</tbody>
+</table>
+</div>
 <h2>Why Singapore dividends are not taxed</h2>
-<p>Singapore uses a <strong>one-tier corporate tax system</strong>. Companies pay tax on their profits, and when those after-tax profits are paid out as dividends, they are <em>not</em> taxed again at the shareholder level. So a dividend from an SGX-listed Singapore company arrives with no further tax to pay, and nothing to declare.</p>
+<p>Singapore uses a <strong>one-tier corporate tax system</strong>. Companies pay tax on their profits, and when those after-tax profits are paid out as dividends, they are <em>not</em> taxed again at the shareholder level. So a dividend from an SGX-listed Singapore company arrives with no further tax to pay, and nothing to declare on your income tax return.</p>
+<h2>Do you need to declare dividends in Singapore?</h2>
+<p>For tax-exempt Singapore dividends &mdash; no. You do not declare them and you do not pay tax on them. IRAS lists a few narrow exceptions (such as certain co-operatives and partnerships), but a typical investor buying SGX shares has nothing to file.</p>
 <h2>What about REIT distributions?</h2>
-<p>Distributions from <a href="/reits/">Singapore REITs</a> are generally <strong>tax-exempt for individuals</strong> holding units in their personal capacity. Different rules can apply if you hold them through a business or as a trading activity.</p>
-<h2>The nuance: foreign stocks</h2>
-<p>The tax-free treatment applies to <em>Singapore</em> dividends. If you own foreign shares, the <strong>source country may withhold tax</strong> before the dividend reaches you. The most common example: US-listed stocks withhold <strong>30%</strong> on dividends for Singapore residents (there is no US–Singapore tax treaty to reduce it). This does not apply to SGX-listed Singapore companies — but it is worth knowing before you buy US dividend stocks for income.</p>
+<p>Distributions from <a href="/reits/">Singapore REITs</a> are generally <strong>tax-exempt for individuals</strong> holding units in their personal capacity. Different rules can apply if you hold them through a business or as a trading activity &mdash; but for ordinary income investors, S-REIT distributions land tax-free, part of what makes them so popular for passive income.</p>
+<h2>The nuance: foreign (US) stocks</h2>
+<p>The tax-free treatment applies to <em>Singapore</em> dividends. If you own foreign shares, the <strong>source country may withhold tax</strong> before the dividend reaches you. The big one: US-listed stocks withhold <strong>30%</strong> on dividends for Singapore residents, because there is no US–Singapore tax treaty to reduce it. Singapore does not tax it again &mdash; but that 30% is already gone at source.</p>
+<h2>The 15% fix: Irish-domiciled ETFs</h2>
+<p>Here is the part many Singapore investors miss. If you get your US exposure through an <strong>Irish-domiciled ETF</strong> (for example an S&amp;P 500 ETF like CSPX rather than a US-listed one like VOO), the fund only suffers <strong>15%</strong> US withholding at the fund level, thanks to the US–Ireland tax treaty &mdash; and Ireland does not withhold again on the way to you. Same underlying US companies, roughly half the dividend leakage. It is the standard reason SG investors prefer Irish-domiciled ETFs for US and global exposure. (Browse <a href="/etfs/">Singapore-listed ETFs</a> by yield.)</p>
 <h2>When could Singapore tax apply?</h2>
-<p>For ordinary investors buying and holding SGX stocks, dividends and capital gains are not taxed. Tax can enter the picture in narrower cases — for instance if you are assessed as <em>trading</em> shares as a business rather than investing — but that is the exception, not the rule for a typical dividend investor.</p>
+<p>For ordinary investors buying and holding SGX stocks, dividends and capital gains are not taxed. Tax can enter the picture in narrower cases — for instance if IRAS assesses you as <em>trading</em> shares as a business rather than investing — but that is the exception, not the rule for a typical dividend investor.</p>
 <p>Because the yield you see is close to the yield you keep, comparing SGX payers is refreshingly simple — start with the <a href="/dividends/">best dividend stocks</a> page.</p>
-<p style="font-size:14px;color:var(--muted)"><em>This is general information, not tax advice. For your own situation, check <a href="https://www.iras.gov.sg/" target="_blank" rel="noopener nofollow">IRAS</a> or a qualified tax professional.</em></p>`,
+<p style="font-size:14px;color:var(--muted)"><em>This is general information, not tax advice, and tax rules can change. For your own situation, check <a href="https://www.iras.gov.sg/" target="_blank" rel="noopener nofollow">IRAS</a> or a qualified tax professional.</em></p>`,
     faqs: [
-      { q: `Do I need to pay tax on dividends from Singapore stocks?`, a: `No. Under Singapore's one-tier corporate tax system, dividends from SGX-listed Singapore-resident companies are tax-exempt for shareholders, and there is no capital-gains tax. You generally do not need to declare them.` },
+      { q: `Is dividend income taxable in Singapore?`, a: `No. Under Singapore's one-tier corporate tax system, dividends from SGX-listed Singapore-resident companies are tax-exempt for shareholders, and there is no capital-gains tax. For a typical investor there is nothing to pay and nothing to declare.` },
+      { q: `Do I need to declare dividends from Singapore stocks?`, a: `Generally no. Tax-exempt dividends from Singapore-resident companies do not need to be declared on your income tax return. Narrow exceptions exist (for example certain co-operatives), but they don't apply to ordinary SGX shareholders.` },
+      { q: `Are REIT dividends taxable in Singapore?`, a: `Distributions from Singapore REITs are generally tax-exempt for individuals holding the units in their personal capacity. Different rules can apply if you hold them through a business or trade them actively.` },
       { q: `Are dividends from US stocks taxed for Singapore investors?`, a: `Yes — the US withholds 30% on dividends paid to Singapore residents, as there is no US–Singapore tax treaty to reduce the rate. This is separate from Singapore, which does not tax the dividend again.` },
+      { q: `How can I reduce US dividend withholding tax?`, a: `Get your US exposure through an Irish-domiciled ETF instead of a US-listed one. The US–Ireland treaty cuts the withholding at the fund level from 30% to 15%, and Ireland doesn't withhold again — so a Singapore investor keeps more of the same underlying dividends.` },
       { q: `Is there capital-gains tax in Singapore?`, a: `No. Singapore does not impose a capital-gains tax, so profits from selling shares are generally not taxable for individual investors.` },
     ],
   },
