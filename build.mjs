@@ -82,6 +82,23 @@ const TODAY = new Date().toISOString().slice(0,10);
 const YEAR = TODAY.slice(0,4);   // current year — for self-updating "best ... <year>" SEO titles (never hardcode the year)
 const daysTo = (s) => Math.round((new Date(s) - new Date(TODAY)) / 86400000);
 const exTag = (s) => { const d = daysTo(s); return d>=0 && d<=7 ? `<span class="tag soon">${d===0?'today':d+'d'}</span>` : ''; };
+const wkday = (s) => { try { return new Date(s+'T00:00:00').toLocaleDateString('en-US',{weekday:'short'}); } catch(e){ return ''; } };
+const relDay = (s) => { const d = daysTo(s); return d===0?'Today':d===1?'Tomorrow':wkday(s); };
+// Group an already-date-sorted list into day cards (used by the ex-date calendar and the pay-date page).
+// dateOf(r)→ISO, rowOf(r)→inner .erow HTML, unit = plural noun for the count chip.
+function dayGroups(items, dateOf, rowOf, unit) {
+  const groups = []; let cur = null;
+  for (const r of items) { const d = dateOf(r); if (!cur || cur.iso !== d) { cur = { iso: d, rows: [] }; groups.push(cur); } cur.rows.push(r); }
+  return groups.map(g => {
+    const dd = daysTo(g.iso), soon = dd <= 1, n = g.rows.length;
+    return `  <div class="daygrp${dd===0?' todaywrap':''}">
+    <div class="dayhdr"><span class="rel${soon?'':' mut'}">${relDay(g.iso)}</span><span class="dt">${prettyShort(g.iso)}</span><span class="ct">${n} ${unit}</span></div>
+    <div class="daycard">
+${g.rows.map(rowOf).join('\n')}
+    </div>
+  </div>`;
+  }).join('\n');
+}
 const yearAgo = new Date(new Date(TODAY).getTime() - 365*86400000).toISOString().slice(0,10);
 
 async function fetchRaw(pages = 50) {
@@ -723,6 +740,19 @@ const STYLE = `
   .pager .pg{font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer;min-width:38px}
   .pager .pg:hover:not([disabled]){border-color:var(--accent);color:var(--ink)} .pager .pg.on{background:var(--accent);color:#fff;border-color:var(--accent)} .pager .pg[disabled]{opacity:.4;cursor:default}
   .pager .pg-dots{color:var(--muted);align-self:center;padding:0 2px}
+  /* dividend calendar / pay dates: grouped by day */
+  .exhelp{margin:12px 0 2px;font-size:12.5px;max-width:820px} .exhelp summary{list-style:none;cursor:pointer;color:var(--accent-dk);font-weight:600;display:inline-flex;align-items:center;gap:6px} .exhelp summary::-webkit-details-marker{display:none} .exhelp p{color:var(--muted);line-height:1.65;margin:9px 0 0;max-width:660px} .exhelp p b{color:var(--ink)} .exhelp p a{color:var(--accent-dk);font-weight:600}
+  .daygrp{margin-top:22px;max-width:820px} .daygrp:first-of-type{margin-top:18px}
+  .dayhdr{display:flex;align-items:baseline;gap:9px;margin:0 2px 8px}
+  .dayhdr .rel{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)} .dayhdr .rel.mut{color:var(--muted)}
+  .dayhdr .dt{font-weight:600;font-size:14px;color:var(--ink)} .dayhdr .ct{margin-left:auto;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .daycard{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--card-sh);overflow:hidden}
+  .todaywrap .daycard{border-color:var(--accent)}
+  .erow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-bottom:1px solid var(--hair-2);color:inherit;text-decoration:none} .erow:last-child{border-bottom:0} .erow:hover{background:var(--row-hover)}
+  .erow .en{min-width:0} .erow .enm{display:block;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .erow .enm .tick{margin-left:5px}
+  .erow .ep{display:block;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+  .erow .ea{flex:0 0 auto;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--accent-dk)} .erow .ea.mut{color:var(--muted);font-weight:600;font-size:12.5px}
+  .calnone{display:none;padding:22px 4px;color:var(--muted);font-size:14px}
   .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:5px}
   .trcard .tp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
   .trcard .tm{font-size:12px;margin-top:4px;font-family:'JetBrains Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:var(--up)} .trcard .tm .down{color:var(--down)}
@@ -1706,17 +1736,11 @@ ${chart}
 // ---------- dividend calendar (upcoming ex-dates, chronological) ----------
 function calendarPage(upcoming) {
   const cm = fullMonthYr(TODAY);   // current month, e.g. "August 2026" — self-updates daily so the page targets "SGX ex-dividend dates <month>" searches
-  const rows = upcoming.map(r => {
-    const amt = r.divIncomplete ? 'scrip' : money(r.ccy, r.amt);
-    const tag = exTag(r.exISO);
-    return `        <a class="lrow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}">
-          <span class="lr-name"><span class="lr-co">${r.name}</span>${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span>
-          <span class="lr-exd">${pretty(r.exISO)} ${tag}</span>
-          <span class="lr-amt">${amt}</span>
-          <span class="lr-ex">${pretty(r.pay)}</span>
-          <span class="lr-meta">Ex ${prettyShort(r.exISO)}${tag?' '+tag:''}  ·  ${amt}  ·  Pay ${prettyShort(r.pay)}</span>
-        </a>`;
-  }).join('\n');
+  const calRow = (r) => {
+    const amt = r.divIncomplete ? '<span class="ea mut">scrip</span>' : `<span class="ea">${money(r.ccy, r.amt)}</span>`;
+    return `      <a class="erow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}"><span class="en"><span class="enm">${r.name}${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span><span class="ep">Pay ${prettyShort(r.pay)}</span></span>${amt}</a>`;
+  };
+  const groupsHTML = dayGroups(upcoming, r => r.exISO, calRow, 'going ex');
   const faqs = [
     { q: `Which Singapore stocks go ex-dividend in ${cm}?`, a: `The calendar above lists every SGX counter going ex-dividend from ${cm} onwards — with its ex-date, dividend amount and pay date, updated daily. Buy before a stock's ex-date to receive its next dividend.` },
     { q: 'What is an ex-dividend date?', a: 'The ex-dividend (ex) date is the cut-off to qualify for a dividend — you must own the shares before the ex-date to be entitled. On the ex-date the share price typically drops by roughly the dividend amount.' },
@@ -1727,36 +1751,34 @@ function calendarPage(upcoming) {
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Calendar — ${cm}</h1>
-    <p class="sub" style="margin-bottom:0">Every upcoming SGX ex-dividend and pay date for ${cm} and beyond, in order — updated daily.</p>
+    <p class="sub" style="margin-bottom:0">Upcoming SGX ex-dividend dates, grouped by day — updated daily.</p>
   </section>
-  <div class="intro">Buy a stock <b>before its ex-date</b> to receive the upcoming dividend. Below are the next <b>${upcoming.length}</b> SGX ex-dividend dates from <b>${cm}</b> onwards, with their amounts and pay dates, newest first. Want to know exactly when the cash lands? See the <a href="/dividend-payout-dates/">dividend payment dates</a>. For the full picture on any counter, tap through to its page.</div>
-  <div class="ltable cols-home" style="margin-top:12px">
-    <div class="lrow lhead"><span>Company</span><span class="lr-exd">Ex-date</span><span class="lr-amt">Amount</span><span class="lr-ex">Pay date</span></div>
-    <div id="tb">
-${rows}
-    </div>
-  </div>
-  <p class="metaline" style="font-size:12px">Ex-dates &amp; amounts from SGX; <b>scrip</b> = a reinvestment-option distribution (cash amount not published in the free feed).</p>
+  <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock going ex-dividend…"></div>
+  <details class="exhelp"><summary>What's an ex-date?</summary><p>Buy a stock <b>before</b> its ex-date to receive the upcoming dividend; on the ex-date the price typically drops by about the dividend amount. The <b>pay date</b> is when the cash is actually credited — usually a few weeks later. Want it ordered by when the money lands? See <a href="/dividend-payout-dates/">dividend payment dates</a>.</p></details>
+${groupsHTML}
+  <div class="calnone" id="none">No upcoming ex-date matches that.</div>
+  <p class="metaline" style="font-size:12px;margin-top:22px">Ex-dates &amp; amounts from SGX; <b>scrip</b> = a reinvestment-option distribution (cash amount not published in the free feed).</p>
   ${faqHTML}
   ${jsonLd}`;
+  const script = `<script>
+var q=document.getElementById('q'),groups=[].slice.call(document.querySelectorAll('.daygrp')),none=document.getElementById('none');
+q.addEventListener('input',function(){var v=q.value.trim().toLowerCase(),shown=0;
+ groups.forEach(function(g){var any=false;[].slice.call(g.querySelectorAll('.erow')).forEach(function(r){var ok=!v||r.dataset.s.indexOf(v)>=0;r.style.display=ok?'':'none';if(ok)any=true;});g.style.display=any?'':'none';if(any)shown++;});
+ none.style.display=shown?'none':'block';});
+</script>`;
   return shell(`Singapore Dividend Calendar ${cm} — Upcoming SGX Ex-Dividend & Pay Dates | StockKaki`,
     `Singapore dividend calendar for ${cm}: every upcoming SGX ex-dividend and pay date in order, updated daily. Never miss a payout.`,
-    SITE + '/dividend-calendar/', body, '', '/og/dividend-calendar.png');
+    SITE + '/dividend-calendar/', body, script, '/og/dividend-calendar.png');
 }
 
 // ---------- dividend payment (pay) dates — "when the cash lands", ordered by pay date (a distinct door from the ex-date calendar) ----------
 function payoutDatesPage(upcoming) {
   const paid = upcoming.filter(r => r.pay && r.pay >= TODAY).sort((a, b) => a.pay < b.pay ? -1 : 1);
-  const rows = paid.map(r => {
-    const amt = r.divIncomplete ? 'scrip' : money(r.ccy, r.amt);
-    return `        <a class="lrow" href="/stock/${r.slug}/" data-s="${esc((r.name + ' ' + (r.ticker || '')).toLowerCase())}">
-          <span class="lr-name"><span class="lr-co">${r.name}</span>${r.ticker ? `<span class="tick">${r.ticker}</span>` : ''}</span>
-          <span class="lr-exd">${pretty(r.pay)}</span>
-          <span class="lr-amt">${amt}</span>
-          <span class="lr-ex">${pretty(r.exISO)}</span>
-          <span class="lr-meta">Pay ${prettyShort(r.pay)}  &middot;  ${amt}  &middot;  Ex ${prettyShort(r.exISO)}</span>
-        </a>`;
-  }).join('\n');
+  const payRow = (r) => {
+    const amt = r.divIncomplete ? '<span class="ea mut">scrip</span>' : `<span class="ea">${money(r.ccy, r.amt)}</span>`;
+    return `      <a class="erow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}"><span class="en"><span class="enm">${r.name}${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span><span class="ep">Ex ${prettyShort(r.exISO)}</span></span>${amt}</a>`;
+  };
+  const groupsHTML = dayGroups(paid, r => r.pay, payRow, 'paid');
   const faqs = [
     { q: 'When will I receive my dividend in Singapore?', a: 'The pay date is when the cash is credited to your account — usually two to four weeks after the ex-dividend date. The table above lists upcoming SGX dividends by pay date, so you can see exactly when each payout lands.' },
     { q: "What's the difference between the ex-date and the payment date?", a: 'The ex-date is the cut-off to qualify — you must own the shares before it. The payment (pay) date is when the money actually reaches your account, a few weeks later. This page is ordered by pay date; the ex-date view is on the dividend calendar.' },
@@ -1767,21 +1789,24 @@ function payoutDatesPage(upcoming) {
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Payment Dates</h1>
-    <p class="sub" style="margin-bottom:0">When upcoming SGX dividends actually land in your account &mdash; ordered by pay date, updated daily.</p>
+    <p class="sub" style="margin-bottom:0">When upcoming SGX dividends land in your account &mdash; grouped by pay date, updated daily.</p>
   </section>
-  <div class="intro">The <b>payment date</b> (or pay date) is when a dividend is credited to your account &mdash; usually a few weeks after the ex-date. Below are the next <b>${paid.length}</b> SGX dividend payouts, soonest first. Looking for the cut-off to qualify instead? See the <a href="/dividend-calendar/">ex-dividend calendar</a>, or browse every payer on <a href="/dividends/">best dividend stocks</a>.</div>
-  <div class="ltable cols-home" style="margin-top:12px">
-    <div class="lrow lhead"><span>Company</span><span class="lr-exd">Pay date</span><span class="lr-amt">Amount</span><span class="lr-ex">Ex-date</span></div>
-    <div id="tb">
-${rows}
-    </div>
-  </div>
-  <p class="metaline" style="font-size:12px">Pay dates &amp; amounts from SGX filings; <b>scrip</b> = a reinvestment-option distribution (cash amount not in the free feed).</p>
+  <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock's payout date…"></div>
+  <details class="exhelp"><summary>What's a pay date?</summary><p>The <b>payment date</b> is when a dividend is actually credited to your account &mdash; usually a few weeks after the ex-date. You qualify by owning the shares before the <b>ex-date</b>; you don't need to still hold them on the pay date. Looking for the cut-off to qualify? See the <a href="/dividend-calendar/">ex-dividend calendar</a>.</p></details>
+${groupsHTML}
+  <div class="calnone" id="none">No upcoming payout matches that.</div>
+  <p class="metaline" style="font-size:12px;margin-top:22px">Pay dates &amp; amounts from SGX filings; <b>scrip</b> = a reinvestment-option distribution (cash amount not in the free feed).</p>
   ${faqHTML}
   ${jsonLd}`;
+  const script = `<script>
+var q=document.getElementById('q'),groups=[].slice.call(document.querySelectorAll('.daygrp')),none=document.getElementById('none');
+q.addEventListener('input',function(){var v=q.value.trim().toLowerCase(),shown=0;
+ groups.forEach(function(g){var any=false;[].slice.call(g.querySelectorAll('.erow')).forEach(function(r){var ok=!v||r.dataset.s.indexOf(v)>=0;r.style.display=ok?'':'none';if(ok)any=true;});g.style.display=any?'':'none';if(any)shown++;});
+ none.style.display=shown?'none':'block';});
+</script>`;
   return shell(`Singapore Dividend Payment Dates — When SGX Dividends Are Paid | StockKaki`,
     `Upcoming Singapore dividend payment (pay) dates: when each SGX dividend is actually credited to your account, ordered by pay date and updated daily.`,
-    SITE + '/dividend-payout-dates/', body, '', '/og/dividend-calendar.png');
+    SITE + '/dividend-payout-dates/', body, script, '/og/dividend-calendar.png');
 }
 
 // ---------- announcements ----------
