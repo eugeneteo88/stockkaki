@@ -508,6 +508,7 @@ const STYLE = `
   .listctrls{display:flex;gap:10px;margin:14px 0 0;flex-wrap:nowrap}
   .lctrl{flex:1 1 0;min-width:0;text-overflow:ellipsis;appearance:none;-webkit-appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:11px 34px 11px 14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:var(--card-sh)} .lctrl:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   @media(min-width:620px){ .listctrls{flex-wrap:wrap} .lctrl{flex:0 0 auto} }
+  .showall{display:block;width:100%;max-width:820px;margin:12px 0 2px;padding:13px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--accent-dk);cursor:pointer;box-shadow:var(--card-sh);text-align:center} .showall:hover{border-color:var(--accent);background:var(--accent-soft)}
   .chip{white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 14px;border-radius:999px;cursor:pointer;user-select:none}
   .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .nextcard{margin:18px 0 4px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;gap:28px;align-items:center}
@@ -1180,6 +1181,7 @@ ${sorted.map(companyRow).join('\n')}
     </div>
   </div>
   <div id="none" class="empty" style="display:none">No match.</div>
+  <button id="showall" class="showall" style="display:none"></button>
   <div class="pager" id="lpager"></div>
   <p class="metaline" style="font-size:12px">Yields are indicative — trailing 12-month dividends ÷ last price. <b>*</b> likely a one-off special dividend; <b>scrip</b> = pays via a reinvestment option (cash amount not in SGX's free feed).</p>
   ${intro ? `<div class="intro" style="margin-top:18px">${intro}</div>` : ''}
@@ -1189,13 +1191,15 @@ ${sorted.map(companyRow).join('\n')}
 const PER=15;
 const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
 const typef=document.getElementById('typef'),sortf=document.getElementById('sortf');
-let matches=[],page=1;
+const showall=document.getElementById('showall');
+let matches=[],page=1,fullCount=0;
 function collect(){const v=q.value.trim().toLowerCase();const f=typef?typef.value:'all';const s=sortf?sortf.value:'top';
  let rows=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
   if(ok&&f!=='all')ok=(r.dataset.type===f);
   return ok;});
  const k=(s==='d')?'d':'y';
  rows.sort((a,b)=>parseFloat(b.dataset[k]||-1)-parseFloat(a.dataset[k]||-1));
+ fullCount=rows.length;
  if(s==='top')rows=rows.slice(0,10);
  matches=rows; matches.forEach(r=>tb.appendChild(r));}
 function pageBtns(total){var out=[],add=function(p){out.push('<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>');};
@@ -1208,11 +1212,13 @@ function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if
  matches.slice((page-1)*PER,page*PER).forEach(r=>r.style.display='');
  none.style.display=matches.length?'none':'block';
  if(total<2){pager.innerHTML='';}else{pager.innerHTML='<button class="pg" data-d="-1"'+(page===1?' disabled':'')+'>←</button>'+pageBtns(total)+'<button class="pg" data-d="1"'+(page===total?' disabled':'')+'>→</button>';}
+ if(showall){if(sortf&&sortf.value==='top'&&fullCount>10){showall.style.display='';showall.textContent='Show all '+fullCount+' →';}else{showall.style.display='none';}}
  if(scroll&&alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});}
 function apply(){collect();page=1;render(false);}
-q.addEventListener('input',apply);
+q.addEventListener('input',function(){if(q.value.trim()&&sortf&&sortf.value==='top')sortf.value='y';apply();});
 if(typef)typef.addEventListener('change',apply);
 if(sortf)sortf.addEventListener('change',apply);
+if(showall)showall.addEventListener('click',function(){if(sortf)sortf.value='y';apply();if(alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});});
 pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
 apply();
 </script>`;
