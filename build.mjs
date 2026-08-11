@@ -1425,8 +1425,9 @@ const stockRow = (c) => {
   const chgTxt = (chg!=null && chg!==0) ? (chg>0?'+':'')+chg.toFixed(2)+'%' : '—';
   const chgCls = 'lr-chg' + (chg>0?' up':chg<0?' down':'');
   const type = c.secType==='etfs' ? 'ETF' : c.isReit ? 'REIT' : 'Stock';
+  const rtype = c.secType==='etfs' ? 'etf' : c.secType==='reits' ? 'reit' : c.secType==='businesstrusts' ? 'trust' : c.isReit ? (/\breit\b/i.test(c.name) ? 'reit' : 'trust') : 'stock';
   const meta = [priceTxt, chgTxt!=='—'?chgTxt:null, f.mktCap?'Cap '+mc:null, f.pe!=null?'P/E '+pe:null].filter(Boolean).join('  ·  ') || type;
-  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-mc="${Math.round(capSGD(f.cur||c.cur, f.mktCap))}" data-pe="${f.pe||0}" data-chg="${chg!=null?chg:-999}">
+  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-type="${rtype}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-n="${esc(c.name.toLowerCase())}" data-mc="${Math.round(capSGD(f.cur||c.cur, f.mktCap))}" data-pe="${f.pe||0}" data-chg="${chg!=null?chg:-999}">
           <span class="lr-name"><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
           <span class="lr-price">${priceTxt}</span>
           <span class="${chgCls}">${chgTxt}</span>
@@ -1443,15 +1444,18 @@ function stocksPage(list) {
   // A–Z, which floated obscure counters and no-data "—" rows to the top. Counters with no cap sink to the bottom.
   const _cap = (c) => capSGD((c.fund&&c.fund.cur)||c.cur, (c.fund&&c.fund.mktCap)||0);
   const sorted = [...uniq].sort((a,b) => _cap(b) - _cap(a) || (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
-  const nStock = uniq.filter(c => !c.isReit && c.secType!=='etfs').length;
-  const nReit = uniq.filter(c => c.isReit).length;
-  const nEtf = uniq.filter(c => c.secType==='etfs').length;
-  const chips = `<div class="chips">
-    <span class="chip on" data-f="all">All <span class="pill-n">${uniq.length}</span></span>
-    <span class="chip" data-f="stock">Stocks <span class="pill-n">${nStock}</span></span>
-    <span class="chip" data-f="reit">REITs &amp; Trusts <span class="pill-n">${nReit}</span></span>
-    <span class="chip" data-f="etf">ETFs <span class="pill-n">${nEtf}</span></span>
-  </div>`;
+  const tOf = (c) => c.secType==='etfs' ? 'etf' : c.secType==='reits' ? 'reit' : c.secType==='businesstrusts' ? 'trust' : c.isReit ? (/\breit\b/i.test(c.name) ? 'reit' : 'trust') : 'stock';
+  const nStock = uniq.filter(c => tOf(c)==='stock').length;
+  const nReit = uniq.filter(c => tOf(c)==='reit').length;
+  const nTrust = uniq.filter(c => tOf(c)==='trust').length;
+  const nEtf = uniq.filter(c => tOf(c)==='etf').length;
+  const typeOpts = [
+    `<option value="all">All types (${uniq.length})</option>`,
+    nStock ? `<option value="stock">Stocks (${nStock})</option>` : '',
+    nReit ? `<option value="reit">REITs (${nReit})</option>` : '',
+    nTrust ? `<option value="trust">Trusts (${nTrust})</option>` : '',
+    nEtf ? `<option value="etf">ETFs (${nEtf})</option>` : '',
+  ].filter(Boolean).join('');
   const faqs = [
     { q: 'How many stocks are listed on the SGX?', a: `There are around ${uniq.length} counters listed on the Singapore Exchange (SGX), including ordinary shares, REITs, business trusts and ETFs. This page lists them all — search, filter and sort.` },
     { q: 'What are the biggest companies on the SGX?', a: 'By market capitalisation, the largest SGX-listed companies are the three local banks — DBS, OCBC and UOB — followed by names like Singtel and Singapore Exchange. Sort this list by market cap to see them ranked.' },
@@ -1465,28 +1469,41 @@ function stocksPage(list) {
     <p class="sub" style="margin-bottom:2px">Every SGX-listed counter — price, day change, market cap and P/E. Search, filter and sort.</p>
   </section>
   <div class="search" id="alltop" style="margin-top:16px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker…"></div>
-  ${chips}
-  <div class="lsort"><button data-sort="mc" class="on">Market cap</button><button data-sort="n">A–Z</button><button data-sort="chg">% change</button></div>
+  <div class="listctrls">
+    <select id="typef" class="lctrl" aria-label="Filter by type">${typeOpts}</select>
+    <select id="sortf" class="lctrl" aria-label="Sort by">
+      <option value="top">Top 10 · market cap</option>
+      <option value="mc">All · market cap</option>
+      <option value="chg">All · today's %</option>
+    </select>
+  </div>
   <div class="ltable cols-stocks" style="margin-top:12px">
-    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-chg" data-sort="chg">Change</span><span class="lr-mc" data-sort="mc">Market cap</span><span class="lr-pe" data-sort="pe">P/E</span></div>
+    <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-chg">Change</span><span class="lr-mc">Market cap</span><span class="lr-pe">P/E</span></div>
     <div id="tb">
 ${sorted.map(stockRow).join('\n')}
     </div>
   </div>
   <div id="none" class="empty" style="display:none">No match.</div>
+  <button id="showall" class="showall" style="display:none"></button>
   <div class="pager" id="lpager"></div>
   <p class="metaline" style="font-size:12px">Market cap, P/E and day change from live market data; last price from the SGX. Updated daily.</p>
-  <div class="intro" style="margin-top:18px">The Singapore Exchange (SGX) is home to around <b>${uniq.length}</b> listed counters — from the big local banks and <a href="/blue-chips/">blue chips</a> to REITs, business trusts and ETFs. Above is every one of them with live price, day change, market cap and P/E. Use the filters for Stocks, REITs or ETFs, sort by name / market cap / day change, or search any name or ticker. Tap any counter for its full page — price, dividends, ex-dates, fundamentals and news.</div>
+  <div class="intro" style="margin-top:18px">The Singapore Exchange (SGX) is home to around <b>${uniq.length}</b> listed counters — from the big local banks and <a href="/blue-chips/">blue chips</a> to REITs, business trusts and ETFs. Above is every one of them with live price, day change, market cap and P/E. Filter by type (stocks, REITs, trusts or ETFs), sort by market cap or today's move, or search any name or ticker. Tap any counter for its full page — price, dividends, ex-dates, fundamentals and news.</div>
   ${faqHTML}
   ${jsonLd}`;
   const script = `<script>
 const PER=15;
 const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
-let matches=[],page=1;
-function collect(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';
- matches=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
-  if(ok&&f==='reit')ok=r.dataset.reit==='1'; if(ok&&f==='etf')ok=r.dataset.etf==='1'; if(ok&&f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
-  return ok;});}
+const typef=document.getElementById('typef'),sortf=document.getElementById('sortf'),showall=document.getElementById('showall');
+let matches=[],page=1,fullCount=0;
+function collect(){const v=q.value.trim().toLowerCase();const f=typef?typef.value:'all';const s=sortf?sortf.value:'top';
+ let rows=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
+  if(ok&&f!=='all')ok=(r.dataset.type===f);
+  return ok;});
+ const k=(s==='chg')?'chg':'mc';
+ rows.sort((a,b)=>parseFloat(b.dataset[k]||-1e18)-parseFloat(a.dataset[k]||-1e18));
+ fullCount=rows.length;
+ if(s==='top')rows=rows.slice(0,10);
+ matches=rows; matches.forEach(r=>tb.appendChild(r));}
 function pageBtns(total){var out=[],add=function(p){out.push('<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>');};
  add(1); if(page>3)out.push('<span class="pg-dots">…</span>');
  for(var p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++)add(p);
@@ -1497,22 +1514,15 @@ function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if
  matches.slice((page-1)*PER,page*PER).forEach(r=>r.style.display='');
  none.style.display=matches.length?'none':'block';
  if(total<2){pager.innerHTML='';}else{pager.innerHTML='<button class="pg" data-d="-1"'+(page===1?' disabled':'')+'>←</button>'+pageBtns(total)+'<button class="pg" data-d="1"'+(page===total?' disabled':'')+'>→</button>';}
+ if(showall){if(sortf&&sortf.value==='top'&&fullCount>10){showall.style.display='';showall.textContent='Show all '+fullCount+' →';}else{showall.style.display='none';}}
  if(scroll&&alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});}
 function apply(){collect();page=1;render(false);}
-q.addEventListener('input',apply);
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');apply();}));
+q.addEventListener('input',function(){if(q.value.trim()&&sortf&&sortf.value==='top')sortf.value='mc';apply();});
+if(typef)typef.addEventListener('change',apply);
+if(sortf)sortf.addEventListener('change',apply);
+if(showall)showall.addEventListener('click',function(){if(sortf)sortf.value='mc';apply();if(alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});});
 pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
-let sk='',sd=-1;
-function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n')?1:-1;}
- const rows=[...tb.querySelectorAll('.lrow')];
- rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
- rows.forEach(r=>tb.appendChild(r));
- document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
- document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));
- apply();}
-document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
-document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
-sortBy('mc');
+apply();
 </script>`;
   return shell('All Singapore Stocks — Every SGX-Listed Company | StockKaki',
     `Browse all ~${list.length} SGX-listed Singapore stocks, REITs and ETFs — with live price, day change, market cap and P/E. Search, filter and sort. Free, updated daily.`,
@@ -1550,9 +1560,14 @@ function blueChipsPage(list) {
   </section>
   <div class="intro" style="margin-top:14px">Blue chips are the biggest, most established companies on the SGX — the heavyweights that anchor the <b>Straits Times Index (STI)</b>: the local banks, Singtel, the exchange itself and other household names. They are prized for stability and steady, tax-free <a href="/dividends/">dividends</a> rather than explosive growth. Below are the <b>${sorted.length}</b> largest by market cap; tap any for its full page, or browse <a href="/stocks/">all SGX counters</a>.</div>
   <div class="search" id="alltop" style="margin-top:16px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter blue chips…"></div>
-  <div class="lsort"><button data-sort="mc" class="on">Market cap</button><button data-sort="chg">% change</button><button data-sort="n">A–Z</button></div>
+  <div class="listctrls">
+    <select id="sortf" class="lctrl" aria-label="Sort by">
+      <option value="mc">Sort: Market cap (biggest)</option>
+      <option value="chg">Sort: Today's move</option>
+    </select>
+  </div>
   <div class="ltable cols-stocks" style="margin-top:12px">
-    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-chg" data-sort="chg">Change</span><span class="lr-mc" data-sort="mc">Market cap</span><span class="lr-pe" data-sort="pe">P/E</span></div>
+    <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-chg">Change</span><span class="lr-mc">Market cap</span><span class="lr-pe">P/E</span></div>
     <div id="tb">
 ${sorted.map(stockRow).join('\n')}
     </div>
@@ -1565,9 +1580,12 @@ ${sorted.map(stockRow).join('\n')}
   const script = `<script>
 const PER=30;
 const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
+const sortf=document.getElementById('sortf');
 let matches=[],page=1;
-function collect(){const v=q.value.trim().toLowerCase();
- matches=[...tb.querySelectorAll('.lrow')].filter(r=>(!v||r.dataset.s.includes(v)));}
+function collect(){const v=q.value.trim().toLowerCase();const k=(sortf&&sortf.value==='chg')?'chg':'mc';
+ let rows=[...tb.querySelectorAll('.lrow')].filter(r=>(!v||r.dataset.s.includes(v)));
+ rows.sort((a,b)=>parseFloat(b.dataset[k]||-1e18)-parseFloat(a.dataset[k]||-1e18));
+ matches=rows; matches.forEach(r=>tb.appendChild(r));}
 function pageBtns(total){var out=[],add=function(p){out.push('<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>');};
  add(1); if(page>3)out.push('<span class="pg-dots">…</span>');
  for(var p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++)add(p);
@@ -1581,18 +1599,9 @@ function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if
  if(scroll&&alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});}
 function apply(){collect();page=1;render(false);}
 q.addEventListener('input',apply);
+if(sortf)sortf.addEventListener('change',apply);
 pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
-let sk='',sd=-1;
-function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n')?1:-1;}
- const rows=[...tb.querySelectorAll('.lrow')];
- rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
- rows.forEach(r=>tb.appendChild(r));
- document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
- document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));
- apply();}
-document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
-document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
-sortBy('mc');
+apply();
 </script>`;
   return shell(`Singapore Blue-Chip Stocks ${YEAR} — Largest SGX Companies (STI) | StockKaki`,
     `The ${sorted.length} largest SGX-listed companies by market cap — Singapore's blue-chip stocks and STI heavyweights. Live price, market cap, P/E and yield. Free, updated daily.`,
