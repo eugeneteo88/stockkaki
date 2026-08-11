@@ -505,6 +505,9 @@ const STYLE = `
   .hint{margin-top:12px;font-size:12.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
   .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent)}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:18px 0 6px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
+  /* list controls: type + sort dropdowns (replaces chip row + A–Z pills) */
+  .listctrls{display:flex;gap:10px;margin:14px 0 0;flex-wrap:wrap}
+  .lctrl{appearance:none;-webkit-appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:11px 34px 11px 14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:var(--card-sh)} .lctrl:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   .chip{white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 14px;border-radius:999px;cursor:pointer;user-select:none}
   .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .nextcard{margin:18px 0 4px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;gap:28px;align-items:center}
@@ -1144,39 +1147,28 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
   const nStock = list.filter(c => !c.isReit && c.secType!=='etfs').length;
   const nReit = list.filter(c => c.isReit).length;
   const nEtf = list.filter(c => c.secType==='etfs').length;
-  const chips = typeChips ? `<div class="chips">
-    <span class="chip on" data-f="all">All <span class="pill-n">${list.length}</span></span>
-    <span class="chip" data-f="stock">Stocks <span class="pill-n">${nStock}</span></span>
-    <span class="chip" data-f="reit">REITs &amp; Trusts <span class="pill-n">${nReit}</span></span>
-    <span class="chip" data-f="etf">ETFs <span class="pill-n">${nEtf}</span></span>
-  </div>` : '';
-  // curated Top-10 block (leads the page for the "top 10 …" search intent)
-  const top10 = sorted.filter(c => c.yieldPct!=null && c.yieldPct<=20 || c.divIncomplete).slice(0, 10);
-  const t10Card = (c, i) => {
-    const CS = csym(c.cur);
-    const type = c.secType==='etfs' ? 'ETF' : c.isReit ? 'REIT' : 'Stock';
-    const sub = [type, (c.ttm>0 && !c.divIncomplete) ? `${CS}${num(c.ttm)} / yr` : (c.divIncomplete?'scrip payer':null)].filter(Boolean).join(' · ');
-    const y = c.yieldPct!=null ? c.yieldPct.toFixed(2)+'%' : (c.divIncomplete?'scrip':'—');
-    const yCls = 'tyv' + ((c.yieldPct==null||c.divIncomplete) ? ' mut' : '');
-    return `      <a class="t10${i<3?' gold':''}" href="/stock/${c.slug}/"><span class="rk">${i+1}</span><span class="ti"><span class="tn">${c.name}${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span><span class="ts">${sub}</span></span><span class="ty"><span class="${yCls}">${y}</span>${c.price?`<span class="tp">${pxf(CS,c.price)}</span>`:''}</span></a>`;
-  };
-  const topBlock = (sorted.length > 10 && top10.length >= 6) ? `  <div class="hub-h" style="margin-bottom:12px">Top 10 ${h1.replace(/^Best /,'').replace(/ in Singapore$/,'')} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">by yield</span></div>
-  <div class="top10">
-${top10.map(t10Card).join('\n')}
-  </div>
-  <div class="hub-h">All ${h1.replace(/^Best /,'').replace(/ in Singapore$/,'')}</div>` : '';
+  const typeSel = typeChips ? `<select id="typef" class="lctrl" aria-label="Filter by type">
+      <option value="all">All types (${list.length})</option>
+      <option value="stock">Stocks (${nStock})</option>
+      <option value="reit">REITs &amp; Trusts (${nReit})</option>
+      <option value="etf">ETFs (${nEtf})</option>
+    </select>` : '';
   const faqHTML = (faqs && faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
   const jsonLd = (faqs && faqs.length) ? `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
     <p class="sub" style="margin-bottom:2px">${sub}</p>
   </section>
-  ${topBlock}
   <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
-  ${chips}
-  <div class="lsort"><button data-sort="y" class="on">Yield</button><button data-sort="d">Dividend</button><button data-sort="n">A–Z</button></div>
+  <div class="listctrls">
+    ${typeSel}
+    <select id="sortf" class="lctrl" aria-label="Sort by">
+      <option value="y">Sort: Yield (highest)</option>
+      <option value="d">Sort: Dividend (highest)</option>
+    </select>
+  </div>
   <div class="ltable cols-screener" style="margin-top:12px">
-    <div class="lrow lhead"><span data-sort="n">Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
+    <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
     <div id="tb">
 ${sorted.map(companyRow).join('\n')}
     </div>
@@ -1190,8 +1182,9 @@ ${sorted.map(companyRow).join('\n')}
   const script = `<script>
 const PER=15;
 const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
+const typef=document.getElementById('typef'),sortf=document.getElementById('sortf');
 let matches=[],page=1;
-function collect(){const v=q.value.trim().toLowerCase();const on=document.querySelector('.chip.on');const f=on?on.dataset.f:'all';
+function collect(){const v=q.value.trim().toLowerCase();const f=typef?typef.value:'all';
  matches=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
   if(ok&&f==='reit')ok=r.dataset.reit==='1'; if(ok&&f==='etf')ok=r.dataset.etf==='1'; if(ok&&f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
   return ok;});}
@@ -1208,18 +1201,18 @@ function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if
  if(scroll&&alltop)alltop.scrollIntoView({behavior:'smooth',block:'start'});}
 function apply(){collect();page=1;render(false);}
 q.addEventListener('input',apply);
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');apply();}));
+if(typef)typef.addEventListener('change',apply);
 pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
 let sk='',sd=-1;
-function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='n'||k==='e')?1:-1;}
+function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='e')?1:-1;}
  const rows=[...tb.querySelectorAll('.lrow')];
- rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='n'||k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
+ rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
  rows.forEach(r=>tb.appendChild(r));
  document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
- document.querySelectorAll('.lsort button').forEach(bn=>bn.classList.toggle('on',bn.dataset.sort===sk));
+ if(sortf&&(sk==='y'||sk==='d'))sortf.value=sk;
  apply();}
 document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
-document.querySelectorAll('.lsort button').forEach(bn=>bn.addEventListener('click',()=>sortBy(bn.dataset.sort)));
+if(sortf)sortf.addEventListener('change',()=>sortBy(sortf.value));
 sortBy('y');
 </script>`;
   return shell(title, desc, canon, body, script, og);
