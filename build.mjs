@@ -376,7 +376,7 @@ const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/">StockKaki<span class="bdot">.</span></a>
   <nav>${NAVLINKS}</nav>
-  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><a class="loginbtn" href="/account/" aria-label="Log in" title="Log in or sign up">${ACCT_IC}<span>Log in</span></a><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
 </header>
 <div id="mscrim" class="mscrim"></div>
@@ -385,7 +385,6 @@ const NAV = `<header class="nav">
   <nav class="mmenu-links">${NAVLINKS}</nav>
   <div class="mmenu-foot">
     <a class="mmenu-login" href="/account/">${ACCT_IC}<span>Log in</span></a>
-    <span class="btn wa soon" title="Coming soon">${WA} Join channel <span class="soon-tag">Soon</span></span>
   </div>
 </aside>`;
 const ALERT = `<section class="alert">
@@ -435,7 +434,7 @@ const STYLE = `
   html[data-theme="dark"] .moon{display:none} html:not([data-theme="dark"]) .sun{display:none}
   .deskonly{display:none} @media(min-width:820px){ .deskonly{display:inline-block} }
   .btn.wa.deskonly{display:none} @media(min-width:820px){ .btn.wa.deskonly{display:inline-flex} }
-  .mtoggle{display:inline-flex} @media(min-width:820px){ .mtoggle{display:none} }
+  .mtoggle{display:inline-flex}
   .mscrim{position:fixed;inset:0;background:rgba(20,14,10,.55);opacity:0;visibility:hidden;transition:opacity .25s ease;z-index:40}
   .mscrim.open{opacity:1;visibility:visible}
   .mmenu{position:fixed;top:0;bottom:0;right:0;width:min(82vw,300px);background:var(--card);border-left:1px solid var(--line);box-shadow:-16px 0 44px -20px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
@@ -506,8 +505,9 @@ const STYLE = `
   .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent)}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:18px 0 6px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
   /* list controls: type + sort dropdowns (replaces chip row + A–Z pills) */
-  .listctrls{display:flex;gap:10px;margin:14px 0 0;flex-wrap:wrap}
-  .lctrl{appearance:none;-webkit-appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:11px 34px 11px 14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:var(--card-sh)} .lctrl:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .listctrls{display:flex;gap:10px;margin:14px 0 0;flex-wrap:nowrap}
+  .lctrl{flex:1 1 0;min-width:0;text-overflow:ellipsis;appearance:none;-webkit-appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:11px 34px 11px 14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:var(--card-sh)} .lctrl:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  @media(min-width:620px){ .listctrls{flex-wrap:wrap} .lctrl{flex:0 0 auto} }
   .chip{white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:7px 14px;border-radius:999px;cursor:pointer;user-select:none}
   .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .nextcard{margin:18px 0 4px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:18px 22px;display:flex;flex-wrap:wrap;gap:28px;align-items:center}
@@ -1130,7 +1130,8 @@ const companyRow = (c) => {
   const yRank = c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
   const week = nx && daysTo(nx.exISO) <= 7 ? 1 : 0;
   const meta = [ c.price?priceTxt:null, c.divIncomplete?'scrip':(c.ttm>0?'Div '+csym(c.cur)+num(c.ttm):null), nx?'Ex '+prettyShort(nx.exISO):null ].filter(Boolean).join('  ·  ') || 'No dividend in 12M';
-  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-week="${week}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
+  const rtype = c.secType==='etfs' ? 'etf' : c.secType==='reits' ? 'reit' : c.secType==='businesstrusts' ? 'trust' : c.isReit ? (/\breit\b/i.test(c.name) ? 'reit' : 'trust') : 'stock';
+  return `        <a class="lrow" href="/stock/${c.slug}/" data-s="${esc((c.name+' '+(c.ticker||'')).toLowerCase())}" data-type="${rtype}" data-reit="${c.isReit?1:0}" data-etf="${c.secType==='etfs'?1:0}" data-week="${week}" data-n="${esc(c.name.toLowerCase())}" data-y="${yRank}" data-d="${c.ttm||0}" data-e="${nx?nx.exISO:''}">
           <span class="lr-name"><span class="lr-co">${c.name}</span>${c.ticker?`<span class="tick">${c.ticker}</span>`:''}</span>
           <span class="lr-price">${priceTxt}</span>
           <span class="${yCls}"${yTitle}>${yTxt}</span>
@@ -1144,15 +1145,19 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
   const key = (c) => c.yieldPct==null ? -1 : (c.yieldPct<=20 ? c.yieldPct : -0.5);
   let sorted = [...list].sort((a,b) => key(b) - key(a));
   if (limit) sorted = sorted.slice(0, limit);
-  const nStock = list.filter(c => !c.isReit && c.secType!=='etfs').length;
-  const nReit = list.filter(c => c.isReit).length;
-  const nEtf = list.filter(c => c.secType==='etfs').length;
-  const typeSel = typeChips ? `<select id="typef" class="lctrl" aria-label="Filter by type">
-      <option value="all">All types (${list.length})</option>
-      <option value="stock">Stocks (${nStock})</option>
-      <option value="reit">REITs &amp; Trusts (${nReit})</option>
-      <option value="etf">ETFs (${nEtf})</option>
-    </select>` : '';
+  const tOf = (c) => c.secType==='etfs' ? 'etf' : c.secType==='reits' ? 'reit' : c.secType==='businesstrusts' ? 'trust' : c.isReit ? (/\breit\b/i.test(c.name) ? 'reit' : 'trust') : 'stock';
+  const nStock = list.filter(c => tOf(c)==='stock').length;
+  const nReit = list.filter(c => tOf(c)==='reit').length;
+  const nTrust = list.filter(c => tOf(c)==='trust').length;
+  const nEtf = list.filter(c => tOf(c)==='etf').length;
+  const typeOpts = [
+    `<option value="all">All types (${list.length})</option>`,
+    nStock ? `<option value="stock">Stocks (${nStock})</option>` : '',
+    nReit ? `<option value="reit">REITs (${nReit})</option>` : '',
+    nTrust ? `<option value="trust">Trusts (${nTrust})</option>` : '',
+    nEtf ? `<option value="etf">ETFs (${nEtf})</option>` : '',
+  ].filter(Boolean).join('');
+  const typeSel = typeChips ? `<select id="typef" class="lctrl" aria-label="Filter by type">${typeOpts}</select>` : '';
   const faqHTML = (faqs && faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
   const jsonLd = (faqs && faqs.length) ? `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
@@ -1163,12 +1168,13 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
   <div class="listctrls">
     ${typeSel}
     <select id="sortf" class="lctrl" aria-label="Sort by">
-      <option value="y">Sort: Yield (highest)</option>
-      <option value="d">Sort: Dividend (highest)</option>
+      <option value="top">Top 10 · yield</option>
+      <option value="y">All · by yield</option>
+      <option value="d">All · by dividend</option>
     </select>
   </div>
   <div class="ltable cols-screener" style="margin-top:12px">
-    <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-yield" data-sort="y">Yield</span><span class="lr-div" data-sort="d">12-mo div</span><span class="lr-ex" data-sort="e">Next ex-date</span></div>
+    <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-yield">Yield</span><span class="lr-div">12-mo div</span><span class="lr-ex">Next ex-date</span></div>
     <div id="tb">
 ${sorted.map(companyRow).join('\n')}
     </div>
@@ -1184,10 +1190,14 @@ const PER=15;
 const q=document.getElementById('q'),tb=document.getElementById('tb'),none=document.getElementById('none'),pager=document.getElementById('lpager'),alltop=document.getElementById('alltop');
 const typef=document.getElementById('typef'),sortf=document.getElementById('sortf');
 let matches=[],page=1;
-function collect(){const v=q.value.trim().toLowerCase();const f=typef?typef.value:'all';
- matches=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
-  if(ok&&f==='reit')ok=r.dataset.reit==='1'; if(ok&&f==='etf')ok=r.dataset.etf==='1'; if(ok&&f==='stock')ok=(r.dataset.reit!=='1'&&r.dataset.etf!=='1');
-  return ok;});}
+function collect(){const v=q.value.trim().toLowerCase();const f=typef?typef.value:'all';const s=sortf?sortf.value:'top';
+ let rows=[...tb.querySelectorAll('.lrow')].filter(r=>{let ok=(!v||r.dataset.s.includes(v));
+  if(ok&&f!=='all')ok=(r.dataset.type===f);
+  return ok;});
+ const k=(s==='d')?'d':'y';
+ rows.sort((a,b)=>parseFloat(b.dataset[k]||-1)-parseFloat(a.dataset[k]||-1));
+ if(s==='top')rows=rows.slice(0,10);
+ matches=rows; matches.forEach(r=>tb.appendChild(r));}
 function pageBtns(total){var out=[],add=function(p){out.push('<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>');};
  add(1); if(page>3)out.push('<span class="pg-dots">…</span>');
  for(var p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++)add(p);
@@ -1202,18 +1212,9 @@ function render(scroll){const total=Math.max(1,Math.ceil(matches.length/PER));if
 function apply(){collect();page=1;render(false);}
 q.addEventListener('input',apply);
 if(typef)typef.addEventListener('change',apply);
+if(sortf)sortf.addEventListener('change',apply);
 pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const total=Math.max(1,Math.ceil(matches.length/PER));if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
-let sk='',sd=-1;
-function sortBy(k){if(sk===k)sd=-sd;else{sk=k;sd=(k==='e')?1:-1;}
- const rows=[...tb.querySelectorAll('.lrow')];
- rows.sort((a,b)=>{let av=a.dataset[k],bv=b.dataset[k];if(k==='e'){av=av||'~';bv=bv||'~';return av<bv?-sd:av>bv?sd:0;}return (parseFloat(av)-parseFloat(bv))*sd;});
- rows.forEach(r=>tb.appendChild(r));
- document.querySelectorAll('.lhead [data-sort]').forEach(th=>{const o=th.querySelector('.ar');if(o)o.remove();if(th.dataset.sort===sk)th.insertAdjacentHTML('beforeend','<span class="ar">'+(sd<0?' ↓':' ↑')+'</span>');});
- if(sortf&&(sk==='y'||sk==='d'))sortf.value=sk;
- apply();}
-document.querySelectorAll('.lhead [data-sort]').forEach(th=>th.addEventListener('click',()=>sortBy(th.dataset.sort)));
-if(sortf)sortf.addEventListener('change',()=>sortBy(sortf.value));
-sortBy('y');
+apply();
 </script>`;
   return shell(title, desc, canon, body, script, og);
 }
