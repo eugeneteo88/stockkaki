@@ -507,7 +507,8 @@ const STYLE = `
   .guidelist{margin-left:auto;margin-right:auto}
   .gcard{padding:20px 22px;border-radius:12px;transition:border-color .2s,box-shadow .2s} .gcard:hover{box-shadow:0 3px 12px rgba(38,71,221,.07)}
   .guidelist{display:grid;grid-template-columns:1fr;gap:10px;max-width:760px;margin-top:8px} @media(min-width:640px){.guidelist{grid-template-columns:1fr 1fr}}
-  .gcard{display:block;border:1px solid var(--line);border-radius:10px;padding:18px 20px;color:inherit} .gcard:hover{border-color:var(--accent);background:var(--row-hover)}
+  .gcard{display:block;border:1px solid var(--line);border-radius:10px;padding:18px 20px;color:inherit;box-shadow:var(--card-sh)} .gcard:hover{border-color:var(--accent);background:var(--row-hover)}
+  .gc-cat{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:7px}
   .gc-t{display:block;font-family:'IBM Plex Serif',serif;font-weight:600;font-size:17px;letter-spacing:-.01em}
   .gc-b{display:block;font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.5}
   .search{position:relative;margin-top:16px;max-width:540px}
@@ -753,6 +754,9 @@ const STYLE = `
   .erow .ep{display:block;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
   .erow .ea{flex:0 0 auto;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--accent-dk)} .erow .ea.mut{color:var(--muted);font-weight:600;font-size:12.5px}
   .calnone{display:none;padding:22px 4px;color:var(--muted);font-size:14px}
+  .newsday .nrow{display:block;padding:14px 15px;border-bottom:1px solid var(--hair-2);color:inherit;text-decoration:none} .newsday .nrow:last-child{border-bottom:0} .newsday .nrow:hover{background:var(--row-hover)}
+  .nrow .ntitle{display:block;font-weight:600;font-size:14.5px;line-height:1.4;color:var(--ink)} .nrow:hover .ntitle{color:var(--accent-dk)}
+  .nrow .nsrc{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
   .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:5px}
   .trcard .tp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
   .trcard .tm{font-size:12px;margin-top:4px;font-family:'JetBrains Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:var(--up)} .trcard .tm .down{color:var(--down)}
@@ -1084,21 +1088,44 @@ function newsPage(items) {
   ];
   const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
-  const PER = 15;
+  // Group headlines by publish day (Today / Yesterday / weekday), date shown once per group.
+  const dayLabel = (iso) => { const d = daysTo(iso); return d===0?'Today':d===-1?'Yesterday':wkday(iso); };
+  const nrow = (n) => `      <a class="nrow" href="${esc(n.link)}" target="_blank" rel="noopener nofollow" data-src="${esc((n.source||'').toLowerCase())}"><span class="ntitle">${esc(n.title)}</span><span class="nsrc">${n.source?esc(n.source)+' · ':''}read ↗</span></a>`;
+  const groups = []; let cur = null;
+  for (const n of items) { const d = n.dateISO || '—'; if (!cur || cur.iso !== d) { cur = { iso: d, rows: [] }; groups.push(cur); } cur.rows.push(n); }
+  const groupsHTML = groups.map(g => {
+    const n = g.rows.length, dated = g.iso !== '—', soon = dated && daysTo(g.iso) >= -1;
+    return `  <div class="daygrp">
+    <div class="dayhdr"><span class="rel${soon?'':' mut'}">${dated?dayLabel(g.iso):'Earlier'}</span><span class="dt">${dated?prettyShort(g.iso):''}</span><span class="ct">${n} ${n===1?'story':'stories'}</span></div>
+    <div class="daycard newsday">
+${g.rows.map(nrow).join('\n')}
+    </div>
+  </div>`;
+  }).join('\n');
+  const sources = [...new Set(items.map(n => n.source).filter(Boolean))].sort();
+  const srcSel = sources.length > 1 ? `  <div class="listctrls">
+    <select id="srcf" class="lctrl" aria-label="Filter by source">
+      <option value="">All sources (${items.length})</option>
+${sources.map(s => `      <option value="${esc(s.toLowerCase())}">${esc(s)}</option>`).join('\n')}
+    </select>
+  </div>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
+    <div class="g-eyebrow"><span class="g-brk"></span>Market news</div>
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore stock market news</h1>
     <p class="sub" style="margin-bottom:6px">The latest on the Singapore market and SGX-listed companies — refreshed through the day.</p>
   </section>
-  <div class="newslist" id="newswrap">
-${items.map(n => `    <a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><span class="news-t">${esc(n.title)}</span><span class="news-m">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</span></a>`).join('\n')}
-  </div>
-  <div class="pager" id="pager"></div>
+${srcSel}
+${groupsHTML}
+  <div class="calnone" id="none">No stories from that source right now.</div>
   ${faqHTML}
   ${jsonLd}`;
-  const script = `<script>(function(){var PER=${PER};var items=[].slice.call(document.querySelectorAll('#newswrap .newsitem'));var total=Math.max(1,Math.ceil(items.length/PER));var pager=document.getElementById('pager');var page=1;
-function render(scroll){items.forEach(function(el,i){el.style.display=(i>=(page-1)*PER&&i<page*PER)?'':'none';});var h='<button class="pg" data-d="-1"'+(page===1?' disabled':'')+'>← Prev</button>';for(var p=1;p<=total;p++){h+='<button class="pg num'+(p===page?' on':'')+'" data-p="'+p+'">'+p+'</button>';}h+='<button class="pg" data-d="1"'+(page===total?' disabled':'')+'>Next →</button>';pager.innerHTML=h;if(scroll)window.scrollTo({top:0,behavior:'smooth'});}
-pager.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.p)page=+b.dataset.p;else page=Math.min(total,Math.max(1,page+(+b.dataset.d)));render(true);});
-if(total<2)pager.style.display='none';render(false);})();</script>`;
+  const script = `<script>
+var srcf=document.getElementById('srcf'),groups=[].slice.call(document.querySelectorAll('.daygrp')),none=document.getElementById('none');
+function apply(){var v=srcf?srcf.value:'',shown=0;
+ groups.forEach(function(g){var any=false;[].slice.call(g.querySelectorAll('.nrow')).forEach(function(r){var ok=!v||r.dataset.src===v;r.style.display=ok?'':'none';if(ok)any=true;});g.style.display=any?'':'none';if(any)shown++;});
+ if(none)none.style.display=shown?'none':'block';}
+if(srcf)srcf.addEventListener('change',apply);
+</script>`;
   return shell('Singapore Stock Market News — Latest SGX Company News | StockKaki',
     'The latest news on SGX-listed Singapore stocks, REITs and ETFs — from The Business Times, The Edge, Straits Times, CNA and more. Updated daily, free.',
     SITE + '/news/', body, script, '/og/home.png');
@@ -2710,17 +2737,41 @@ function guidePage(g) {
   return shell(g.title, g.desc, `${SITE}/guides/${g.slug}/`, body);
 }
 function guidesIndexPage(guides) {
+  // topic buckets so the index can be filtered (Dividends / Savings & rates / REITs & ETFs)
+  const CATOF = {
+    'how-to-read-fixed-deposit-rates-singapore': 'Savings & rates',
+    'where-to-park-cash-singapore': 'Savings & rates',
+    'singapore-savings-bonds-vs-t-bills': 'Savings & rates',
+    'how-is-dividend-yield-calculated': 'Dividends',
+    'what-is-an-ex-dividend-date': 'Dividends',
+    'how-to-buy-dividend-stocks-in-singapore': 'Dividends',
+    'are-dividends-taxed-in-singapore': 'Dividends',
+    'how-to-buy-etf-in-singapore': 'REITs & ETFs',
+    'singapore-reits-explained': 'REITs & ETFs',
+  };
+  const catOf = (g) => CATOF[g.slug] || 'Dividends';
+  const CATS = ['Dividends', 'Savings & rates', 'REITs & ETFs'];
+  const counts = CATS.map(c => guides.filter(g => catOf(g) === c).length);
+  const chips = `  <div class="chips" id="gchips">
+    <span class="chip on" data-c="all">All <span class="pill-n">${guides.length}</span></span>
+${CATS.map((c, i) => `    <span class="chip" data-c="${esc(c)}">${c} <span class="pill-n">${counts[i]}</span></span>`).join('\n')}
+  </div>`;
   const body = `  <div class="guideindex">
   <section class="hero" style="padding:26px 0 6px">
     <span class="g-eyebrow"><i class="g-brk"></i> Learn</span>
     <h1 class="serif" style="font-size:34px;margin:6px 0 8px">Guides</h1>
     <p class="sub" style="margin-bottom:0;max-width:52ch">Plain-English explainers for Singapore dividend &amp; income investing — no jargon, no fluff.</p>
   </section>
+${chips}
   <div class="guidelist">
-${guides.map(g => `    <a class="gcard" href="/guides/${g.slug}/"><span class="gc-t">${g.h1}</span><span class="gc-b">${g.blurb}</span></a>`).join('\n')}
+${guides.map(g => `    <a class="gcard" data-cat="${esc(catOf(g))}" href="/guides/${g.slug}/"><span class="gc-cat">${esc(catOf(g))}</span><span class="gc-t">${g.h1}</span><span class="gc-b">${g.blurb}</span></a>`).join('\n')}
   </div>
   </div>`;
-  return shell('Investing Guides — Singapore Dividends & Income Explained | StockKaki', 'Plain-English guides to dividend investing in Singapore — how dividend yield works, SSB vs T-bills, ex-dividend dates, REITs and more. Free, no jargon.', `${SITE}/guides/`, body);
+  const script = `<script>
+var chips=[].slice.call(document.querySelectorAll('#gchips .chip')),cards=[].slice.call(document.querySelectorAll('.gcard'));
+chips.forEach(function(ch){ch.addEventListener('click',function(){chips.forEach(function(x){x.classList.remove('on');});ch.classList.add('on');var c=ch.dataset.c;cards.forEach(function(k){k.style.display=(c==='all'||k.dataset.cat===c)?'':'none';});});});
+</script>`;
+  return shell('Investing Guides — Singapore Dividends & Income Explained | StockKaki', 'Plain-English guides to dividend investing in Singapore — how dividend yield works, SSB vs T-bills, ex-dividend dates, REITs and more. Free, no jargon.', `${SITE}/guides/`, body, script);
 }
 function disclaimerPage() {
   const body = `  <section class="hero" style="padding-bottom:4px">
