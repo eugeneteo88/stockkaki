@@ -648,6 +648,23 @@ const STYLE = `
   .dr .ds{flex:1;min-width:0} .dr .dt{font-weight:600;font-size:14.5px;color:var(--ink)} .dr .dv{font-size:12.5px;color:var(--muted);margin-top:2px} .dr .dv b{color:var(--accent-dk);font-family:'JetBrains Mono',monospace;font-weight:700}
   .dr .chev{flex:0 0 auto;color:var(--muted);transition:transform .2s;font-size:13px} details.dr[open]>summary .chev{transform:rotate(90deg)}
   .dr-body{padding:2px 16px 18px;border-top:1px solid var(--hair-2)} .dr-body .card,.dr-body .ltable{margin-top:14px} .dr-body .chartwrap{margin-top:12px} .dr-body>.ssb-status{margin-top:14px} .dr-body>.metaline{margin-top:12px}
+  /* SSB switch tool: pick your bond → plain keep/switch verdict */
+  .sw-row{display:flex;gap:12px;align-items:flex-end;margin-top:14px}
+  .sw-row .f{flex:1;min-width:0} .sw-row label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sw-row input,.sw-row select{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:11px 13px;font-size:16px;color:var(--ink);font-family:'Inter',sans-serif} .sw-row input{font-family:'JetBrains Mono',monospace} .sw-row input:focus,.sw-row select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .sw-fact{margin:16px 0 4px;font-size:13px;color:var(--muted);line-height:1.55} .sw-fact b{color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:700}
+  .sw-verdict{margin-top:14px;border-radius:14px;padding:15px 16px;display:flex;gap:12px;align-items:flex-start}
+  .sw-verdict .ic{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;margin-top:1px}
+  .sw-verdict .vh{font-weight:700;font-size:16.5px;line-height:1.2} .sw-verdict .vr{font-size:13px;line-height:1.55;margin-top:5px} .sw-verdict .vr b{font-weight:700}
+  .sw-verdict.keep{background:#dcf3e7;border:1px solid #b7e6cd} .sw-verdict.keep .ic{background:var(--up)} .sw-verdict.keep .vh{color:#0c7a4e} .sw-verdict.keep .vr{color:#20603f}
+  .sw-verdict.switch{background:var(--accent-soft);border:1px solid #c9d2ff} .sw-verdict.switch .ic{background:var(--accent)} .sw-verdict.switch .vh{color:var(--accent-dk)} .sw-verdict.switch .vr{color:#33407a}
+  .sw-verdict.tie{background:var(--bg);border:1px solid var(--line)} .sw-verdict.tie .ic{background:var(--muted)} .sw-verdict.tie .vh{color:var(--ink)} .sw-verdict.tie .vr{color:var(--muted)}
+  html[data-theme="dark"] .sw-verdict.keep{background:#123726;border-color:#1c5238} html[data-theme="dark"] .sw-verdict.keep .vh{color:#5fd39e} html[data-theme="dark"] .sw-verdict.keep .vr{color:#a5d9bf}
+  html[data-theme="dark"] .sw-verdict.switch .vr{color:#aeb9ef}
+  .sw-compare{display:flex;gap:12px;margin-top:14px}
+  .sw-cstat{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .sw-cstat.win{border-color:var(--accent);background:var(--accent-soft)} .sw-cstat.keepwin{border-color:var(--up);background:#dcf3e7} html[data-theme="dark"] .sw-cstat.keepwin{background:#123726;border-color:#1c5238}
+  .sw-cstat .ck{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;min-height:2.4em} .sw-cstat .cv{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;color:var(--ink);margin-top:6px;line-height:1} .sw-cstat .cc{font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
   /* ---- home hub ---- */
   .hub-hero{padding:34px 0 6px} @media(max-width:560px){.hub-hero{padding:22px 0 4px}}
   .hub-hero h1{font-family:'IBM Plex Serif',sans-serif;font-weight:700;font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:8px 0 10px;max-width:14ch} @media(max-width:560px){.hub-hero h1{font-size:27px}}
@@ -2054,18 +2071,18 @@ function swapCard(ssb) {
       <span class="chev">▸</span>
     </summary>
     <div class="dr-body">
-    <p class="ssb-meta" style="margin-top:14px">You can redeem an SSB any month with no penalty — so if a new issue pays more than your current bond will <i>going forward</i>, it can pay to switch. But your bond has already "stepped up", so newer isn't always better. Compare:</p>
-    <div class="calc">
+    <p class="ssb-meta" style="margin-top:14px">Thinking of redeeming your bond to buy this month's? <b>Usually you shouldn't</b> — here's the honest math for the bond you hold.</p>
+    <div class="sw-row">
       <div class="f"><label for="swAmt">You hold (S$)</label><input id="swAmt" type="number" min="500" step="500" value="10000"></div>
-      <div class="f"><label for="swOld">Your current bond</label><select id="swOld"></select></div>
-      <div class="f"><label for="swYrs">Keep for</label><select id="swYrs"></select></div>
+      <div class="f"><label for="swOld">Your bond</label><select id="swOld"></select></div>
     </div>
-    <div class="calc-out">
-      <div class="bigstat" id="swKeepBox"><div class="k">Keep your bond</div><div class="v" id="swKeep">—</div><div class="cap" id="swKeepAvg"></div></div>
-      <div class="bigstat" id="swNewBox"><div class="k">Switch to ${c.code}</div><div class="v" id="swNew">—</div><div class="cap" id="swNewAvg"></div></div>
+    <p class="sw-fact" id="swFact"></p>
+    <div class="sw-verdict" id="swVbox"><div class="ic" id="swVic"></div><div><div class="vh" id="swVh"></div><div class="vr" id="swVr"></div></div></div>
+    <div class="sw-compare">
+      <div class="sw-cstat" id="swKeepBox"><div class="ck">Keep your bond</div><div class="cv" id="swKeep">—</div><div class="cc" id="swKeepAvg"></div></div>
+      <div class="sw-cstat" id="swNewBox"><div class="ck">Switch to ${c.code}</div><div class="cv" id="swNew">—</div><div class="cc" id="swNewAvg"></div></div>
     </div>
-    <p class="ssb-meta" id="swVerdict" style="font-weight:600;color:var(--ink)"></p>
-    <p class="ssb-meta" style="font-size:12px">Compares interest earned over the period (SSB coupons are paid out, not compounded). Ignores the ~S$2 transaction fee. Your holding so far is estimated from each issue's date.</p>
+    <p class="ssb-meta" style="font-size:11.5px" id="swFoot"></p>
     </div>
   </details>
 `;
@@ -2262,24 +2279,36 @@ function calc(){let p=parseFloat(amt.value)||0,y=parseInt(yrs.value,10);
  document.getElementById('oPaid').textContent='over '+y+' year'+(y>1?'s':'');}
 amt.addEventListener('input',calc);yrs.addEventListener('change',calc);calc();
 var SWAP_NEW=${JSON.stringify(c.coupons)},SWAP_OLD=${JSON.stringify(ssb.issued||[])};
-var swOld=document.getElementById('swOld'),swYrs=document.getElementById('swYrs'),swAmt=document.getElementById('swAmt');
+var swOld=document.getElementById('swOld'),swAmt=document.getElementById('swAmt');
 if(swOld&&SWAP_OLD.length){
  SWAP_OLD.forEach(function(b,i){var o=document.createElement('option');o.value=i;o.textContent=b.ym+' · '+b.code;swOld.appendChild(o);});
- function fillYrs(){var b=SWAP_OLD[swOld.value];var rem=10-b.held;swYrs.innerHTML='';for(var n=1;n<=rem;n++){var o=document.createElement('option');o.value=n;o.textContent=n+' more year'+(n>1?'s':'');swYrs.appendChild(o);}swYrs.value=Math.min(3,rem);}
- function swCalc(){var b=SWAP_OLD[swOld.value];var p=parseFloat(swAmt.value)||0;var n=parseInt(swYrs.value,10);
-  var keepSum=0,newSum=0;for(var i=0;i<n;i++){keepSum+=b.coupons[b.held+i];newSum+=SWAP_NEW[i];}
-  var keep=p*keepSum/100,sw=p*newSum/100;
+ function swCalc(){var b=SWAP_OLD[swOld.value];var p=parseFloat(swAmt.value)||0;
+  var rem=10-b.held; if(rem<1)rem=1;
+  var keepSum=0,newSum=0;for(var i=0;i<rem;i++){keepSum+=b.coupons[b.held+i];newSum+=SWAP_NEW[i];}
+  var keep=p*keepSum/100,sw=p*newSum/100,diff=Math.round(Math.abs(sw-keep));
+  var curr=b.coupons[b.held],yl=rem+' year'+(rem>1?'s':'');
+  document.getElementById('swFact').innerHTML='Your <b>'+b.ym+'</b> bond has <b>'+yl+'</b> left and is paying about <b>'+curr.toFixed(2)+'%</b>/yr right now.';
   document.getElementById('swKeep').textContent='S$'+fmt(keep);
   document.getElementById('swNew').textContent='S$'+fmt(sw);
-  document.getElementById('swKeepAvg').textContent='avg '+(keepSum/n).toFixed(2)+'%/yr';
-  document.getElementById('swNewAvg').textContent='avg '+(newSum/n).toFixed(2)+'%/yr';
-  var kb=document.getElementById('swKeepBox'),nb=document.getElementById('swNewBox'),V=document.getElementById('swVerdict');
-  kb.classList.remove('win');nb.classList.remove('win');var diff=Math.round(Math.abs(sw-keep));
-  if(sw>keep+0.5){nb.classList.add('win');V.textContent='Switching to ${c.code} earns about S$'+fmt(diff)+' more over '+n+' year'+(n>1?'s':'')+'.';}
-  else if(keep>sw+0.5){kb.classList.add('win');V.textContent='Keep your bond — it pays about S$'+fmt(diff)+' more over '+n+' year'+(n>1?'s':'')+' (it has already stepped up).';}
-  else{V.textContent='≈ About the same either way over '+n+' year'+(n>1?'s':'')+'.';}}
- swOld.addEventListener('change',function(){fillYrs();swCalc();});swYrs.addEventListener('change',swCalc);swAmt.addEventListener('input',swCalc);
- fillYrs();swCalc();
+  document.getElementById('swKeepAvg').textContent='over '+rem+'yr · avg '+(keepSum/rem).toFixed(2)+'%';
+  document.getElementById('swNewAvg').textContent='over '+rem+'yr · avg '+(newSum/rem).toFixed(2)+'%';
+  var v=document.getElementById('swVbox'),ic=document.getElementById('swVic'),vh=document.getElementById('swVh'),vr=document.getElementById('swVr');
+  var kb=document.getElementById('swKeepBox'),nb=document.getElementById('swNewBox');
+  kb.className='sw-cstat';nb.className='sw-cstat';
+  if(Math.abs(sw-keep)<=20){
+   v.className='sw-verdict tie';ic.textContent='≈';vh.textContent='About the same either way';
+   vr.textContent='Your bond\\'s stepped-up rate and a fresh bond come out roughly even over your remaining '+yl+'. No strong reason to move your money.';
+  }else if(keep>sw){
+   v.className='sw-verdict keep';ic.textContent='\\u2713';vh.textContent='Keep your bond';kb.className='sw-cstat keepwin';
+   vr.innerHTML='Over its remaining '+yl+' it earns about <b>S$'+fmt(diff)+' more</b> than switching — it has already stepped up to '+curr.toFixed(2)+'%, while a new bond restarts at just '+SWAP_NEW[0].toFixed(2)+'%.';
+  }else{
+   v.className='sw-verdict switch';ic.textContent='\\u2192';vh.textContent='Switch to ${c.code}';nb.className='sw-cstat win';
+   vr.innerHTML='Its remaining coupons (~'+curr.toFixed(2)+'%) are <b>below</b> what a fresh bond pays now, so switching earns about <b>S$'+fmt(diff)+' more</b> over the '+yl+' you have left.';
+  }
+  document.getElementById('swFoot').innerHTML='Compares interest over your bond\\'s remaining life (coupons are paid out, not compounded). Switching resets a fresh 10-year clock — a small plus only if you want to lock a long runway. Ignores the ~S$2 fee.';
+ }
+ swOld.addEventListener('change',swCalc);swAmt.addEventListener('input',swCalc);
+ swCalc();
 }
 </script>`;
   return shell(`Singapore Savings Bonds (SSB) Interest Rate ${tm}: ${c.y1.toFixed(2)}%–${c.y10.toFixed(2)}% | StockKaki`,
