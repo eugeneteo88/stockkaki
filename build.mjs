@@ -635,6 +635,19 @@ const STYLE = `
   .chartwrap{margin-top:6px} .leg{display:flex;gap:18px;font-size:12px;color:var(--muted);margin:2px 0 10px}
   .leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
   .stepup tr.hl td{background:var(--accent-soft)} .stepup tr.hl td:first-child{font-weight:700}
+  /* ---- SSB calmer layer: plain answer, one-hero rate, section rhythm, drawers ---- */
+  .ssb-answer{font-size:15.5px;line-height:1.62;color:var(--ink);margin:9px 0 2px;max-width:640px} .ssb-answer b{font-weight:700}
+  .ssb-rate .rate-hero{margin-top:16px}
+  .ssb-rate .rate-n{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:52px;line-height:.95;color:var(--accent-dk);letter-spacing:-.02em} @media(max-width:560px){.ssb-rate .rate-n{font-size:46px}}
+  .ssb-rate .rate-k{font-size:12.5px;color:var(--muted);margin-top:9px} .ssb-rate .rate-k b{color:var(--ink)}
+  .ssb-rate .rate-second{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair-2);font-size:13.5px;color:var(--muted)} .ssb-rate .rate-second b{font-family:'JetBrains Mono',monospace;color:var(--ink);font-weight:700}
+  .ssb-rate .rate-issue{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:13px}
+  .seclabel{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:30px 0 10px;display:flex;align-items:center;gap:10px;max-width:820px} .seclabel::after{content:"";flex:1;height:1px;background:var(--line)}
+  details.dr{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-top:10px;overflow:hidden;max-width:820px}
+  details.dr>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:15px 16px} details.dr>summary::-webkit-details-marker{display:none}
+  .dr .ds{flex:1;min-width:0} .dr .dt{font-weight:600;font-size:14.5px;color:var(--ink)} .dr .dv{font-size:12.5px;color:var(--muted);margin-top:2px} .dr .dv b{color:var(--accent-dk);font-family:'JetBrains Mono',monospace;font-weight:700}
+  .dr .chev{flex:0 0 auto;color:var(--muted);transition:transform .2s;font-size:13px} details.dr[open]>summary .chev{transform:rotate(90deg)}
+  .dr-body{padding:2px 16px 18px;border-top:1px solid var(--hair-2)} .dr-body .card,.dr-body .ltable{margin-top:14px} .dr-body .chartwrap{margin-top:12px} .dr-body>.ssb-status{margin-top:14px} .dr-body>.metaline{margin-top:12px}
   /* ---- home hub ---- */
   .hub-hero{padding:34px 0 6px} @media(max-width:560px){.hub-hero{padding:22px 0 4px}}
   .hub-hero h1{font-family:'IBM Plex Serif',sans-serif;font-weight:700;font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:8px 0 10px;max-width:14ch} @media(max-width:560px){.hub-hero h1{font-size:27px}}
@@ -2012,17 +2025,22 @@ function allotCard(ssb) {
   const balloted = a.rndmRate > 0;
   const subPct = a.applied / a.size * 100;
   const guar = a.cutoff != null ? Math.round(a.cutoff * 1e6) : null;
-  return `  <div class="h2">Latest allotment result</div>
-  <div class="ssb-card" style="border-left-color:var(--muted)">
-    <span class="ssb-status ${balloted?'closed':'open'}">${balloted?'Balloted · oversubscribed':'Fully allotted'}</span>
-    <div class="ssb-stats">
-      <div class="bigstat"><div class="k">Applications</div><div class="v" style="font-size:26px">S$${a.applied.toFixed(0)}m</div><div class="cap">of S$${a.size.toFixed(0)}m offered · ${subPct.toFixed(0)}% subscribed</div></div>
-      ${balloted && guar!=null
-        ? `<div class="bigstat"><div class="k">Filled in full up to</div><div class="v" style="font-size:26px">S$${guar.toLocaleString('en-SG')}</div><div class="cap">above that, ${a.rndmRate.toFixed(1)}% won the next S$500 by ballot</div></div>`
-        : `<div class="bigstat alt"><div class="k">Outcome</div><div class="v" style="font-size:19px;margin-top:11px">Everyone got their full amount</div><div class="cap">no balloting</div></div>`}
+  return `  <details class="dr">
+    <summary>
+      <div class="ds"><div class="dt">Latest allotment result</div><div class="dv">${balloted?'Balloted · oversubscribed':`Fully allotted · <b>${subPct.toFixed(0)}%</b> subscribed`}</div></div>
+      <span class="chev">▸</span>
+    </summary>
+    <div class="dr-body">
+      <span class="ssb-status ${balloted?'closed':'open'}">${balloted?'Balloted · oversubscribed':'Fully allotted'}</span>
+      <div class="ssb-stats">
+        <div class="bigstat"><div class="k">Applications</div><div class="v" style="font-size:26px">S$${a.applied.toFixed(0)}m</div><div class="cap">of S$${a.size.toFixed(0)}m offered · ${subPct.toFixed(0)}% subscribed</div></div>
+        ${balloted && guar!=null
+          ? `<div class="bigstat"><div class="k">Filled in full up to</div><div class="v" style="font-size:26px">S$${guar.toLocaleString('en-SG')}</div><div class="cap">above that, ${a.rndmRate.toFixed(1)}% won the next S$500 by ballot</div></div>`
+          : `<div class="bigstat alt"><div class="k">Outcome</div><div class="v" style="font-size:19px;margin-top:11px">Everyone got their full amount</div><div class="cap">no balloting</div></div>`}
+      </div>
+      <p class="ssb-meta">Issue ${a.code} · ${monthYr(a.issueISO)}.${(!balloted && ssb.streak>1)?` The last <b>${ssb.streak}</b> issues were all fully allotted — recently, a full application has been getting filled in full.`:''}</p>
     </div>
-    <p class="ssb-meta">Issue ${a.code} · ${monthYr(a.issueISO)}.${(!balloted && ssb.streak>1)?` The last <b>${ssb.streak}</b> issues were all fully allotted — recently, a full application has been getting filled in full.`:''}</p>
-  </div>
+  </details>
 `;
 }
 
@@ -2030,9 +2048,13 @@ function allotCard(ssb) {
 function swapCard(ssb) {
   if (!ssb.issued || ssb.issued.length < 2) return '';
   const c = ssb.current;
-  return `  <div class="h2">Should you switch to the new issue?</div>
-  <div class="ssb-card" style="border-left-color:var(--line)">
-    <p class="ssb-meta" style="margin-top:0">You can redeem an SSB any month with no penalty — so if a new issue pays more than your current bond will <i>going forward</i>, it can pay to switch. But your bond has already "stepped up", so newer isn't always better. Compare:</p>
+  return `  <details class="dr">
+    <summary>
+      <div class="ds"><div class="dt">Already hold an older bond?</div><div class="dv">See if switching to this issue pays</div></div>
+      <span class="chev">▸</span>
+    </summary>
+    <div class="dr-body">
+    <p class="ssb-meta" style="margin-top:14px">You can redeem an SSB any month with no penalty — so if a new issue pays more than your current bond will <i>going forward</i>, it can pay to switch. But your bond has already "stepped up", so newer isn't always better. Compare:</p>
     <div class="calc">
       <div class="f"><label for="swAmt">You hold (S$)</label><input id="swAmt" type="number" min="500" step="500" value="10000"></div>
       <div class="f"><label for="swOld">Your current bond</label><select id="swOld"></select></div>
@@ -2044,7 +2066,8 @@ function swapCard(ssb) {
     </div>
     <p class="ssb-meta" id="swVerdict" style="font-weight:600;color:var(--ink)"></p>
     <p class="ssb-meta" style="font-size:12px">Compares interest earned over the period (SSB coupons are paid out, not compounded). Ignores the ~S$2 transaction fee. Your holding so far is estimated from each issue's date.</p>
-  </div>
+    </div>
+  </details>
 `;
 }
 
@@ -2055,15 +2078,21 @@ function projCard(ssb, sgs) {
   const refMonth = monthAdd(sgs.refYM, 0), appMonth = monthAdd(sgs.refYM, 1);
   const d = sgs.y10 - c.y10;
   const dir = Math.abs(d) < 0.03 ? '≈ about the same as' : d > 0 ? '↑ higher than' : '↓ lower than';
-  return `  <div class="h2">Next issue — projected</div>
-  <div class="ssb-card" style="border-left-color:var(--muted)">
-    <span class="ssb-status" style="background:var(--bg);color:var(--muted)">Projection · ${refMonth} SGS yields · ${sgs.days} trading day${sgs.days>1?'s':''} so far</span>
-    <div class="ssb-stats">
-      <div class="bigstat"><div class="k">Projected 1st-year</div><div class="v" style="color:var(--muted)">~${sgs.y1.toFixed(2)}%</div><div class="cap">now ${c.y1.toFixed(2)}%</div></div>
-      <div class="bigstat"><div class="k">Projected 10-yr average</div><div class="v" style="color:var(--muted)">~${sgs.y10.toFixed(2)}%</div><div class="cap">${dir} the ${c.y10.toFixed(2)}% now</div></div>
+  const headline = Math.abs(sgs.y1 - c.y1) < 0.03 ? 'about the same' : sgs.y1 > c.y1 ? 'higher' : 'lower';
+  return `  <details class="dr">
+    <summary>
+      <div class="ds"><div class="dt">Next month looks ${headline}</div><div class="dv">Projected <b>~${sgs.y1.toFixed(2)}%</b> first-year · tap for detail</div></div>
+      <span class="chev">▸</span>
+    </summary>
+    <div class="dr-body">
+      <span class="ssb-status" style="background:var(--bg);color:var(--muted)">Projection · ${refMonth} SGS yields · ${sgs.days} trading day${sgs.days>1?'s':''} so far</span>
+      <div class="ssb-stats">
+        <div class="bigstat"><div class="k">Projected 1st-year</div><div class="v" style="color:var(--muted)">~${sgs.y1.toFixed(2)}%</div><div class="cap">now ${c.y1.toFixed(2)}%</div></div>
+        <div class="bigstat"><div class="k">Projected 10-yr average</div><div class="v" style="color:var(--muted)">~${sgs.y10.toFixed(2)}%</div><div class="cap">${dir} the ${c.y10.toFixed(2)}% now</div></div>
+      </div>
+      <p class="ssb-meta">Projected average return by holding period: <b>1yr ~${sgs.y1.toFixed(2)}%</b> · 2yr ~${sgs.y2!=null?sgs.y2.toFixed(2):'—'}% · 5yr ~${sgs.y5!=null?sgs.y5.toFixed(2):'—'}% · <b>10yr ~${sgs.y10.toFixed(2)}%</b>. The next issue's applications open around early ${appMonth}, when MAS confirms the final rate. This is an estimate from SGS benchmark yields (MAS sets SSB rates from the prior month's average yields) — not an official figure.</p>
     </div>
-    <p class="ssb-meta">Projected average return by holding period: <b>1yr ~${sgs.y1.toFixed(2)}%</b> · 2yr ~${sgs.y2!=null?sgs.y2.toFixed(2):'—'}% · 5yr ~${sgs.y5!=null?sgs.y5.toFixed(2):'—'}% · <b>10yr ~${sgs.y10.toFixed(2)}%</b>. The next issue's applications open around early ${appMonth}, when MAS confirms the final rate. This is an estimate from SGS benchmark yields (MAS sets SSB rates from the prior month's average yields) — not an official figure.</p>
-  </div>
+  </details>
 `;
 }
 
@@ -2144,17 +2173,23 @@ function ssbPage(ssb, sgs) {
     { "@type":"FAQPage","mainEntity":faqs.map(f=>({ "@type":"Question","name":f.q,"acceptedAnswer":{ "@type":"Answer","text":f.a } })) } ] };
   const jsonLd = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}</script>`;
 
+  const proj = projCard(ssb, sgs);
+  const swap = swapCard(ssb);
+  const lookAhead = (proj || swap) ? `  <div class="seclabel">Look ahead</div>\n${proj}${swap}` : '';
+
   const body = `  <section class="hero" style="padding:22px 0 2px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Savings Bonds (SSB) interest rates — ${tm}</h1>
-    <p class="sub" style="margin-bottom:0">The latest Singapore Savings Bond for <b>${tm}</b> (issue ${c.code}) pays <b>${c.y1.toFixed(2)}%</b> in year one and a <b>${c.y10.toFixed(2)}%</b> average return over 10 years. Full step-up schedule, returns & swap calculators and rate history below — from MAS, updated every issue.</p>
+    <div class="kicker">Savings Bonds · ${tm}</div>
+    <h1 class="serif" style="font-size:27px;margin:6px 0 4px">Singapore Savings Bonds (SSB) interest rates — ${tm}</h1>
+    <p class="ssb-answer">Pays <b>${c.y1.toFixed(2)}%</b> if you hold one year, up to <b>${c.y10.toFixed(2)}%/yr</b> over ten. Government-backed, redeem any month with no penalty.${open?` <b>Apply by ${c.applyFmt||pretty(c.applyISO)}.</b>`:''}</p>
   </section>
-  <div class="ssb-card">
+  <div class="ssb-card ssb-rate">
     ${statusHTML}
-    <div class="ssb-stats">
-      <div class="bigstat"><div class="k">1st-year interest</div><div class="v">${c.y1.toFixed(2)}%</div><div class="cap">if you hold for 1 year</div></div>
-      <div class="bigstat"><div class="k">10-year average return</div><div class="v">${c.y10.toFixed(2)}%</div><div class="cap">per year, held to maturity</div></div>
-      <div class="bigstat alt"><div class="k">Issue</div><div class="v" style="font-size:20px;margin-top:10px">${c.code}</div><div class="cap">issued ${c.issueFmt||pretty(c.issueISO)}${open?` · apply by ${c.applyFmt||pretty(c.applyISO)}`:''}</div></div>
+    <div class="rate-hero">
+      <div class="rate-n">${c.y1.toFixed(2)}%</div>
+      <div class="rate-k"><b>First-year interest</b> — what you earn if you hold one year</div>
     </div>
+    <div class="rate-second">Hold longer and it steps up to <b>${c.y10.toFixed(2)}%/yr</b> averaged over the full 10 years.</div>
+    <div class="rate-issue">Issue ${c.code} · issued ${c.issueFmt||pretty(c.issueISO)}${open?` · apply by ${c.applyFmt||pretty(c.applyISO)}`:''}</div>
     <div class="facts">
       <span class="fact">Min <b>S$500</b></span>
       <span class="fact">Max <b>S$200,000</b> cap</span>
@@ -2162,10 +2197,10 @@ function ssbPage(ssb, sgs) {
       <span class="fact"><b>SG-Government</b> backed</span>
       <span class="fact">Interest paid <b>every 6 months</b></span>
     </div>
-    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds. Rates are the same at every bank — they're set by MAS. Prefer a fixed 6–12 month rate you can also buy with CPF? Compare the latest <a href="/t-bills/">Singapore T-bill rates</a> or bank <a href="/fixed-deposits/">fixed deposit rates</a>.</p>
+    <p class="ssb-meta">Apply via DBS/POSB, OCBC or UOB (internet banking / ATM) or with SRS funds — the rate is the same at every bank (set by MAS). Prefer a fixed 6–12 month rate you can also buy with CPF? Compare the latest <a href="/t-bills/">Singapore T-bill rates</a> or bank <a href="/fixed-deposits/">fixed deposit rates</a>.</p>
   </div>
-${projCard(ssb, sgs)}
-  <div class="h2">How much you'd earn</div>
+
+  <div class="seclabel">Calculate what you'd earn</div>
   <div class="ssb-card" style="border-left-color:var(--line)">
     <div class="calc">
       <div class="f"><label for="amt">You invest (S$)</label><input id="amt" type="number" min="500" step="500" value="10000"></div>
@@ -2177,27 +2212,38 @@ ${projCard(ssb, sgs)}
     </div>
     <p class="ssb-meta">Based on the current issue (${c.code}). Interest is paid out every 6 months; figures assume you hold the whole period and don't reinvest the coupons.</p>
   </div>
-${swapCard(ssb)}
-  <div class="h2">Interest rate step-up — issue ${c.code}</div>
-  <div class="card"><table class="stepup">
-    <thead><tr><th>If you hold…</th><th class="r">Interest that year</th><th class="r">Average return / year</th></tr></thead>
-    <tbody>
+${lookAhead}
+  <div class="seclabel">The detail</div>
+  <details class="dr">
+    <summary><div class="ds"><div class="dt">Interest rate step-up</div><div class="dv">Year 1 <b>${c.coupons[0].toFixed(2)}%</b> → Year 10 <b>${c.coupons[9].toFixed(2)}%</b></div></div><span class="chev">▸</span></summary>
+    <div class="dr-body">
+      <div class="card"><table class="stepup">
+        <thead><tr><th>If you hold…</th><th class="r">Interest that year</th><th class="r">Average return / year</th></tr></thead>
+        <tbody>
 ${stepRows}
-    </tbody>
-  </table></div>
-  <p class="metaline" style="font-size:12px">The longer you hold, the higher the rate — that's the SSB "step-up". Average return is what you'd earn per year if you redeem at the end of that year.</p>
-
-  <div class="h2">SSB rate trend</div>
-  <div class="chartwrap">
-    <div class="leg"><span><i style="background:var(--accent)"></i>10-year average return</span><span><i style="background:var(--muted)"></i>1st-year interest</span></div>
-    ${chart}
-  </div>
-
-  <div class="h2">Recent issues</div>
-  <div class="ltable cols-ssbr">
-    <div class="lrow lhead"><span>Issue</span><span class="lr-div">1-yr</span><span class="lr-yield">10-yr avg</span><span class="lr-amt">Applied / offered</span><span class="lr-price">Cut-off</span></div>
+        </tbody>
+      </table></div>
+      <p class="metaline" style="font-size:12px">The longer you hold, the higher the rate — that's the SSB "step-up". Average return is what you'd earn per year if you redeem at the end of that year.</p>
+    </div>
+  </details>
+  <details class="dr">
+    <summary><div class="ds"><div class="dt">SSB rate trend</div><div class="dv">3-year history · 1-yr &amp; 10-yr average</div></div><span class="chev">▸</span></summary>
+    <div class="dr-body">
+      <div class="chartwrap">
+        <div class="leg"><span><i style="background:var(--accent)"></i>10-year average return</span><span><i style="background:var(--muted)"></i>1st-year interest</span></div>
+        ${chart}
+      </div>
+    </div>
+  </details>
+  <details class="dr">
+    <summary><div class="ds"><div class="dt">Recent issues</div><div class="dv">Last ${ssb.recent.length} months of rates &amp; take-up</div></div><span class="chev">▸</span></summary>
+    <div class="dr-body">
+      <div class="ltable cols-ssbr">
+        <div class="lrow lhead"><span>Issue</span><span class="lr-div">1-yr</span><span class="lr-yield">10-yr avg</span><span class="lr-amt">Applied / offered</span><span class="lr-price">Cut-off</span></div>
 ${recentRows}
-  </div>
+      </div>
+    </div>
+  </details>
 ${allotCard(ssb)}
   <p class="metaline" style="font-size:12px">Data from the Monetary Authority of Singapore (MAS), updated each issue. Not financial advice — see <a href="/disclaimer/" style="color:var(--accent-dk)">disclaimer</a>.</p>
 
