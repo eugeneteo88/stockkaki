@@ -419,8 +419,8 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
 const FOOTER = `<footer><div class="wrap"><div class="foot-brand"><span class="brand">StockKaki<span class="bdot">.</span></span><p class="foot-tag">Your money kaki.</p><p class="foot-desc">Every SGX counter, dividend and yield — plus rates, bonds and more to come. Clean, free, updated daily.</p></div><div class="disc"><span class="dlinks"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a></span><span>© ${YEAR} StockKaki · <a href="https://heyada.io/" target="_blank" rel="noopener" style="color:var(--accent-dk);font-weight:600">Built by HeyAda</a></span></div></div></footer>`;
 
 const STYLE = `
-  :root{ --ink:#0F1319; --muted:#6B7280; --line:#E6E8EE; --hair-2:#EEF0F4; --bg:#F7F8FA; --card:#FFFFFF; --accent:#2647DD; --accent-soft:#EBEEFF; --accent-dk:#1E3AB8; --up:#0E9E6E; --down:#DA3B3B; --nav-bg:rgba(247,248,250,.85); --row-hover:#F1F3F7; }
-  html[data-theme="dark"]{ --ink:#EAECF1; --muted:#8B93A2; --line:#20242E; --hair-2:#191D25; --bg:#0B0D12; --card:#12151C; --accent:#6E86FF; --accent-soft:#1A2033; --accent-dk:#8FA2FF; --up:#2FD69C; --down:#FF6060; --nav-bg:rgba(11,13,18,.85); --row-hover:#171B23; }
+  :root{ --ink:#0F1319; --muted:#6B7280; --line:#E6E8EE; --hair-2:#EEF0F4; --bg:#F7F8FA; --card:#FFFFFF; --accent:#2647DD; --accent-soft:#EBEEFF; --accent-dk:#1E3AB8; --up:#0E9E6E; --down:#DA3B3B; --nav-bg:rgba(247,248,250,.85); --row-hover:#F1F3F7; --card-sh:0 1px 3px rgba(15,19,25,.06); }
+  html[data-theme="dark"]{ --ink:#EAECF1; --muted:#8B93A2; --line:#20242E; --hair-2:#191D25; --bg:#0B0D12; --card:#12151C; --accent:#6E86FF; --accent-soft:#1A2033; --accent-dk:#8FA2FF; --up:#2FD69C; --down:#FF6060; --nav-bg:rgba(11,13,18,.85); --row-hover:#171B23; --card-sh:0 1px 3px rgba(0,0,0,.3); }
   *{box-sizing:border-box;margin:0;padding:0} html{overflow-x:clip}
   body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100dvh;display:flex;flex-direction:column;overflow-x:clip}
   main.wrap{flex:1 0 auto;min-width:0}
@@ -700,11 +700,18 @@ const STYLE = `
   .cat .ct{font-family:'Inter',sans-serif;font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
   .cat .cn{font-size:11.5px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
   .cat .cd{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5} .cat .cd b{color:var(--ink);font-family:'JetBrains Mono',monospace}
+  /* home browse: grouped, tappable tiles (replaces the flat description list) */
+  .stats{box-shadow:var(--card-sh)}
+  .tilegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:820px} @media(min-width:620px){.tilegrid{grid-template-columns:repeat(3,1fr)}}
+  .tile{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;box-shadow:var(--card-sh);transition:border-color .15s,background .15s} .tile:hover{border-color:var(--accent);background:var(--row-hover)}
+  .tile .tt{font-weight:600;font-size:14px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tile .tn{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:2px 9px}
+  .tile.span{grid-column:1/-1} .tile.span .tn{color:var(--muted);background:transparent;font-size:17px;font-weight:400}
   /* home trending: 2-row grid that scrolls sideways on mobile, 4-col wall on desktop */
   .trgrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,1fr);grid-auto-columns:min(74vw,264px);gap:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;min-width:0} .trgrid::-webkit-scrollbar{display:none}
   @media(min-width:720px){.trgrid{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);grid-template-rows:none;grid-auto-columns:auto;overflow:visible}}
   .trwall{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(min-width:720px){.trwall{grid-template-columns:repeat(4,1fr)}}
-  .trcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px 16px} .trcard:hover{border-color:var(--accent)}
+  .trcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px 16px;box-shadow:var(--card-sh)} .trcard:hover{border-color:var(--accent)}
   .tchip .up{color:var(--up)} .tchip .down{color:var(--down)}
   .readmore{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--accent-dk)} .readmore:hover{text-decoration:underline}
   .hubnews .nd{font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
@@ -973,16 +980,28 @@ function homepage(listed, index, hub, upcoming) {
       : (c.chg!=null && c.chg!==0 ? `<b class="${c.chg>0?'up':'down'}">${c.chg>0?'+':''}${c.chg.toFixed(1)}%</b>` : '');
     return `<a class="tchip" href="/stock/${c.slug}/">${c.name.split(/\s|-/)[0]}${m?' '+m:''}</a>`;
   }).join('');
-  const cards = [
-    catCard('/stocks/', 'stk', 'All Singapore stocks', hub.stockCount, 'Every SGX counter — price, market cap &amp; P/E.'),
-    catCard('/blue-chips/', 'bc', 'Blue-chip stocks', null, 'The biggest SGX companies — the STI heavyweights.'),
-    catCard('/dividends/', 'div', 'Best dividend stocks', hub.divCount, 'Every SGX payer ranked by dividend yield.'),
-    catCard('/reits/', 'reit', 'Best REITs to buy', hub.reitCount, 'S-REITs &amp; trusts by distribution yield.'),
-    catCard('/etfs/', 'etf', 'Best ETFs', hub.etfCount, 'SGX ETFs ranked by distribution yield.'),
-    catCard('/dividend-calendar/', 'cal', 'Dividend calendar', null, 'Upcoming ex-dates &amp; pay dates, in order.'),
-    catCard('/ssb/', 'ssb', 'Savings Bonds (SSB)', null, hub.ssbLo!=null?`This month <b>${hub.ssbLo.toFixed(2)}%</b> → <b>${hub.ssbHi.toFixed(2)}%</b>. Rates, swap &amp; calculator.`:'Rates, step-up schedule, swap &amp; calculator.'),
-    catCard('/t-bills/', 'tb', 'T-bill rates', null, hub.tb6!=null?`Latest 6-mo <b>${hub.tb6.toFixed(2)}%</b>. Cut-off yields, next auction & history.`:'Latest 6-month & 1-year auction cut-off yields.'),
-    catCard('/dividends/', 'hy', 'Highest yield', hub.hyCount, 'Top yielders — with a risk note on the specials.'),
+  // Browse: grouped, tappable tiles (by what people come for), each with a live count or rate.
+  const fdBest = (typeof BANK!=='undefined' && BANK.fd) ? Math.max(...BANK.fd.map(r => r.rate)) : null;
+  const svBest = (typeof BANK!=='undefined' && BANK.savings) ? Math.max(...BANK.savings.map(r => r.rate)) : null;
+  const tile = (href, title, chip) => `    <a class="tile" href="${href}"><span class="tt">${title}</span>${chip!=null&&chip!==''?`<span class="tn">${chip}</span>`:''}</a>`;
+  const tileSpan = (href, title) => `    <a class="tile span" href="${href}"><span class="tt">${title}</span><span class="tn">›</span></a>`;
+  const grpStocks = [
+    tile('/stocks/', 'All SG stocks', hub.stockCount),
+    tile('/blue-chips/', 'Blue chips', 'STI'),
+    tile('/dividends/', 'Dividend stocks', hub.divCount),
+    tile('/reits/', 'Best REITs', hub.reitCount),
+    tile('/etfs/', 'Best ETFs', hub.etfCount),
+    tile('/dividends/', 'Highest yield', hub.hyCount),
+  ].join('\n');
+  const grpCash = [
+    tile('/ssb/', 'Savings Bonds', hub.ssbHi!=null?`${hub.ssbHi.toFixed(2)}%`:''),
+    tile('/t-bills/', 'T-bills', hub.tb6!=null?`${hub.tb6.toFixed(2)}%`:''),
+    tile('/fixed-deposits/', 'Fixed deposits', fdBest!=null?`${fdBest.toFixed(2)}%`:''),
+    tile('/savings-accounts/', 'Savings accounts', svBest!=null?`${svBest.toFixed(1)}%`:''),
+  ].join('\n');
+  const grpTools = [
+    tileSpan('/dividend-calendar/', 'Dividend calendar — upcoming ex &amp; pay dates'),
+    tileSpan('/savings/', 'Compare all savings rates side by side'),
   ].join('\n');
   const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
   const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news <a href="/news/">Read more →</a></div>
@@ -996,10 +1015,18 @@ ${hub.news.map(n => `    <a href="${esc(n.link)}" target="_blank" rel="noopener 
     <div class="hub-search">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search a stock or ticker — e.g. Singtel, DBS, S68"><div id="qres"></div></div>
     <div class="trend"><span class="tl">Trending:</span>${trendingChips}</div>
   </section>
-${statsHTML}
-  <div class="hub-h">Browse by what you're after</div>
-  <div class="catgrid">
-${cards}
+${statsHTML ? '  <div class="seclabel">Market snapshot</div>\n'+statsHTML : ''}
+  <div class="seclabel">Stocks &amp; funds</div>
+  <div class="tilegrid">
+${grpStocks}
+  </div>
+  <div class="seclabel">Cash &amp; safe</div>
+  <div class="tilegrid">
+${grpCash}
+  </div>
+  <div class="seclabel">Tools</div>
+  <div class="tilegrid">
+${grpTools}
   </div>
   <div class="hub-h">Trending stocks <a href="/trending/">See top ${hub.trendingCount||30} →</a></div>
   <div class="trgrid">
