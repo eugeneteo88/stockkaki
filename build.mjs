@@ -416,7 +416,7 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
     </div>
   </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
-const FOOTER = `<footer><div class="wrap"><div class="foot-brand"><span class="brand">StockKaki<span class="bdot">.</span></span><p class="foot-tag">Your money kaki.</p><p class="foot-desc">Every SGX counter, dividend and yield — plus rates, bonds and more to come. Clean, free, updated daily.</p></div><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a><span>© ${YEAR} StockKaki</span></div></div></footer>`;
+const FOOTER = `<footer><div class="wrap"><div class="foot-brand"><span class="brand">StockKaki<span class="bdot">.</span></span><p class="foot-tag">Your money kaki.</p><p class="foot-desc">Every SGX counter, dividend and yield — plus rates, bonds and more to come. Clean, free, updated daily.</p></div><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a><span>© ${YEAR} StockKaki · <a href="https://heyada.io/" target="_blank" rel="noopener" style="color:var(--accent-dk);font-weight:600">Built by HeyAda</a></span></div></div></footer>`;
 
 const STYLE = `
   :root{ --ink:#0F1319; --muted:#6B7280; --line:#E6E8EE; --hair-2:#EEF0F4; --bg:#F7F8FA; --card:#FFFFFF; --accent:#2647DD; --accent-soft:#EBEEFF; --accent-dk:#1E3AB8; --up:#0E9E6E; --down:#DA3B3B; --nav-bg:rgba(247,248,250,.85); --row-hover:#F1F3F7; }
