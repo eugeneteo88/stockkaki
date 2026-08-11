@@ -424,7 +424,7 @@ const STYLE = `
   *{box-sizing:border-box;margin:0;padding:0} html{overflow-x:clip}
   body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100dvh;display:flex;flex-direction:column;overflow-x:clip}
   main.wrap{flex:1 0 auto;min-width:0}
-  .serif{font-family:'IBM Plex Serif',sans-serif;letter-spacing:-.01em} a{color:inherit;text-decoration:none} .wrap{width:100%;max-width:1000px;margin:0 auto;padding:0 20px}
+  .serif{font-family:'IBM Plex Serif',sans-serif;letter-spacing:-.01em} a{color:inherit;text-decoration:none} .wrap{width:100%;max-width:1100px;margin:0 auto;padding:0 22px}
   header.nav{position:sticky;top:0;z-index:20;background:var(--nav-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
   .nav .row{display:flex;align-items:center;justify-content:space-between;height:60px}
   .brand{display:inline-flex;align-items:center;font-family:'IBM Plex Serif',serif;font-weight:600;font-size:20px}
@@ -523,8 +523,8 @@ const STYLE = `
   .ov-bar{position:relative;height:6px;background:var(--line);border-radius:3px;margin:14px 0 7px}
   .ov-mark{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%);box-shadow:0 0 0 3px var(--card)}
   .ov-range-f{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
-  .newslist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;margin-top:16px}
-  .annlist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;margin-top:16px}
+  .newslist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;margin-top:16px;box-shadow:var(--card-sh)}
+  .annlist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 18px;margin-top:16px;box-shadow:var(--card-sh)}
   .annrow{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);align-items:flex-start} .annrow:last-child{border-bottom:0}
   .ann-type{flex:0 0 auto;padding-top:1px} .ann-body{min-width:0}
   .ann-p{font-size:14.5px;line-height:1.45} .ann-m{font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
@@ -533,7 +533,7 @@ const STYLE = `
   .news-d{display:block;font-size:13px;color:var(--muted);line-height:1.5;margin-top:5px}
   .news-m{display:block;font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
   .ov-chart-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);margin:16px 0 4px} .ov-chart-h span:last-child{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:16px;color:var(--ink)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;max-width:820px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;max-width:820px;box-shadow:var(--card-sh)}
   .card:has(table){max-width:560px}
   thead th,tbody td{padding-top:11px;padding-bottom:11px}
   table{width:100%;border-collapse:collapse}
@@ -554,7 +554,7 @@ const STYLE = `
   .hide-m{display:none} @media(min-width:720px){ .hide-m{display:table-cell} }
   @media(max-width:560px){ thead th,tbody td{padding:12px 10px;font-size:13px} .tick{display:none} .amt,.yld{font-size:13px} }
   /* ---- responsive data list (screener / reits / homepage): aligned columns on desktop, 2-line cards on mobile ---- */
-  .ltable{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .ltable{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--card-sh)}
   .lrow{display:grid;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);color:inherit}
   .lrow:last-child{border-bottom:0} .lrow:not(.lhead):hover{background:var(--row-hover)}
   .lhead{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:transparent}
@@ -601,7 +601,7 @@ const STYLE = `
   .alert h3{font-family:'IBM Plex Serif',sans-serif;font-weight:700;font-size:21px} .alert p{color:#FFE7D6;font-size:14px;max-width:520px}
   .alert form{display:flex;gap:8px;flex-wrap:wrap} .alert input{flex:1;min-width:200px;border:0;border-radius:999px;padding:12px 16px;font-size:16px;font-family:inherit} .alert .btn{background:#20160E;color:#fff}
   @media(min-width:820px){ .alert{flex-direction:row;align-items:center;justify-content:space-between} .alert .txt{max-width:52%} }
-  .brokers{margin:24px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .brokers{margin:24px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--card-sh)}
   .bk-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .bk-t{font-family:'IBM Plex Serif',sans-serif;font-weight:600;font-size:15px}
   .bk-ad{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex:0 0 auto}
@@ -722,21 +722,21 @@ const STYLE = `
   .trcard .tn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trcard .tt{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-left:5px}
   .trcard .tp{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;margin-top:8px}
   .trcard .tm{font-size:12px;margin-top:4px;font-family:'JetBrains Mono',monospace} .trcard .tm .ty{color:var(--accent-dk);font-weight:600} .trcard .tm .up{color:var(--up)} .trcard .tm .down{color:var(--down)}
-  .hubnews{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 18px}
+  .hubnews{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 18px;box-shadow:var(--card-sh)}
   .hubnews a{display:block;padding:15px 0;border-bottom:1px solid var(--line);color:inherit} .hubnews a:last-child{border-bottom:0}
   .hubnews .nt{font-weight:600;font-size:15px;line-height:1.4} .hubnews a:hover .nt{color:var(--accent-dk)}
   .hubnews .nm{font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
   /* ---- category-page Top 10 block ---- */
   .pill-n{opacity:.72;font-weight:500;margin-left:2px}
   .top10{display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px} @media(min-width:640px){.top10{grid-template-columns:1fr 1fr}}
-  .t10{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 15px;transition:.15s} .t10:hover{border-color:var(--accent);background:var(--row-hover)}
+  .t10{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 15px;box-shadow:var(--card-sh);transition:.15s} .t10:hover{border-color:var(--accent);background:var(--row-hover)}
   .t10 .rk{flex:0 0 auto;width:29px;height:29px;border-radius:9px;background:var(--accent-soft);color:var(--accent-dk);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
   .t10.gold .rk{background:var(--accent);color:#fff}
   .t10 .ti{flex:1;min-width:0;display:block} .t10 .tn{display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .t10 .tn .tick{margin-left:5px}
   .t10 .ts{display:block;color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .t10 .ty{flex:0 0 auto;text-align:right} .t10 .tyv{display:block;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--accent-dk)} .t10 .tyv.mut{color:var(--muted);font-weight:600} .t10 .tp{display:block;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
   /* ---- moomoo affiliate card (stock pages) ---- */
-  .mm-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;position:relative;overflow:hidden;margin:26px 0 8px;max-width:820px}
+  .mm-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;position:relative;overflow:hidden;margin:26px 0 8px;max-width:820px;box-shadow:var(--card-sh)}
   .mm-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
   .mm-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
   .mm-eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-dk)}
@@ -1004,10 +1004,6 @@ function homepage(listed, index, hub, upcoming) {
     tileSpan('/savings/', 'Compare all savings rates side by side'),
   ].join('\n');
   const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
-  const newsHTML = (hub.news||[]).length ? `  <div class="hub-h">Latest news <a href="/news/">Read more →</a></div>
-  <div class="hubnews">
-${hub.news.map(n => `    <a href="${esc(n.link)}" target="_blank" rel="noopener nofollow"><div class="nt">${esc(n.title)}</div><div class="nm">${[n.source?esc(n.source):null, n.dateISO?pretty(n.dateISO):null].filter(Boolean).join(' · ')} · read ↗</div></a>`).join('\n')}
-  </div>` : '';
   const body = `  <section class="hub-hero">
     <span class="kicker">Singapore dividends · updated daily</span>
     <h1>Every Singapore stock, one clean search.</h1>
@@ -1031,8 +1027,7 @@ ${grpTools}
   <div class="hub-h">Trending stocks <a href="/trending/">See top ${hub.trendingCount||30} →</a></div>
   <div class="trgrid">
 ${trending}
-  </div>
-${newsHTML}`;
+  </div>`;
   const script = `<script>
 const IDX=${idxJson};
 const q=document.getElementById('q'),qr=document.getElementById('qres');
@@ -1053,7 +1048,7 @@ function newsPage(items) {
     { q: 'Where does StockKaki get its news?', a: 'Headlines are aggregated from Singapore and global financial press — The Business Times, The Edge Singapore, The Straits Times, CNA, Reuters and others — and each links to the original article.' },
     { q: 'How often is the news updated?', a: 'Daily. Each SGX-listed company page also has its own News tab with the latest coverage of that specific stock.' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
   const PER = 15;
   const body = `  <section class="hero" style="padding:22px 0 4px">
@@ -1098,7 +1093,7 @@ function trendingPage(items) {
     { q: 'What makes a stock “trending” on StockKaki?', a: 'These are the most actively traded SGX counters by value traded (volume × last price) — where the most money is changing hands right now. The list refreshes daily.' },
     { q: 'Does trending mean it’s a good buy?', a: 'No. Heavy trading just signals strong interest — it can be driven by results, news or momentum, in either direction. Always do your own research.' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Trending Singapore stocks</h1>
@@ -1170,7 +1165,7 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
 ${top10.map(t10Card).join('\n')}
   </div>
   <div class="hub-h">All ${h1.replace(/^Best /,'').replace(/ in Singapore$/,'')}</div>` : '';
-  const faqHTML = (faqs && faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
+  const faqHTML = (faqs && faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
   const jsonLd = (faqs && faqs.length) ? `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
@@ -1282,7 +1277,7 @@ function bestPerfReitsPage(reitList) {
     { q: 'How do I invest in the best performing REITs?', a: 'They trade on the SGX like any other share, so you buy them through a brokerage. But do not buy on past performance alone — a REIT that has already run up may be fully valued. Use this ranking as a starting point, then check each REIT’s fundamentals and outlook.' },
     { q: 'Should I pick REITs for income or for price growth?', a: 'Both are valid strategies. For steady income, rank S-REITs by distribution yield on our best REITs by dividend yield page. For price gains, this page ranks them by 1-year return over the past 12 months. Many investors hold a mix of both.' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
@@ -1327,7 +1322,7 @@ function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
     steps: r.steps || [],
   }]));
   const detailJSON = JSON.stringify(detailMap).replace(/</g, '\\u003c');
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
   const topR = sorted[0];
   const lowMin = [...list].filter(r => r.min).sort((a, b) => a.min - b.min)[0];
@@ -1463,7 +1458,7 @@ function stocksPage(list) {
     { q: 'How do I buy Singapore stocks?', a: 'Open an account with any SGX brokerage (DBS Vickers, moomoo, Tiger, Interactive Brokers and others), or use SRS funds. You buy and sell SGX-listed shares in board lots during trading hours.' },
     { q: 'Which Singapore stocks pay dividends?', a: 'Many do — Singapore has no tax on dividends, so income investing is popular. See the dedicated best dividend stocks and best REITs pages for counters ranked by yield.' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">All Singapore stocks</h1>
@@ -1547,7 +1542,7 @@ function blueChipsPage(list) {
     { q: 'What is the Straits Times Index (STI)?', a: 'The STI tracks the 30 largest and most liquid companies on the SGX — effectively Singapore’s blue-chip benchmark. This list closely mirrors it, ranked by market capitalisation. You can also buy the whole basket in a single trade via an STI ETF.' },
     { q: 'How do I buy Singapore blue-chip stocks?', a: 'Through any SGX brokerage (DBS Vickers, moomoo, Tiger, Interactive Brokers and others), or with SRS funds. Many investors dollar-cost average into blue chips via a monthly regular-savings plan (RSP).' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">Singapore blue-chip stocks — ${YEAR}</h1>
@@ -1653,7 +1648,7 @@ function tbillsPage(tb) {
     { q: `Can I buy T-bills with CPF?`, a: `Yes. T-bills can be bought with CPF Ordinary Account (CPF-OA) and CPF Special Account (CPF-SA) funds, as well as cash and SRS. This makes them a popular way to earn a fixed return on idle CPF-OA savings — though you should weigh it against the CPF-OA interest you give up.` },
     { q: `Are T-bills or Singapore Savings Bonds better?`, a: `It depends on your needs. T-bills lock in a fixed rate for 6 or 12 months and can be bought with CPF; SSBs are flexible — redeemable any month with no penalty — and step up the longer you hold. See our full SSB vs T-bills comparison for the details.` },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const ld = { "@context":"https://schema.org","@graph":[
     { "@type":"BreadcrumbList","itemListElement":[
       { "@type":"ListItem","position":1,"name":"StockKaki","item":`${SITE}/` },
@@ -1719,7 +1714,7 @@ function calendarPage(upcoming) {
     { q: "What's the difference between the ex-date and the pay date?", a: 'The ex-date decides who is entitled; the pay date is when the cash is actually credited to your account — usually a few weeks after the ex-date.' },
     { q: 'How do I use a dividend calendar?', a: 'Buy a stock before its ex-date to receive the upcoming dividend. This calendar lists the next SGX ex-dates and pay dates, updated daily.' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Calendar — ${cm}</h1>
@@ -1759,7 +1754,7 @@ function payoutDatesPage(upcoming) {
     { q: 'Do I need to still hold the shares on the payment date?', a: 'No. Once you owned the shares before the ex-date, you are entitled to the dividend even if you sell afterwards — you will still be paid on the pay date.' },
     { q: 'How often are these dividend payment dates updated?', a: 'Daily. Pay dates come from SGX corporate-action filings and are refreshed every day.' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Payment Dates</h1>
@@ -1957,7 +1952,7 @@ ${hist}
   } else {
     faqs.push({ q: `Does ${c.name} pay dividends?`, a: `${c.name} has not paid a dividend in the last ~6 years, based on SGX corporate-action filings.` });
   }
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const ld = { "@context":"https://schema.org", "@graph":[
     { "@type":"BreadcrumbList", "itemListElement":[
       { "@type":"ListItem", "position":1, "name":"Dividends", "item":`${SITE}/dividends/` },
@@ -2635,7 +2630,7 @@ const GUIDES = [
   },
 ];
 function guidePage(g) {
-  const faqHTML = (g.faqs && g.faqs.length) ? `<div class="h2">Common questions</div><div class="faq">${g.faqs.map(f => `<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>` : '';
+  const faqHTML = (g.faqs && g.faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${g.faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
   const ld = { "@context":"https://schema.org","@graph":[
     { "@type":"BreadcrumbList","itemListElement":[ { "@type":"ListItem","position":1,"name":"Guides","item":`${SITE}/guides/` }, { "@type":"ListItem","position":2,"name":g.h1,"item":`${SITE}/guides/${g.slug}/` } ] },
     { "@type":"Article","headline":g.h1,"description":g.desc,"author":{ "@type":"Person","name":"Eugene","description":"Writes StockKaki's plain-English guides to money in Singapore." },"publisher":{ "@type":"Organization","name":"StockKaki" },"mainEntityOfPage":`${SITE}/guides/${g.slug}/` },
