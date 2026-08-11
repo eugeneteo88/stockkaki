@@ -416,7 +416,7 @@ ${BROKERS.map(b => `      <a class="bk" href="${b.u}" target="_blank" rel="spons
     </div>
   </aside>`; */
 // TODO(Eugene): make "HeyAda" clickable — wrap in <a href="https://…">HeyAda</a> once the URL is confirmed.
-const FOOTER = `<footer><div class="wrap"><div class="foot-brand"><span class="brand">StockKaki<span class="bdot">.</span></span><p class="foot-tag">Your money kaki.</p><p class="foot-desc">Every SGX counter, dividend and yield — plus rates, bonds and more to come. Clean, free, updated daily.</p></div><div class="disc"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a><span>© ${YEAR} StockKaki · <a href="https://heyada.io/" target="_blank" rel="noopener" style="color:var(--accent-dk);font-weight:600">Built by HeyAda</a></span></div></div></footer>`;
+const FOOTER = `<footer><div class="wrap"><div class="foot-brand"><span class="brand">StockKaki<span class="bdot">.</span></span><p class="foot-tag">Your money kaki.</p><p class="foot-desc">Every SGX counter, dividend and yield — plus rates, bonds and more to come. Clean, free, updated daily.</p></div><div class="disc"><span class="dlinks"><a href="/disclaimer/" style="color:var(--accent-dk);font-weight:600">Disclaimer</a><a href="#" onclick="openFb();return false" style="color:var(--accent-dk);font-weight:600">Feedback</a></span><span>© ${YEAR} StockKaki · <a href="https://heyada.io/" target="_blank" rel="noopener" style="color:var(--accent-dk);font-weight:600">Built by HeyAda</a></span></div></div></footer>`;
 
 const STYLE = `
   :root{ --ink:#0F1319; --muted:#6B7280; --line:#E6E8EE; --hair-2:#EEF0F4; --bg:#F7F8FA; --card:#FFFFFF; --accent:#2647DD; --accent-soft:#EBEEFF; --accent-dk:#1E3AB8; --up:#0E9E6E; --down:#DA3B3B; --nav-bg:rgba(247,248,250,.85); --row-hover:#F1F3F7; }
@@ -609,8 +609,10 @@ const STYLE = `
   .bk-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px} @media(max-width:620px){.bk-list{grid-template-columns:1fr}}
   .bk{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:.15s} .bk:hover{border-color:var(--accent);background:var(--accent-soft)}
   .bk b{display:block;font-size:14px} .bk span{font-size:12px;color:var(--muted)}
-  footer{flex-shrink:0;margin-top:36px;padding-bottom:34px;color:var(--muted);font-size:12.5px;line-height:1.7} footer .disc{border-top:1px solid var(--line);padding-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-  footer .foot-brand{margin-bottom:16px} footer .foot-tag{color:var(--ink);font-size:15px;margin-top:6px} footer .foot-desc{color:var(--muted);font-size:12.5px;margin-top:3px;max-width:520px}
+  footer{flex-shrink:0;margin-top:56px;background:var(--card);border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;line-height:1.7;padding:32px 0 40px} @media(max-width:560px){footer{margin-top:44px;padding:26px 0 34px}}
+  footer .foot-brand{margin-bottom:18px} footer .foot-tag{color:var(--ink);font-size:15px;margin-top:6px} footer .foot-desc{color:var(--muted);font-size:12.5px;margin-top:4px;max-width:520px}
+  footer .disc{border-top:1px solid var(--line);margin-top:22px;padding-top:18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap} footer .disc .dlinks{display:flex;gap:20px}
+  @media(max-width:560px){ footer .disc{flex-direction:column;align-items:flex-start;gap:13px} }
   .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:22px;max-width:820px}
   .ssb-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:6px 13px;border-radius:999px}
   .ssb-status .pulse{width:7px;height:7px;border-radius:50%;background:currentColor}
@@ -665,6 +667,14 @@ const STYLE = `
   .sw-cstat{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
   .sw-cstat.win{border-color:var(--accent);background:var(--accent-soft)} .sw-cstat.keepwin{border-color:var(--up);background:#dcf3e7} html[data-theme="dark"] .sw-cstat.keepwin{background:#123726;border-color:#1c5238}
   .sw-cstat .ck{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;min-height:2.4em} .sw-cstat .cv{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;color:var(--ink);margin-top:6px;line-height:1} .sw-cstat .cc{font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
+  /* FAQ accordion — deliberately lighter than data drawers: no card fill, hairline rows, +/x toggle */
+  .faq-head{font-family:'IBM Plex Serif',sans-serif;font-weight:600;font-size:23px;letter-spacing:-.01em;color:var(--ink);margin:48px 0 2px;padding-top:30px;border-top:1px solid var(--line);max-width:760px} @media(max-width:560px){.faq-head{font-size:21px;margin-top:38px}}
+  .faq-head-s{color:var(--muted);font-size:13.5px;margin:0 0 6px;max-width:760px}
+  .faqlist{max-width:760px}
+  .faq-item{border-bottom:1px solid var(--line)} .faq-item:first-child{border-top:1px solid var(--line)}
+  .faq-item>summary{list-style:none;cursor:pointer;display:flex;gap:14px;align-items:flex-start;padding:16px 4px;font-weight:600;font-size:15.5px;line-height:1.4;color:var(--ink)} .faq-item>summary::-webkit-details-marker{display:none} .faq-item>summary:hover{color:var(--accent-dk)}
+  .faq-item .fqp{flex:0 0 auto;width:16px;text-align:center;color:var(--accent);font-size:20px;line-height:1.2;font-weight:400;transition:transform .2s} .faq-item[open]>summary .fqp{transform:rotate(45deg)}
+  .faq-item .faq-a{padding:0 4px 18px 34px;color:var(--muted);font-size:14.5px;line-height:1.72;max-width:70ch} .faq-item .faq-a a{color:var(--accent-dk);font-weight:500}
   /* ---- home hub ---- */
   .hub-hero{padding:34px 0 6px} @media(max-width:560px){.hub-hero{padding:22px 0 4px}}
   .hub-hero h1{font-family:'IBM Plex Serif',sans-serif;font-weight:700;font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:8px 0 10px;max-width:14ch} @media(max-width:560px){.hub-hero h1{font-size:27px}}
@@ -2073,7 +2083,7 @@ function swapCard(ssb) {
     <div class="dr-body">
     <p class="ssb-meta" style="margin-top:14px">Thinking of redeeming your bond to buy this month's? <b>Usually you shouldn't</b> — here's the honest math for the bond you hold.</p>
     <div class="sw-row">
-      <div class="f"><label for="swAmt">You hold (S$)</label><input id="swAmt" type="number" min="500" step="500" value="10000"></div>
+      <div class="f"><label for="swAmt">You hold (S$)</label><input id="swAmt" type="number" min="500" step="500" value="10000" onfocus="this.select()"></div>
       <div class="f"><label for="swOld">Your bond</label><select id="swOld"></select></div>
     </div>
     <p class="sw-fact" id="swFact"></p>
@@ -2182,7 +2192,7 @@ function ssbPage(ssb, sgs) {
     { q: 'Can I withdraw my Savings Bond early?', a: 'Yes. You can redeem in any month with no penalty and get your full principal back plus any accrued interest — one reason SSBs are considered very low risk. They are fully backed by the Singapore Government.' },
     { q: 'How is SSB interest paid?', a: 'Interest is paid every 6 months into your bank account, starting six months from the issue date.' },
   ];
-  const faqHTML = `<div class="h2">Common questions</div><div class="faq">${faqs.map(f=>`<div class="faq-q">${f.q}</div><div class="faq-a">${f.a}</div>`).join('')}</div>`;
+  const faqHTML = `<div class="faq-head">Common questions</div><p class="faq-head-s">Quick answers on the ${tm} Savings Bond — tap a question.</p><div class="faqlist">${faqs.map(f=>`<details class="faq-item" name="ssbfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const ld = { "@context":"https://schema.org","@graph":[
     { "@type":"BreadcrumbList","itemListElement":[
       { "@type":"ListItem","position":1,"name":"StockKaki","item":`${SITE}/` },
@@ -2220,7 +2230,7 @@ function ssbPage(ssb, sgs) {
   <div class="seclabel">Calculate what you'd earn</div>
   <div class="ssb-card" style="border-left-color:var(--line)">
     <div class="calc">
-      <div class="f"><label for="amt">You invest (S$)</label><input id="amt" type="number" min="500" step="500" value="10000"></div>
+      <div class="f"><label for="amt">You invest (S$)</label><input id="amt" type="number" min="500" step="500" value="10000" onfocus="this.select()"></div>
       <div class="f"><label for="yrs">You hold for</label><select id="yrs">${Array.from({length:10},(_,i)=>`<option value="${i+1}"${i===9?' selected':''}>${i+1} year${i?'s':''}</option>`).join('')}</select></div>
     </div>
     <div class="calc-out">
