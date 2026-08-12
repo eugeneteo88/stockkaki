@@ -1391,6 +1391,28 @@ const rateCard = (r, i) => {
         <div class="rc-detail">${esc(r.note || '')}</div>
       </div>`;
 };
+// Dense ranked rate table (chosen design). Rows open the same detail sheet as before via openSheet().
+const rateTable = (rows) => {
+  const hasTen = rows.some(r => r.tenure), hasMin = rows.some(r => r.min);
+  const badge = (r) => r.verified ? ` <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--up)">&#10003;</span>` : ` <span style="font-size:10px;color:var(--muted)">listed</span>`;
+  const tr = (r, i) => {
+    const meta = [r.tenure ? esc(r.tenure) : null, r.min ? 'min S$' + r.min.toLocaleString() : null].filter(Boolean).join(' &middot; ');
+    return `      <tr class="rrow" role="button" tabindex="0" data-bank="${esc(r.bank)}" data-url="${esc(r.url)}" onclick="openSheet(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSheet(this)}">
+        <td class="rt-rank${i < 3 ? ' top' : ''}">${i + 1}</td>
+        <td><span class="rt-bank">${esc(r.bank)}</span>${badge(r)}<div class="rc-metatext rt-sub">${meta}</div></td>
+        ${hasTen ? `<td class="rt-meta hide-m">${r.tenure ? esc(r.tenure) : '&mdash;'}</td>` : ''}
+        ${hasMin ? `<td class="rt-meta hide-m">${r.min ? 'S$' + r.min.toLocaleString() : '&mdash;'}</td>` : ''}
+        <td class="r"><span class="rc-rate">${r.rate.toFixed(2)}<span> % p.a.</span></span></td>
+        <td class="r hide-m"><span class="rt-det">details &rsaquo;</span><span class="rc-detail">${esc(r.note || '')}</span></td>
+      </tr>`;
+  };
+  return `  <div class="rtwrap"><table class="rtable">
+    <thead><tr><th>#</th><th>Bank</th>${hasTen ? '<th class="hide-m">Tenure</th>' : ''}${hasMin ? '<th class="hide-m">Min</th>' : ''}<th class="r">Rate</th><th class="hide-m"></th></tr></thead>
+    <tbody>
+${rows.map(tr).join('\n')}
+    </tbody>
+  </table></div>`;
+};
 function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
   const sorted = [...list].sort((a, b) => b.rate - a.rate);
   // Deep "help you understand" layer — served from a script object, NOT the indexed HTML (keeps the
@@ -1408,15 +1430,19 @@ function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
   const lowMin = [...list].filter(r => r.min).sort((a, b) => a.min - b.min)[0];
   const summary = `<div style="background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13px"><b>Quick answer:</b> top rate &mdash; ${esc(topR.bank)} <b>${topR.rate.toFixed(2)}%</b>${lowMin ? `; lowest entry &mdash; ${esc(lowMin.bank)} at <b>S$${lowMin.min.toLocaleString()}</b>` : ''}. Tap any bank for the details.</div>`;
   const style = `<style>
-.rcard{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
-.rcard:hover,.rcard:focus-visible{border-color:var(--accent);outline:none}
-.rc-main{flex:1;min-width:0}
-.rc-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.rc-bank{font-weight:600}
-.rc-rate{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:17px;color:var(--accent-dk);white-space:nowrap}
+.rtwrap{max-width:820px;overflow-x:auto}
+.rtable{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--card-sh)}
+.rtable thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--line)}
+.rtable th.r,.rtable td.r{text-align:right}
+.rtable td{padding:14px 16px;border-bottom:1px solid var(--hair-2);font-size:14px} .rtable tbody tr:last-child td{border-bottom:0}
+.rtable tbody tr{cursor:pointer} .rtable tbody tr:hover{background:var(--bg)} .rtable tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.rt-rank{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--muted);width:1%;white-space:nowrap} .rt-rank.top{color:var(--accent)}
+.rt-bank{font-weight:600;color:var(--ink)}
+.rt-meta{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);white-space:nowrap}
+.rc-rate{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--accent-dk);white-space:nowrap}
 .rc-rate span{font-size:11px;color:var(--muted);font-weight:600}
-.rc-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:3px}
-.rc-more{color:var(--accent-dk);white-space:nowrap;font-weight:600}
+.rt-det{color:var(--accent-dk);font-weight:600;font-size:12.5px;white-space:nowrap}
+.rt-sub{display:none} @media(max-width:559px){ .rt-sub{display:block;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:3px} }
 .rc-detail{display:none}
 .skscrim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .25s;z-index:60}
 .skscrim.on{opacity:1;visibility:visible}
@@ -1465,7 +1491,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()
   </section>
   <div class="hub-h" style="margin:14px 0 10px">${tag} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">verified ${prettyShort(BANK.updated)}</span></div>
   ${summary}
-  ${sorted.map(rateCard).join('\n')}
+  ${rateTable(sorted)}
   <p class="metaline" style="font-size:12px;margin-top:14px">Every rate here is checked against the bank&rsquo;s own website, last verified ${pretty(BANK.updated)}. Promotional rates can change at any time &mdash; always confirm with the bank before placing funds. Not financial advice.</p>
   <div class="intro" style="margin-top:18px">${intro}</div>
   ${faqHTML}
