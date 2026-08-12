@@ -1475,7 +1475,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()
 }
 function savingsHubPage() {
   const fdBest = Math.max(...BANK.fd.map(r => r.rate)), svBest = Math.max(...BANK.savings.map(r => r.rate));
-  const card = (name, href, blurb) => `    <a href="${href}" style="display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px;text-decoration:none">
+  const card = (name, href, blurb) => `    <a href="${href}" style="display:block;height:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-decoration:none;box-shadow:var(--card-sh)">
       <div style="font-weight:600;color:var(--ink);font-size:16px">${name} <span style="color:var(--accent-dk)">&rarr;</span></div>
       <div style="font-size:13px;color:var(--muted);margin-top:4px">${blurb}</div>
     </a>`;
@@ -1483,7 +1483,7 @@ function savingsHubPage() {
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">Where to park your cash in Singapore</h1>
     <p class="sub">The safe, interest-earning options compared &mdash; fixed deposits, high-interest savings accounts, Singapore Savings Bonds and T-bills. Rates verified against each provider.</p>
   </section>
-  <div style="margin-top:16px">
+  <div class="catgrid" style="margin-top:16px">
 ${card('Fixed Deposits', '/fixed-deposits/', `Lock in a guaranteed rate for a set term. Best verified now: <b>${fdBest.toFixed(2)}% p.a.</b>`)}
 ${card('Savings Accounts', '/savings-accounts/', `High-interest accounts that reward salary + spend. Up to <b>${svBest.toFixed(2)}% p.a.</b> (conditions apply).`)}
 ${card('Singapore Savings Bonds (SSB)', '/ssb/', 'Government-backed, fully flexible, step-up interest that rises the longer you hold.')}
