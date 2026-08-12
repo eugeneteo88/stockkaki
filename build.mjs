@@ -775,6 +775,19 @@ const STYLE = `
   .datechip.on{background:var(--accent);border-color:var(--accent)} .datechip.on .wd{color:#c3cffb} .datechip.on .dn{color:#fff} .datechip.on .cn{color:#dbe3ff}
   .dayview.hide{display:none}
   .divgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:2px 20px;box-shadow:var(--card-sh)} @media(max-width:720px){.divgrid{grid-template-columns:1fr}}
+  /* T-bill dashboard: auction history table beside the yield-trend card */
+  .tbgrid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:6px} @media(min-width:820px){ .tbgrid{grid-template-columns:1.5fr 1fr;align-items:start} }
+  .atbl{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--card-sh)}
+  .atbl thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .atbl th.r,.atbl td.r{text-align:right}
+  .atbl td{padding:13px 16px;border-bottom:1px solid var(--hair-2);font-size:14px} .atbl tbody tr:last-child td{border-bottom:0}
+  .atbl .adt{font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:13px}
+  .atbl .ayld{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--ink)}
+  .atbl .abtc{font-family:'JetBrains Mono',monospace;color:var(--accent-dk);font-weight:600}
+  .atbl .adelta{font-family:'JetBrains Mono',monospace;font-size:12.5px} .atbl .adelta .up{color:var(--up)} .atbl .adelta .dn{color:var(--down)}
+  .trendcard{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--card-sh);padding:16px 18px}
+  .trendcard .tlabel{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .trendcard .tcap{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5}
   .newsday .nrow{display:block;padding:14px 15px;border-bottom:1px solid var(--hair-2);color:inherit;text-decoration:none} .newsday .nrow:last-child{border-bottom:0} .newsday .nrow:hover{background:var(--row-hover)}
   .nrow .ntitle{display:block;font-weight:600;font-size:14.5px;line-height:1.4;color:var(--ink)} .nrow:hover .ntitle{color:var(--accent-dk)}
   .nrow .nsrc{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
@@ -1730,34 +1743,39 @@ function tbillsPage(tb) {
   const nextHTML = nx
     ? `<span class="ssb-status open"><span class="pulse"></span>Next auction · ${pretty(nx.auction_date)} · ${tenorName(nx.auction_tenor)} T-bill · issues ${pretty(nx.issue_date)}</span>`
     : `<span class="ssb-status closed">Next auction date to be announced by MAS</span>`;
-  const histRows = tb.hist6.map(r =>
-    `        <tr><td class="date">${pretty(r.auction_date)}</td><td class="r amt">${r.cutoff_yield.toFixed(2)}%</td><td class="r yld">${r.bid_to_cover ? r.bid_to_cover.toFixed(2) + '×' : '—'}</td></tr>`).join('\n');
+  const histRows = tb.hist6.map((r, i) => {
+    const prev = tb.hist6[i + 1];
+    let delta = '<span style="color:var(--muted)">&mdash;</span>';
+    if (prev) { const d = r.cutoff_yield - prev.cutoff_yield; delta = d > 0 ? `<span class="up">&#9650; ${d.toFixed(2)}</span>` : d < 0 ? `<span class="dn">&#9660; ${Math.abs(d).toFixed(2)}</span>` : '<span style="color:var(--muted)">&mdash;</span>'; }
+    return `        <tr><td class="adt">${pretty(r.auction_date)}</td><td class="r ayld">${r.cutoff_yield.toFixed(2)}%</td><td class="r adelta">${delta}</td><td class="r abtc">${r.bid_to_cover ? r.bid_to_cover.toFixed(2) + '&times;' : '&mdash;'}</td></tr>`;
+  }).join('\n');
 
-  // 6-month cut-off yield trend (inline SVG, no libs)
+  // 6-month cut-off yield trend (inline SVG, no libs) — rendered inside a card beside the history table
   const T = tb.trend, n = T.length;
-  let chart = '';
+  let trendCard = '';
   if (n >= 2) {
     const vals = T.map(p => p.y);
     const lo = Math.floor(Math.min(...vals) * 10) / 10, hi = Math.ceil(Math.max(...vals) * 10) / 10, span = (hi - lo) || 1;
-    const W = 640, H = 200, PL = 6, PR = 46, PT = 14, PB = 26;
+    const W = 400, H = 150, PL = 6, PR = 40, PT = 12, PB = 24;
     const X = i => (PL + (W - PL - PR) * (n > 1 ? i / (n - 1) : 0));
     const Y = v => (PT + (H - PT - PB) * (1 - (v - lo) / span));
     const pts = T.map((p, i) => X(i).toFixed(1) + ',' + Y(p.y).toFixed(1)).join(' ');
-    const last = T[n - 1];
-    chart = `  <div class="h2">6-month T-bill yield trend</div>
-  <div class="chartwrap">
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Singapore 6-month T-bill cut-off yield trend">
-      <line x1="${PL}" y1="${Y(hi).toFixed(1)}" x2="${W - PR}" y2="${Y(hi).toFixed(1)}" stroke="var(--line)"/>
-      <line x1="${PL}" y1="${Y(lo).toFixed(1)}" x2="${W - PR}" y2="${Y(lo).toFixed(1)}" stroke="var(--line)"/>
-      <text x="${W - PR + 6}" y="${(Y(hi) + 4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${hi.toFixed(1)}%</text>
-      <text x="${W - PR + 6}" y="${(Y(lo) + 4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${lo.toFixed(1)}%</text>
-      <polyline fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>
-      <circle cx="${X(n - 1).toFixed(1)}" cy="${Y(last.y).toFixed(1)}" r="3.5" fill="var(--accent)"/>
-      <text x="${PL}" y="${H - 8}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${monthYr(T[0].iso)}</text>
-      <text x="${(W - PR).toFixed(1)}" y="${H - 8}" fill="var(--muted)" font-size="11" text-anchor="end" font-family="'JetBrains Mono',monospace">${monthYr(last.iso)}</text>
-    </svg>
-  </div>
-  <p class="metaline" style="font-size:12px">Cut-off yield at each 6-month T-bill auction — the annualised return the last successful bidder locked in. Source: MAS.</p>`;
+    const last = T[n - 1], first = T[0];
+    const dir = last.y > first.y ? `<span style="color:var(--up)">rising</span>` : last.y < first.y ? `<span style="color:var(--down)">easing</span>` : 'flat';
+    trendCard = `<div class="trendcard">
+      <div class="tlabel">6-month yield trend</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Singapore 6-month T-bill cut-off yield trend">
+        <line x1="${PL}" y1="${Y(hi).toFixed(1)}" x2="${W - PR}" y2="${Y(hi).toFixed(1)}" stroke="var(--line)"/>
+        <line x1="${PL}" y1="${Y(lo).toFixed(1)}" x2="${W - PR}" y2="${Y(lo).toFixed(1)}" stroke="var(--line)"/>
+        <text x="${W - PR + 6}" y="${(Y(hi) + 4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${hi.toFixed(1)}%</text>
+        <text x="${W - PR + 6}" y="${(Y(lo) + 4).toFixed(1)}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${lo.toFixed(1)}%</text>
+        <polyline fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>
+        <circle cx="${X(n - 1).toFixed(1)}" cy="${Y(last.y).toFixed(1)}" r="3.5" fill="var(--accent)"/>
+        <text x="${PL}" y="${H - 7}" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono',monospace">${monthYr(first.iso)}</text>
+        <text x="${(W - PR).toFixed(1)}" y="${H - 7}" fill="var(--muted)" font-size="11" text-anchor="end" font-family="'JetBrains Mono',monospace">${monthYr(last.iso)}</text>
+      </svg>
+      <p class="tcap">Cut-off yield at each 6-month auction, ${first.y.toFixed(2)}% &rarr; ${last.y.toFixed(2)}% (${dir}). Source: MAS.</p>
+    </div>`;
   }
 
   const faqs = [
@@ -1797,14 +1815,18 @@ function tbillsPage(tb) {
   </div>
   <div class="intro" style="margin-top:16px">A <b>Treasury Bill (T-bill)</b> is a short-term Singapore Government security — as safe as a <a href="/ssb/">Savings Bond</a>, but it works differently. You buy it at a <b>discount</b> and are repaid the full face value at maturity; the difference is your return, quoted above as the annualised <b>cut-off yield</b>. MAS auctions the 6-month T-bill roughly every two weeks and the 1-year about once a quarter.</div>
   <div class="h2">Recent 6-month T-bill auctions</div>
-  <div class="card"><table class="stepup">
-    <thead><tr><th>Auction date</th><th class="r">Cut-off yield</th><th class="r">Bid-to-cover</th></tr></thead>
-    <tbody>
+  <div class="tbgrid">
+    <div>
+      <table class="atbl">
+        <thead><tr><th>Auction date</th><th class="r">Cut-off yield</th><th class="r">vs prev</th><th class="r">Bid-to-cover</th></tr></thead>
+        <tbody>
 ${histRows}
-    </tbody>
-  </table></div>
-  <p class="metaline" style="font-size:12px">Bid-to-cover = total bids ÷ amount offered; higher means stronger demand. A higher demand auction often pushes the cut-off yield down. Source: MAS.</p>
-${chart}
+        </tbody>
+      </table>
+      <p class="metaline" style="font-size:12px">Bid-to-cover = total bids ÷ amount offered; higher means stronger demand. A higher-demand auction often pushes the cut-off yield down. Source: MAS.</p>
+    </div>
+    ${trendCard}
+  </div>
   <div class="intro" style="margin-top:18px"><b>T-bill or Savings Bond?</b> T-bills lock in a fixed rate for 6–12 months and can be bought with CPF; SSBs are flexible — redeem any month with no penalty — and step up the longer you hold. Read the full <a href="/guides/singapore-savings-bonds-vs-t-bills/">SSB vs T-bills comparison</a>, or check the latest <a href="/ssb/">Singapore Savings Bond rates</a>.</div>
   ${faqHTML}
   ${jsonLd}`;
