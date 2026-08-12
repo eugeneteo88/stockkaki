@@ -394,7 +394,7 @@ const NAV = `<header class="nav">
   <div class="wrap row">
   <a class="brand" href="/">StockKaki<span class="bdot">.</span></a>
   <nav>${NAVLINKS}</nav>
-  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
+  <div style="display:flex;align-items:center;gap:6px"><button id="themeBtn" class="tbtn" aria-label="Toggle dark mode">${MOON}${SUN}</button><div class="acctwrap"><button id="acctBtn" class="tbtn" aria-label="Account" aria-haspopup="true" aria-expanded="false">${ACCT_IC}</button><div id="acctMenu" class="acctmenu"><div class="acctmenu-h">Account</div><a href="/account/">Log in</a><a href="/account/">Sign up</a></div></div><button id="mtoggle" class="tbtn mtoggle" aria-label="Menu">${BURGER}</button></div>
   </div>
 </header>
 <div id="mscrim" class="mscrim"></div>
@@ -452,7 +452,12 @@ const STYLE = `
   html[data-theme="dark"] .moon{display:none} html:not([data-theme="dark"]) .sun{display:none}
   .deskonly{display:none} @media(min-width:820px){ .deskonly{display:inline-block} }
   .btn.wa.deskonly{display:none} @media(min-width:820px){ .btn.wa.deskonly{display:inline-flex} }
-  .mtoggle{display:inline-flex}
+  .mtoggle{display:inline-flex} @media(min-width:820px){ .mtoggle{display:none} }
+  .acctwrap{position:relative;display:none} @media(min-width:820px){ .acctwrap{display:inline-flex} }
+  .acctmenu{position:absolute;top:calc(100% + 8px);right:0;min-width:172px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px -16px rgba(0,0,0,.35);padding:6px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .16s,transform .16s,visibility .16s;z-index:45}
+  .acctmenu.on{opacity:1;visibility:visible;transform:none}
+  .acctmenu-h{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 12px 4px}
+  .acctmenu a{display:block;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:var(--ink)} .acctmenu a:hover{background:var(--row-hover);color:var(--accent-dk)}
   .mscrim{position:fixed;inset:0;background:rgba(20,14,10,.55);opacity:0;visibility:hidden;transition:opacity .25s ease;z-index:40}
   .mscrim.open{opacity:1;visibility:visible}
   .mmenu{position:fixed;top:0;bottom:0;right:0;width:min(82vw,300px);background:var(--card);border-left:1px solid var(--line);box-shadow:-16px 0 44px -20px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
@@ -1014,6 +1019,8 @@ if(mt)mt.onclick=function(){toggleMenu(!mm.classList.contains('open'));};
 if(ms)ms.onclick=function(){toggleMenu(false);};
 if(mc)mc.onclick=function(){toggleMenu(false);};
 if(mm)mm.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){toggleMenu(false);});});
+var ab=document.getElementById('acctBtn'),am=document.getElementById('acctMenu');
+if(ab&&am){ab.addEventListener('click',function(e){e.stopPropagation();var o=!am.classList.contains('on');am.classList.toggle('on',o);ab.setAttribute('aria-expanded',o?'true':'false');});document.addEventListener('click',function(){am.classList.remove('on');ab.setAttribute('aria-expanded','false');});document.addEventListener('keydown',function(e){if(e.key==='Escape'){am.classList.remove('on');ab.setAttribute('aria-expanded','false');}});}
 document.querySelectorAll('.alert form').forEach(function(f){f.addEventListener('submit',function(ev){ev.preventDefault();var inp=f.querySelector('input');var e=(inp.value||'').trim();if(!e)return;var btn=f.querySelector('button');btn.textContent='…';btn.disabled=true;fetch(SBFN+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SBK,apikey:SBK},body:JSON.stringify({email:e})}).then(function(r){return r.json();}).then(function(d){if(d&&d.ok){f.innerHTML='<div style="color:#fff;font-weight:600">✓ Almost there — check your inbox to confirm.</div>';}else{btn.textContent='Try again';btn.disabled=false;}}).catch(function(){btn.textContent='Try again';btn.disabled=false;});});});
 })();</script>
 </body></html>`;
