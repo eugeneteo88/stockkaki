@@ -83,6 +83,7 @@ const YEAR = TODAY.slice(0,4);   // current year — for self-updating "best ...
 const daysTo = (s) => Math.round((new Date(s) - new Date(TODAY)) / 86400000);
 const exTag = (s) => { const d = daysTo(s); return d>=0 && d<=7 ? `<span class="tag soon">${d===0?'today':d+'d'}</span>` : ''; };
 const wkday = (s) => { try { return new Date(s+'T00:00:00').toLocaleDateString('en-US',{weekday:'short'}); } catch(e){ return ''; } };
+const fullDate = (s) => { try { return new Date(s+'T00:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}); } catch(e){ return s; } };
 const relDay = (s) => { const d = daysTo(s); return d===0?'Today':d===1?'Tomorrow':wkday(s); };
 // Group an already-date-sorted list into day cards (used by the ex-date calendar and the pay-date page).
 // dateOf(r)→ISO, rowOf(r)→inner .erow HTML, unit = plural noun for the count chip.
@@ -759,6 +760,15 @@ const STYLE = `
   .erow .ep{display:block;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
   .erow .ea{flex:0 0 auto;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--accent-dk)} .erow .ea.mut{color:var(--muted);font-weight:600;font-size:12.5px}
   .calnone{display:none;padding:22px 4px;color:var(--muted);font-size:14px}
+  /* calendar date selector: pick a day, see its payers in a 2-col grid */
+  .datestrip{display:flex;gap:10px;overflow-x:auto;padding:16px 0 4px;scrollbar-width:thin} .datestrip::-webkit-scrollbar{height:6px} .datestrip::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+  .datechip{flex:0 0 auto;min-width:94px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s;box-shadow:var(--card-sh);font-family:inherit} .datechip:hover{border-color:var(--accent)}
+  .datechip .wd{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .datechip .dn{display:block;font-family:'IBM Plex Serif',sans-serif;font-weight:700;font-size:18px;color:var(--ink);margin-top:3px;white-space:nowrap}
+  .datechip .cn{display:block;font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace}
+  .datechip.on{background:var(--accent);border-color:var(--accent)} .datechip.on .wd{color:#c3cffb} .datechip.on .dn{color:#fff} .datechip.on .cn{color:#dbe3ff}
+  .dayview.hide{display:none}
+  .divgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:2px 20px;box-shadow:var(--card-sh)} @media(max-width:720px){.divgrid{grid-template-columns:1fr}}
   .newsday .nrow{display:block;padding:14px 15px;border-bottom:1px solid var(--hair-2);color:inherit;text-decoration:none} .newsday .nrow:last-child{border-bottom:0} .newsday .nrow:hover{background:var(--row-hover)}
   .nrow .ntitle{display:block;font-weight:600;font-size:14.5px;line-height:1.4;color:var(--ink)} .nrow:hover .ntitle{color:var(--accent-dk)}
   .nrow .nsrc{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace}
@@ -1778,7 +1788,19 @@ function calendarPage(upcoming) {
     const amt = r.divIncomplete ? '<span class="ea mut">scrip</span>' : `<span class="ea">${money(r.ccy, r.amt)}</span>`;
     return `      <a class="erow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}"><span class="en"><span class="enm">${r.name}${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span><span class="ep">Pay ${prettyShort(r.pay)}</span></span>${amt}</a>`;
   };
-  const groupsHTML = dayGroups(upcoming, r => r.exISO, calRow, 'going ex');
+  // group upcoming into days, then render a date-selector strip + one 2-col view per day
+  const days = []; let cur = null;
+  for (const r of upcoming) { const d = r.exISO; if (!cur || cur.iso !== d) { cur = { iso: d, rows: [] }; days.push(cur); } cur.rows.push(r); }
+  const stripHTML = `  <div class="datestrip" id="strip">
+    <button class="datechip" data-d="all"><span class="wd">All</span><span class="dn">Upcoming</span><span class="cn">${upcoming.length} total</span></button>
+${days.map((g,i) => `    <button class="datechip${i===0?' on':''}" data-d="${i}"><span class="wd">${relDay(g.iso)}</span><span class="dn">${prettyShort(g.iso)}</span><span class="cn">${g.rows.length} ex</span></button>`).join('\n')}
+  </div>`;
+  const viewsHTML = days.map((g,i) => `  <div class="dayview${i===0?'':' hide'}" data-v="${i}">
+    <div class="dayhdr" style="margin-top:18px"><span class="rel${daysTo(g.iso)<=1?'':' mut'}">${relDay(g.iso)}</span><span class="dt">${fullDate(g.iso)}</span><span class="ct">${g.rows.length} going ex</span></div>
+    <div class="divgrid">
+${g.rows.map(calRow).join('\n')}
+    </div>
+  </div>`).join('\n');
   const faqs = [
     { q: `Which Singapore stocks go ex-dividend in ${cm}?`, a: `The calendar above lists every SGX counter going ex-dividend from ${cm} onwards — with its ex-date, dividend amount and pay date, updated daily. Buy before a stock's ex-date to receive its next dividend.` },
     { q: 'What is an ex-dividend date?', a: 'The ex-dividend (ex) date is the cut-off to qualify for a dividend — you must own the shares before the ex-date to be entitled. On the ex-date the share price typically drops by roughly the dividend amount.' },
@@ -1793,15 +1815,21 @@ function calendarPage(upcoming) {
   </section>
   <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock going ex-dividend…"></div>
   <details class="exhelp"><summary>What's an ex-date?</summary><p>Buy a stock <b>before</b> its ex-date to receive the upcoming dividend; on the ex-date the price typically drops by about the dividend amount. The <b>pay date</b> is when the cash is actually credited — usually a few weeks later. Want it ordered by when the money lands? See <a href="/dividend-payout-dates/">dividend payment dates</a>.</p></details>
-${groupsHTML}
+${stripHTML}
+${viewsHTML}
   <div class="calnone" id="none">No upcoming ex-date matches that.</div>
   <p class="metaline" style="font-size:12px;margin-top:22px">Ex-dates &amp; amounts from SGX; <b>scrip</b> = a reinvestment-option distribution (cash amount not published in the free feed).</p>
   ${faqHTML}
   ${jsonLd}`;
   const script = `<script>
-var q=document.getElementById('q'),groups=[].slice.call(document.querySelectorAll('.daygrp')),none=document.getElementById('none');
-q.addEventListener('input',function(){var v=q.value.trim().toLowerCase(),shown=0;
- groups.forEach(function(g){var any=false;[].slice.call(g.querySelectorAll('.erow')).forEach(function(r){var ok=!v||r.dataset.s.indexOf(v)>=0;r.style.display=ok?'':'none';if(ok)any=true;});g.style.display=any?'':'none';if(any)shown++;});
+var q=document.getElementById('q'),chips=[].slice.call(document.querySelectorAll('#strip .datechip')),views=[].slice.call(document.querySelectorAll('.dayview')),none=document.getElementById('none');
+function showDate(d){chips.forEach(function(c){c.classList.toggle('on',c.dataset.d===d);});views.forEach(function(v){v.classList.toggle('hide',d!=='all'&&v.dataset.v!==d);});none.style.display='none';}
+function clearRows(){views.forEach(function(v){[].slice.call(v.querySelectorAll('.erow')).forEach(function(r){r.style.display='';});});}
+chips.forEach(function(c){c.addEventListener('click',function(){q.value='';clearRows();showDate(c.dataset.d);});});
+q.addEventListener('input',function(){var v=q.value.trim().toLowerCase();
+ if(!v){clearRows();showDate('0');return;}
+ chips.forEach(function(c){c.classList.remove('on');});var shown=0;
+ views.forEach(function(vw){var any=false;[].slice.call(vw.querySelectorAll('.erow')).forEach(function(r){var ok=r.dataset.s.indexOf(v)>=0;r.style.display=ok?'':'none';if(ok)any=true;});vw.classList.toggle('hide',!any);if(any)shown++;});
  none.style.display=shown?'none':'block';});
 </script>`;
   return shell(`Singapore Dividend Calendar ${cm} — Upcoming SGX Ex-Dividend & Pay Dates | StockKaki`,
