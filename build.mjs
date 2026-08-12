@@ -640,6 +640,7 @@ const STYLE = `
   footer .disc{border-top:1px solid var(--line);margin-top:22px;padding-top:18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap} footer .disc .dlinks{display:flex;gap:20px}
   @media(max-width:560px){ footer .disc{flex-direction:column;align-items:flex-start;gap:13px} }
   .ssb-card{margin:16px 0 6px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:22px;max-width:820px}
+  .ssb-card.wide{max-width:none}
   .ssb-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:6px 13px;border-radius:999px}
   .ssb-status .pulse{width:7px;height:7px;border-radius:50%;background:currentColor}
   .ssb-status.open{background:#dcf3e7;color:#0c7a4e} html[data-theme="dark"] .ssb-status.open{background:#123726;color:#5fd39e}
@@ -1795,9 +1796,9 @@ function tbillsPage(tb) {
 
   const body = `  <section class="hero" style="padding:22px 0 2px">
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore T-Bill Rates — ${mo}</h1>
-    <p class="sub" style="margin-bottom:0">The latest 6-month Singapore T-bill (${l6.issue_code}) cut off at <b>${l6.cutoff_yield.toFixed(2)}%</b> per year, auctioned ${pretty(l6.auction_date)}.${l1 ? ` The latest 1-year T-bill cut off at <b>${l1.cutoff_yield.toFixed(2)}%</b>.` : ''} Rates, next auction and yield history below — from MAS, updated every auction.</p>
+    <p class="sub" style="margin-bottom:0;max-width:none">The latest 6-month Singapore T-bill (${l6.issue_code}) cut off at <b>${l6.cutoff_yield.toFixed(2)}%</b> per year, auctioned ${pretty(l6.auction_date)}.${l1 ? ` The latest 1-year T-bill cut off at <b>${l1.cutoff_yield.toFixed(2)}%</b>.` : ''} Rates, next auction and yield history below — from MAS, updated every auction.</p>
   </section>
-  <div class="ssb-card">
+  <div class="ssb-card wide">
     ${nextHTML}
     <div class="ssb-stats">
       <div class="bigstat"><div class="k">6-month cut-off yield</div><div class="v">${l6.cutoff_yield.toFixed(2)}%</div><div class="cap">${l6.issue_code} · auctioned ${pretty(l6.auction_date)}</div></div>
