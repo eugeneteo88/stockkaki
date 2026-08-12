@@ -697,6 +697,8 @@ const STYLE = `
   .faq-head-s{color:var(--muted);font-size:13.5px;margin:0 0 6px;max-width:760px}
   .faqlist{max-width:760px}
   .faq-item{border-bottom:1px solid var(--line)} .faq-item:first-child{border-top:1px solid var(--line)}
+  @media(min-width:760px){ .faqlist{max-width:none;display:grid;grid-template-columns:1fr 1fr;column-gap:44px} .faq-item:nth-child(2){border-top:1px solid var(--line)} }
+  .guide .faqlist{display:block;max-width:760px} .guide .faq-item:nth-child(2){border-top:0}
   .faq-item>summary{list-style:none;cursor:pointer;display:flex;gap:14px;align-items:flex-start;padding:16px 4px;font-weight:600;font-size:15.5px;line-height:1.4;color:var(--ink)} .faq-item>summary::-webkit-details-marker{display:none} .faq-item>summary:hover{color:var(--accent-dk)}
   .faq-item .fqp{flex:0 0 auto;width:16px;text-align:center;color:var(--accent);font-size:20px;line-height:1.2;font-weight:400;transition:transform .2s} .faq-item[open]>summary .fqp{transform:rotate(45deg)}
   .faq-item .faq-a{padding:0 4px 18px 34px;color:var(--muted);font-size:14.5px;line-height:1.72;max-width:70ch} .faq-item .faq-a a{color:var(--accent-dk);font-weight:500}
