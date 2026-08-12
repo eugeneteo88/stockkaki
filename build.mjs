@@ -502,11 +502,10 @@ const STYLE = `
   .gnext .t{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .gnext .h{font-family:'IBM Plex Serif',serif;font-weight:600;font-size:17px;margin-top:3px;color:var(--ink)}
   .gnext .go{color:var(--accent);font-size:22px;flex:0 0 auto}
-  /* guides index: centered + roomier cards */
-  .guideindex{max-width:820px;margin:0 auto}
-  .guidelist{margin-left:auto;margin-right:auto}
+  /* guides index: left-aligned to the nav/logo, roomier cards */
+  .guideindex{max-width:none}
   .gcard{padding:20px 22px;border-radius:12px;transition:border-color .2s,box-shadow .2s} .gcard:hover{box-shadow:0 3px 12px rgba(38,71,221,.07)}
-  .guidelist{display:grid;grid-template-columns:1fr;gap:10px;max-width:760px;margin-top:8px} @media(min-width:640px){.guidelist{grid-template-columns:1fr 1fr}}
+  .guidelist{display:grid;grid-template-columns:1fr;gap:14px;margin-top:8px} @media(min-width:640px){.guidelist{grid-template-columns:1fr 1fr}} @media(min-width:960px){.guidelist{grid-template-columns:repeat(3,1fr)}}
   .gcard{display:block;border:1px solid var(--line);border-radius:10px;padding:18px 20px;color:inherit;box-shadow:var(--card-sh)} .gcard:hover{border-color:var(--accent);background:var(--row-hover)}
   .gc-cat{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:7px}
   .gc-t{display:block;font-family:'IBM Plex Serif',serif;font-weight:600;font-size:17px;letter-spacing:-.01em}
