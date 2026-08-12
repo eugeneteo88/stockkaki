@@ -522,6 +522,9 @@ const STYLE = `
   .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent)}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:18px 0 6px;scrollbar-width:none} .chips::-webkit-scrollbar{display:none}
   /* list controls: type + sort dropdowns (replaces chip row + A–Z pills) */
+  .listbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  .listbar .search{margin-top:0;flex:1 1 260px} .listbar .listctrls{margin-top:0}
+  @media(max-width:619px){ .listbar .search,.listbar .listctrls{flex:1 1 100%} }
   .listctrls{display:flex;gap:10px;margin:14px 0 0;flex-wrap:nowrap}
   .lctrl{flex:1 1 0;min-width:0;text-overflow:ellipsis;appearance:none;-webkit-appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:11px 34px 11px 14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:var(--card-sh)} .lctrl:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   @media(min-width:620px){ .listctrls{flex-wrap:wrap} .lctrl{flex:0 0 auto} }
@@ -1221,14 +1224,16 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
     <p class="sub" style="margin-bottom:2px">${sub}</p>
   </section>
-  <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
-  <div class="listctrls">
-    ${typeSel}
-    <select id="sortf" class="lctrl" aria-label="Sort by">
-      <option value="top">Top 10 · yield</option>
-      <option value="y">All · by yield</option>
-      <option value="d">All · by dividend</option>
-    </select>
+  <div class="listbar">
+    <div class="search" id="alltop">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter by name or ticker…"></div>
+    <div class="listctrls">
+      ${typeSel}
+      <select id="sortf" class="lctrl" aria-label="Sort by">
+        <option value="top">Top 10 · yield</option>
+        <option value="y">All · by yield</option>
+        <option value="d">All · by dividend</option>
+      </select>
+    </div>
   </div>
   <div class="ltable cols-screener" style="margin-top:12px">
     <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-yield">Yield</span><span class="lr-div">12-mo div</span><span class="lr-ex">Next ex-date</span></div>
@@ -1524,14 +1529,16 @@ function stocksPage(list) {
     <h1 class="serif" style="font-size:27px;margin:0 0 4px">All Singapore stocks</h1>
     <p class="sub" style="margin-bottom:2px">Every SGX-listed counter — price, day change, market cap and P/E. Search, filter and sort.</p>
   </section>
-  <div class="search" id="alltop" style="margin-top:16px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker…"></div>
-  <div class="listctrls">
-    <select id="typef" class="lctrl" aria-label="Filter by type">${typeOpts}</select>
-    <select id="sortf" class="lctrl" aria-label="Sort by">
-      <option value="top">Top 10 · market cap</option>
-      <option value="mc">All · market cap</option>
-      <option value="chg">All · today's %</option>
-    </select>
+  <div class="listbar">
+    <div class="search" id="alltop">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Search any stock or ticker…"></div>
+    <div class="listctrls">
+      <select id="typef" class="lctrl" aria-label="Filter by type">${typeOpts}</select>
+      <select id="sortf" class="lctrl" aria-label="Sort by">
+        <option value="top">Top 10 · market cap</option>
+        <option value="mc">All · market cap</option>
+        <option value="chg">All · today's %</option>
+      </select>
+    </div>
   </div>
   <div class="ltable cols-stocks" style="margin-top:12px">
     <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-chg">Change</span><span class="lr-mc">Market cap</span><span class="lr-pe">P/E</span></div>
@@ -1615,12 +1622,14 @@ function blueChipsPage(list) {
     <p class="sub" style="margin-bottom:2px">The ${sorted.length} largest SGX-listed companies and trusts, ranked by market capitalisation — updated daily.</p>
   </section>
   <div class="intro" style="margin-top:14px">Blue chips are the biggest, most established companies on the SGX — the heavyweights that anchor the <b>Straits Times Index (STI)</b>: the local banks, Singtel, the exchange itself and other household names. They are prized for stability and steady, tax-free <a href="/dividends/">dividends</a> rather than explosive growth. Below are the <b>${sorted.length}</b> largest by market cap; tap any for its full page, or browse <a href="/stocks/">all SGX counters</a>.</div>
-  <div class="search" id="alltop" style="margin-top:16px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter blue chips…"></div>
-  <div class="listctrls">
-    <select id="sortf" class="lctrl" aria-label="Sort by">
-      <option value="mc">Sort: Market cap (biggest)</option>
-      <option value="chg">Sort: Today's move</option>
-    </select>
+  <div class="listbar">
+    <div class="search" id="alltop">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Filter blue chips…"></div>
+    <div class="listctrls">
+      <select id="sortf" class="lctrl" aria-label="Sort by">
+        <option value="mc">Sort: Market cap (biggest)</option>
+        <option value="chg">Sort: Today's move</option>
+      </select>
+    </div>
   </div>
   <div class="ltable cols-stocks" style="margin-top:12px">
     <div class="lrow lhead"><span>Company</span><span class="lr-price">Price</span><span class="lr-chg">Change</span><span class="lr-mc">Market cap</span><span class="lr-pe">P/E</span></div>
