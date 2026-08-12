@@ -1430,7 +1430,7 @@ function ratePage({ title, desc, h1, sub, intro, list, faqs, canon, tag }) {
   const lowMin = [...list].filter(r => r.min).sort((a, b) => a.min - b.min)[0];
   const summary = `<div style="background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13px"><b>Quick answer:</b> top rate &mdash; ${esc(topR.bank)} <b>${topR.rate.toFixed(2)}%</b>${lowMin ? `; lowest entry &mdash; ${esc(lowMin.bank)} at <b>S$${lowMin.min.toLocaleString()}</b>` : ''}. Tap any bank for the details.</div>`;
   const style = `<style>
-.rtwrap{max-width:820px;overflow-x:auto}
+.rtwrap{overflow-x:auto}
 .rtable{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--card-sh)}
 .rtable thead th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--line)}
 .rtable th.r,.rtable td.r{text-align:right}
