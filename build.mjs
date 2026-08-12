@@ -749,6 +749,12 @@ const STYLE = `
   .pager .pg-dots{color:var(--muted);align-self:center;padding:0 2px}
   /* dividend calendar / pay dates: grouped by day */
   .exhelp{margin:12px 0 2px;font-size:12.5px;max-width:820px} .exhelp summary{list-style:none;cursor:pointer;color:var(--accent-dk);font-weight:600;display:inline-flex;align-items:center;gap:6px} .exhelp summary::-webkit-details-marker{display:none} .exhelp p{color:var(--muted);line-height:1.65;margin:9px 0 0;max-width:660px} .exhelp p b{color:var(--ink)} .exhelp p a{color:var(--accent-dk);font-weight:600}
+  /* calendar bar: search + "What's an ex-date?" on one row, toggle at the right edge */
+  .calbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  .calbar .search{flex:1 1 260px;max-width:none;margin-top:0}
+  .calbar .exhelp{flex:0 0 auto;margin:0;position:relative} .calbar .exhelp>summary{white-space:nowrap}
+  .calbar .exhelp>p{position:absolute;top:calc(100% + 10px);right:0;z-index:6;width:min(520px,86vw);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px -14px rgba(0,0,0,.3);padding:14px 16px;margin:0}
+  @media(max-width:560px){ .calbar .search,.calbar .exhelp{flex:1 1 100%} .calbar .exhelp>p{position:static;width:auto;box-shadow:none;border:0;border-radius:0;padding:8px 2px 0} }
   .daygrp{margin-top:22px;max-width:820px} .daygrp:first-of-type{margin-top:18px}
   .dayhdr{display:flex;align-items:baseline;gap:9px;margin:0 2px 8px}
   .dayhdr .rel{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)} .dayhdr .rel.mut{color:var(--muted)}
@@ -1813,8 +1819,10 @@ ${g.rows.map(calRow).join('\n')}
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Calendar — ${cm}</h1>
     <p class="sub" style="margin-bottom:0">Upcoming SGX ex-dividend dates, grouped by day — updated daily.</p>
   </section>
-  <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock going ex-dividend…"></div>
-  <details class="exhelp"><summary>What's an ex-date?</summary><p>Buy a stock <b>before</b> its ex-date to receive the upcoming dividend; on the ex-date the price typically drops by about the dividend amount. The <b>pay date</b> is when the cash is actually credited — usually a few weeks later. Want it ordered by when the money lands? See <a href="/dividend-payout-dates/">dividend payment dates</a>.</p></details>
+  <div class="calbar">
+    <div class="search" id="alltop">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock going ex-dividend…"></div>
+    <details class="exhelp"><summary>What's an ex-date?</summary><p>Buy a stock <b>before</b> its ex-date to receive the upcoming dividend; on the ex-date the price typically drops by about the dividend amount. The <b>pay date</b> is when the cash is actually credited — usually a few weeks later. Want it ordered by when the money lands? See <a href="/dividend-payout-dates/">dividend payment dates</a>.</p></details>
+  </div>
 ${stripHTML}
 ${viewsHTML}
   <div class="calnone" id="none">No upcoming ex-date matches that.</div>
@@ -1868,8 +1876,10 @@ ${g.rows.map(payRow).join('\n')}
     <h1 class="serif" style="font-size:27px;margin:0 0 5px">Singapore Dividend Payment Dates</h1>
     <p class="sub" style="margin-bottom:0">When upcoming SGX dividends land in your account &mdash; grouped by pay date, updated daily.</p>
   </section>
-  <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock's payout date…"></div>
-  <details class="exhelp"><summary>What's a pay date?</summary><p>The <b>payment date</b> is when a dividend is actually credited to your account &mdash; usually a few weeks after the ex-date. You qualify by owning the shares before the <b>ex-date</b>; you don't need to still hold them on the pay date. Looking for the cut-off to qualify? See the <a href="/dividend-calendar/">ex-dividend calendar</a>.</p></details>
+  <div class="calbar">
+    <div class="search" id="alltop">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock's payout date…"></div>
+    <details class="exhelp"><summary>What's a pay date?</summary><p>The <b>payment date</b> is when a dividend is actually credited to your account &mdash; usually a few weeks after the ex-date. You qualify by owning the shares before the <b>ex-date</b>; you don't need to still hold them on the pay date. Looking for the cut-off to qualify? See the <a href="/dividend-calendar/">ex-dividend calendar</a>.</p></details>
+  </div>
 ${stripHTML}
 ${viewsHTML}
   <div class="calnone" id="none">No upcoming payout matches that.</div>
