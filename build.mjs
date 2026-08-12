@@ -1844,7 +1844,18 @@ function payoutDatesPage(upcoming) {
     const amt = r.divIncomplete ? '<span class="ea mut">scrip</span>' : `<span class="ea">${money(r.ccy, r.amt)}</span>`;
     return `      <a class="erow" href="/stock/${r.slug}/" data-s="${esc((r.name+' '+(r.ticker||'')).toLowerCase())}"><span class="en"><span class="enm">${r.name}${r.ticker?`<span class="tick">${r.ticker}</span>`:''}</span><span class="ep">Ex ${prettyShort(r.exISO)}</span></span>${amt}</a>`;
   };
-  const groupsHTML = dayGroups(paid, r => r.pay, payRow, 'paid');
+  const days = []; let curp = null;
+  for (const r of paid) { const d = r.pay; if (!curp || curp.iso !== d) { curp = { iso: d, rows: [] }; days.push(curp); } curp.rows.push(r); }
+  const stripHTML = `  <div class="datestrip" id="strip">
+    <button class="datechip" data-d="all"><span class="wd">All</span><span class="dn">Upcoming</span><span class="cn">${paid.length} total</span></button>
+${days.map((g,i) => `    <button class="datechip${i===0?' on':''}" data-d="${i}"><span class="wd">${relDay(g.iso)}</span><span class="dn">${prettyShort(g.iso)}</span><span class="cn">${g.rows.length} paid</span></button>`).join('\n')}
+  </div>`;
+  const viewsHTML = days.map((g,i) => `  <div class="dayview${i===0?'':' hide'}" data-v="${i}">
+    <div class="dayhdr" style="margin-top:18px"><span class="rel${daysTo(g.iso)<=1?'':' mut'}">${relDay(g.iso)}</span><span class="dt">${fullDate(g.iso)}</span><span class="ct">${g.rows.length} paid</span></div>
+    <div class="divgrid">
+${g.rows.map(payRow).join('\n')}
+    </div>
+  </div>`).join('\n');
   const faqs = [
     { q: 'When will I receive my dividend in Singapore?', a: 'The pay date is when the cash is credited to your account — usually two to four weeks after the ex-dividend date. The table above lists upcoming SGX dividends by pay date, so you can see exactly when each payout lands.' },
     { q: "What's the difference between the ex-date and the payment date?", a: 'The ex-date is the cut-off to qualify — you must own the shares before it. The payment (pay) date is when the money actually reaches your account, a few weeks later. This page is ordered by pay date; the ex-date view is on the dividend calendar.' },
@@ -1859,15 +1870,21 @@ function payoutDatesPage(upcoming) {
   </section>
   <div class="search" id="alltop" style="margin-top:14px">${SEARCH_IC}<input id="q" type="text" autocomplete="off" placeholder="Find a stock's payout date…"></div>
   <details class="exhelp"><summary>What's a pay date?</summary><p>The <b>payment date</b> is when a dividend is actually credited to your account &mdash; usually a few weeks after the ex-date. You qualify by owning the shares before the <b>ex-date</b>; you don't need to still hold them on the pay date. Looking for the cut-off to qualify? See the <a href="/dividend-calendar/">ex-dividend calendar</a>.</p></details>
-${groupsHTML}
+${stripHTML}
+${viewsHTML}
   <div class="calnone" id="none">No upcoming payout matches that.</div>
   <p class="metaline" style="font-size:12px;margin-top:22px">Pay dates &amp; amounts from SGX filings; <b>scrip</b> = a reinvestment-option distribution (cash amount not in the free feed).</p>
   ${faqHTML}
   ${jsonLd}`;
   const script = `<script>
-var q=document.getElementById('q'),groups=[].slice.call(document.querySelectorAll('.daygrp')),none=document.getElementById('none');
-q.addEventListener('input',function(){var v=q.value.trim().toLowerCase(),shown=0;
- groups.forEach(function(g){var any=false;[].slice.call(g.querySelectorAll('.erow')).forEach(function(r){var ok=!v||r.dataset.s.indexOf(v)>=0;r.style.display=ok?'':'none';if(ok)any=true;});g.style.display=any?'':'none';if(any)shown++;});
+var q=document.getElementById('q'),chips=[].slice.call(document.querySelectorAll('#strip .datechip')),views=[].slice.call(document.querySelectorAll('.dayview')),none=document.getElementById('none');
+function showDate(d){chips.forEach(function(c){c.classList.toggle('on',c.dataset.d===d);});views.forEach(function(v){v.classList.toggle('hide',d!=='all'&&v.dataset.v!==d);});none.style.display='none';}
+function clearRows(){views.forEach(function(v){[].slice.call(v.querySelectorAll('.erow')).forEach(function(r){r.style.display='';});});}
+chips.forEach(function(c){c.addEventListener('click',function(){q.value='';clearRows();showDate(c.dataset.d);});});
+q.addEventListener('input',function(){var v=q.value.trim().toLowerCase();
+ if(!v){clearRows();showDate('0');return;}
+ chips.forEach(function(c){c.classList.remove('on');});var shown=0;
+ views.forEach(function(vw){var any=false;[].slice.call(vw.querySelectorAll('.erow')).forEach(function(r){var ok=r.dataset.s.indexOf(v)>=0;r.style.display=ok?'':'none';if(ok)any=true;});vw.classList.toggle('hide',!any);if(any)shown++;});
  none.style.display=shown?'none':'block';});
 </script>`;
   return shell(`Singapore Dividend Payment Dates — When SGX Dividends Are Paid | StockKaki`,
