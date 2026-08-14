@@ -2811,6 +2811,39 @@ const GUIDES = [
       { q: `Is there capital-gains tax in Singapore?`, a: `No. Singapore does not impose a capital-gains tax, so profits from selling shares are generally not taxable for individual investors.` },
     ],
   },
+  {
+    slug: 'what-is-a-special-dividend',
+    title: `What Is a Special Dividend? (Singapore Guide) | StockKaki`,
+    desc: `A special dividend is a one-off bonus payout on top of a company's regular dividend. Why companies pay them, how they inflate the yield, and how ex-dates and tax work in Singapore.`,
+    h1: `What is a special dividend?`,
+    blurb: `A one-off bonus on top of the regular dividend — why companies pay them, and why the yield it creates isn't repeatable.`,
+    body: `<p>A <strong>special dividend</strong> is a one-off payout a company makes <em>on top of</em> its usual dividend &mdash; a bonus, not part of the regular schedule. It's the company's way of saying: "we've got extra cash this year, and we'd rather hand it to shareholders than sit on it."</p>
+<h2>Why a company pays one</h2>
+<p>It almost always comes down to a pile of cash the company didn't expect to be holding. The usual reasons:</p>
+<ul>
+<li><strong>It sold something big</strong> &mdash; a building, a subsidiary, or a stake in another company. Rather than let the proceeds sit idle, it returns part of them to shareholders.</li>
+<li><strong>An unusually strong year</strong> &mdash; a bumper profit, sometimes from a one-off event, leaves more cash than the regular dividend needs.</li>
+<li><strong>Surplus reserves</strong> &mdash; the company is holding more cash than it has good uses for, so it gives some back.</li>
+</ul>
+<p>The key word is <strong>one-off</strong>. A special dividend is not a promise to keep paying at that level &mdash; the next year it usually drops back to just the regular dividend.</p>
+<h2>How it shows up in the yield (watch this)</h2>
+<p>Because a special is extra cash, it inflates the <a href="/guides/how-is-dividend-yield-calculated/">dividend yield</a> for the year it's paid. A stock that normally yields 4% might flash 7% in a year it pays a special &mdash; but that 7% isn't repeatable. Buy expecting 7% every year and you'll be disappointed when it settles back to 4%.</p>
+<p>This is one of the classic reasons a trailing yield can look higher than the "real" ongoing yield. StockKaki shows the trailing 12-month figure, so when you spot an unusually high number, it's worth checking whether a one-off special is behind it.</p>
+<h2>Do the ex-date and tax rules work the same?</h2>
+<p>Yes. A special dividend has an <a href="/guides/what-is-an-ex-dividend-date/">ex-dividend date</a> just like a regular one &mdash; you must own the shares before that date to receive it. And in Singapore, a special dividend from an SGX-listed company is <a href="/guides/are-dividends-taxed-in-singapore/">tax-free</a> in your hands, exactly like the ordinary dividend. Upcoming specials show up on the <a href="/dividend-calendar/">dividend calendar</a> alongside regular payouts.</p>
+<h2>Is a special dividend a good thing?</h2>
+<p>Mostly, yes &mdash; it's real cash in your pocket, and it often signals a company being disciplined with a windfall rather than overpaying for a bad acquisition. But two cautions:</p>
+<ul>
+<li><strong>Don't buy a stock just for a rumoured special.</strong> The share price usually drops by roughly the payout on the ex-date (same as any dividend), so "buy before, sell after" rarely wins once you count trading costs.</li>
+<li><strong>Ask why they have spare cash.</strong> Sometimes a big special means the company simply can't find a good way to grow &mdash; fine for an income investor, but worth knowing.</li>
+</ul>
+<p>Treat a special as a welcome bonus on a stock you'd want to own anyway &mdash; not a reason on its own. You can see every SGX payer's full history, specials included, on the <a href="/dividends/">dividend stocks</a> page.</p>`,
+    faqs: [
+      { q: `What is the difference between a special dividend and a regular dividend?`, a: `A regular dividend is paid on a recurring schedule (often twice a year) and is expected to continue. A special dividend is a one-off bonus on top of that — usually funded by a windfall like an asset sale — and is not expected to repeat the following year.` },
+      { q: `Do I pay tax on a special dividend in Singapore?`, a: `No. A special dividend from an SGX-listed Singapore company is tax-free for individual investors, exactly like an ordinary dividend, under Singapore's one-tier system. There is nothing to declare.` },
+      { q: `Does the share price drop after a special dividend?`, a: `Yes. On the ex-dividend date the share price typically falls by roughly the amount of the payout — the same mechanic as a regular dividend. It's an adjustment, not a loss, because the cash is being paid out to shareholders.` },
+    ],
+  },
 ];
 function guidePage(g) {
   const faqHTML = (g.faqs && g.faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${g.faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
@@ -2837,6 +2870,7 @@ function guidePage(g) {
     'how-to-buy-dividend-stocks-in-singapore': { href:'/dividends/', h:'Browse the best SGX dividend stocks' },
     'how-to-buy-etf-in-singapore': { href:'/etfs/', h:'Browse Singapore ETFs by yield' },
     'are-dividends-taxed-in-singapore': { href:'/dividends/', h:'Find tax-free SGX dividend stocks' },
+    'what-is-a-special-dividend': { href:'/dividend-calendar/', h:'See upcoming dividends and ex-dates' },
     'how-to-read-fixed-deposit-rates-singapore': { href:'/fixed-deposits/', h:'Compare the latest fixed deposit rates' },
     'where-to-park-cash-singapore': { href:'/savings/', h:'See where your cash earns the most' },
     'singapore-savings-bonds-vs-t-bills': { href:'/ssb/', h:"Check this month's SSB rate" },
@@ -2868,6 +2902,7 @@ function guidesIndexPage(guides) {
     'what-is-an-ex-dividend-date': 'Dividends',
     'how-to-buy-dividend-stocks-in-singapore': 'Dividends',
     'are-dividends-taxed-in-singapore': 'Dividends',
+    'what-is-a-special-dividend': 'Dividends',
     'how-to-buy-etf-in-singapore': 'REITs & ETFs',
     'singapore-reits-explained': 'REITs & ETFs',
   };
