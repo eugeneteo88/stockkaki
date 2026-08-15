@@ -2932,6 +2932,44 @@ const GUIDES = [
       { q: `Is the iEdge S-REIT Leaders ETF better than buying individual REITs?`, a: `Neither is automatically better. The ETF is hands-off and diversified, with a 10% cap per REIT spreading your risk — but you pay a small fund fee and can't avoid the weaker names. Picking your own lets you concentrate on the REITs you rate most, at the cost of more research and more risk if you're wrong.` },
     ],
   },
+  {
+    slug: 'what-are-blue-chip-stocks-singapore',
+    title: `What Are Blue-Chip Stocks in Singapore? (STI Explained) | StockKaki`,
+    desc: `Blue-chip stocks are Singapore's biggest, most established companies — usually the 30 in the Straits Times Index. What makes a stock "blue chip", why people buy them, and how to buy them.`,
+    h1: `What are blue-chip stocks in Singapore?`,
+    blurb: `Singapore's biggest, steadiest companies — what makes a stock "blue chip", and how to own them.`,
+    hero: { stat: "30", line: "companies make up the STI &mdash; Singapore&rsquo;s blue chips.", neu: true },
+    close: { h: "The bottom line", p: "Blue chips are the steady, income core of most Singapore portfolios &mdash; buy them for the long term and the dividends, not for fast growth.", cta: { href: "/blue-chips/", label: "See Singapore&rsquo;s blue-chip stocks &rarr;" } },
+    body: `<p>A <strong>blue-chip stock</strong> is a share in a big, well-established company with a long track record &mdash; the kind of name almost everyone recognises. In Singapore, when people say "blue chips" they usually mean the <strong>30 companies in the Straits Times Index (STI)</strong>: the largest and most heavily traded stocks on the SGX.</p>
+<p>Think of the three local banks &mdash; <a href="/stock/dbs-group-holdings-ltd/">DBS</a>, OCBC and UOB &mdash; alongside names like Singtel, ST Engineering, Singapore Exchange, CapitaLand and the big Mapletree and CapitaLand REITs. These are the household names that form the backbone of the local market. You can see them all on the <a href="/blue-chips/">Singapore blue-chip stocks page</a>.</p>
+<h2>What makes a stock &ldquo;blue chip&rdquo;?</h2>
+<p>There's no official certificate, but blue chips tend to share a few things:</p>
+<ul>
+<li><strong>Large and established</strong> &mdash; big market value, often decades of history. Not a startup or a story stock.</li>
+<li><strong>Financially solid</strong> &mdash; steady earnings and a strong balance sheet, so they ride out a downturn better than smaller companies.</li>
+<li><strong>Reliable dividends</strong> &mdash; most pay a consistent dividend year after year, which is a big part of why locals hold them.</li>
+<li><strong>Heavily traded</strong> &mdash; plenty of buyers and sellers, so you can get in and out easily without moving the price.</li>
+</ul>
+<h2>Why people buy blue chips</h2>
+<p>They're the &ldquo;sleep well at night&rdquo; part of most Singapore portfolios. You're not buying them to double your money overnight &mdash; you're buying stability and a steady stream of income. The local banks in particular have been dependable dividend payers, and because <a href="/guides/are-dividends-taxed-in-singapore/">dividends are tax-free in Singapore</a>, the yield you see is close to the yield you keep.</p>
+<p>They also tend to fall less than smaller stocks when markets get rough &mdash; not immune, just steadier. For a lot of people, a core of blue chips plus some <a href="/reits/">REITs</a> is the whole plan.</p>
+<h2>The catch &mdash; blue chip doesn&rsquo;t mean bulletproof</h2>
+<p>Two things worth remembering. First, <strong>blue chips can still fall</strong>, sometimes hard &mdash; being big and famous didn't protect plenty of former blue chips around the world. Second, they usually <strong>grow slowly</strong>: you're trading away some upside for stability, so if you're chasing fast growth, blue chips alone won't get you there. A company can also drop out of the STI if it shrinks &mdash; the index is reviewed regularly and the line-up changes over the years.</p>
+<div class="g-note"><b>Reality check &rarr;</b> &ldquo;Blue chip&rdquo; isn&rsquo;t a guarantee &mdash; these can still fall, they grow slowly, and a name can drop out of the STI if it shrinks. You&rsquo;re buying <b>steadiness and income</b>, not fast growth.</div>
+<h2>How to buy blue-chip stocks in Singapore</h2>
+<p>Two ways:</p>
+<ul>
+<li><strong>Buy them individually</strong> through any broker &mdash; pick the specific names you want (say, the three banks for dividends). Here's <a href="/guides/how-to-buy-dividend-stocks-in-singapore/">how to buy shares on the SGX</a>, step by step.</li>
+<li><strong>Buy all 30 at once with an STI ETF</strong> &mdash; a single fund (the SPDR STI ETF, ES3, or Nikko AM STI ETF, G3B) that holds the whole index in one trade. It's the simplest way to own the blue chips as a group, and it's covered in our <a href="/guides/how-to-buy-etf-in-singapore/">guide to buying ETFs</a>.</li>
+</ul>
+<p>Whichever you choose, blue chips are usually held for the <strong>long term</strong> &mdash; you're collecting dividends and letting them compound, not trading in and out. Compare the current blue chips and their yields on the <a href="/blue-chips/">blue-chip stocks page</a>, or see every SGX dividend payer on the <a href="/dividends/">best dividend stocks</a> page.</p>`,
+    faqs: [
+      { q: `What are blue-chip stocks in Singapore?`, a: `Shares in the biggest, most established SGX-listed companies — usually the 30 in the Straits Times Index (STI). That includes the three local banks (DBS, OCBC, UOB), Singtel, ST Engineering and the large REITs. They're known for stability and steady, reliable dividends.` },
+      { q: `What is the Straits Times Index (STI)?`, a: `It's the main benchmark for the Singapore stock market — the 30 largest and most heavily traded SGX-listed companies. It's the usual shorthand for "Singapore blue chips," and you can buy the whole index in one trade through an STI ETF.` },
+      { q: `Are blue-chip stocks a safe investment?`, a: `They're safer than small, speculative stocks — large, financially solid and steadier in a downturn — but not risk-free. Blue chips can still fall, they usually grow slowly, and a company can drop out of the index if it shrinks. They suit long-term, income-focused investors more than those chasing fast growth.` },
+      { q: `How do I buy blue-chip stocks in Singapore?`, a: `Either individually through a broker, or all 30 at once through an STI ETF (ES3 or G3B). Many investors hold a core of blue chips for the long term and collect the dividends, which are tax-free in Singapore.` },
+    ],
+  },
 ];
 function guidePage(g) {
   const faqHTML = (g.faqs && g.faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${g.faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
@@ -2960,6 +2998,7 @@ function guidePage(g) {
     'are-dividends-taxed-in-singapore': { href:'/dividends/', h:'Find tax-free SGX dividend stocks' },
     'what-is-a-special-dividend': { href:'/dividend-calendar/', h:'See upcoming dividends and ex-dates' },
     'iedge-s-reit-leaders-index': { href:'/reits/', h:'Compare every S-REIT by distribution yield' },
+    'what-are-blue-chip-stocks-singapore': { href:'/blue-chips/', h:"See Singapore's blue-chip stocks and their yields" },
     'how-to-read-fixed-deposit-rates-singapore': { href:'/fixed-deposits/', h:'Compare the latest fixed deposit rates' },
     'where-to-park-cash-singapore': { href:'/savings/', h:'See where your cash earns the most' },
     'singapore-savings-bonds-vs-t-bills': { href:'/ssb/', h:"Check this month's SSB rate" },
@@ -2998,6 +3037,7 @@ function guidesIndexPage(guides) {
     'are-dividends-taxed-in-singapore': 'Dividends',
     'what-is-a-special-dividend': 'Dividends',
     'iedge-s-reit-leaders-index': 'REITs & ETFs',
+    'what-are-blue-chip-stocks-singapore': 'Dividends',
     'how-to-buy-etf-in-singapore': 'REITs & ETFs',
     'singapore-reits-explained': 'REITs & ETFs',
   };
