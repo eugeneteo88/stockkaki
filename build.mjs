@@ -853,8 +853,8 @@ const STYLE = `
   .kbox .kv{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;margin-top:3px} .kbox .kv.acc{color:var(--accent-dk)}
   /* --- stock detail redesign: full-width tiles + main/sidebar --- */
   .st-kpi{grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:12px;border:0;border-radius:0;overflow:visible}
-  .st-kpi .kbox{border:1px solid var(--line);border-radius:12px;padding:15px 17px}
-  .st-kpi .kv{font-size:20px}
+  .st-kpi .kbox{border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--card-sh);transition:border-color .15s} .st-kpi .kbox:hover{border-color:var(--accent)}
+  .st-kpi .kv{font-size:29px;font-weight:600;margin-top:6px} @media(max-width:560px){.st-kpi .kv{font-size:24px}}
   @media(max-width:640px){ .st-kpi{grid-template-columns:1fr 1fr} }
   .st-cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:34px;align-items:start;margin-top:22px}
   .st-main{min-width:0}
