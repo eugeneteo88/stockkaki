@@ -2560,6 +2560,7 @@ const GUIDES = [
 <h2>Headline rate vs effective rate</h2>
 <p>This is the big one. Many promotions advertise an "up to" rate that's higher than what you'll really earn. It usually means the rate <strong>steps up</strong> over the term &mdash; lower at the start, reaching the headline only near the end. Average it across the whole period and you get the <strong>effective rate</strong>, which is what you actually take home.</p>
 <p>For example, a bank might headline <strong>1.65%</strong> for 12 months, but the effective rate works out to <strong>1.50%</strong>. On our <a href="/fixed-deposits/">fixed deposit comparison</a> we rank by the effective rate, so every number is what you'd genuinely get.</p>
+<div class="g-eg">Ad shouts <b>1.65%</b> for 12 months &rarr; because the rate steps up, the <b>effective</b> rate is nearer <b>1.50%</b>. That's what actually lands in your pocket.</div>
 <h2>Fresh funds only</h2>
 <p>Most of the best rates apply only to <strong>new money</strong> brought into the bank &mdash; cash already sitting in an account with them usually won't qualify. If you're moving an existing deposit around, check whether it counts as "fresh funds" first.</p>
 <h2>Tenure &mdash; how long you lock it up</h2>
@@ -2667,6 +2668,7 @@ const GUIDES = [
 </ul>
 <h2>When to choose which</h2>
 <p>Pick an <strong>SSB</strong> if you value flexibility — you are parking money you might need back at short notice, or you want a long-term home for cash you can top up and exit freely. Pick a <strong>T-bill</strong> if you have a fixed sum you will not need for 6–12 months and want to lock in a known return, or if you want to put CPF-OA funds to work.</p>
+<div class="g-note"><b>CPF tip &rarr;</b> T-bills can be bought with <b>CPF-OA/SA</b> funds &mdash; a popular way to earn a fixed return on idle CPF savings. SSBs are cash or SRS only. Just weigh it against the CPF interest you'd give up.</div>
 <p>Rates on both move with the market. You can see the latest SSB rates, the full step-up schedule and a returns calculator on the <a href="/ssb/">Singapore Savings Bonds page</a>, which also projects the likely rate of the next issue.</p>
 <h2>What they have in common</h2>
 <p>Both are backed by the AAA-rated Singapore Government, both are bought through DBS/POSB, OCBC or UOB (internet banking or ATM), and the return on either is <strong>not taxed</strong> in Singapore. They are tools for the safe part of a portfolio — not a substitute for the growth you would seek from <a href="/dividends/">dividend stocks</a> or <a href="/reits/">REITs</a>.</p>`,
@@ -2760,6 +2762,7 @@ const GUIDES = [
 <p>To buy a lump sum instead, search the ETF in your broker's app, choose <strong>buy</strong>, and pick a <strong>market order</strong> (fills immediately) or a <strong>limit order</strong> (fills only at your price or better). SGX ETFs trade in board lots, often 100 or 10 units.</p>
 <h2>A note on withholding tax (this can save you money)</h2>
 <p>For ETFs that hold <em>US</em> shares, where the fund is legally based matters. A <strong>US-domiciled</strong> ETF has <strong>30%</strong> tax withheld on its US dividends for Singapore investors; an <strong>Ireland-domiciled</strong> (UCITS) ETF holding the same shares is taxed at only <strong>15%</strong>. For long-term investors that gap compounds, so many Singaporeans prefer Ireland-domiciled ETFs — these usually have <strong>"UCITS"</strong> in the name and trade on the London Stock Exchange (for example CSPX or VUAA for the S&amp;P 500). There is a second reason too: US-domiciled ETFs can expose foreign investors to <strong>US estate tax</strong> on holdings above about US$60,000, which Ireland-domiciled ETFs avoid. Singapore-listed ETFs like the STI ETF are not affected by either, and Singapore itself charges <strong>no tax on the dividends or gains</strong> you receive.</p>
+<div class="g-eg">Same S&amp;P 500, different home &rarr; a <b>US-domiciled</b> ETF loses <b>30%</b> of its US dividends to withholding; an <b>Ireland-domiciled</b> (UCITS) one loses only <b>15%</b>. Over the years, that gap compounds.</div>
 <p>Once you own the ETF, distributions (if it is a distributing ETF) are paid automatically; accumulating ETFs reinvest internally instead. That is all there is to it.</p>`,
     faqs: [
       { q: `What is the best ETF for beginners in Singapore?`, a: `A common starting point is an STI ETF (ES3 or G3B) for instant exposure to Singapore's 30 blue chips, or a global/S&P 500 ETF for worldwide growth. Beginners often build the position gradually through a monthly Regular Savings Plan rather than one lump sum.` },
@@ -2779,6 +2782,7 @@ const GUIDES = [
     body: `<p>A <strong>REIT</strong> — Real Estate Investment Trust — owns a portfolio of income-producing property (malls, offices, warehouses, data centres) and passes the rental income to unitholders. Singapore's REITs, or <strong>S-REITs</strong>, are one of the most popular ways locals earn passive income.</p>
 <h2>Why S-REITs yield more than ordinary stocks</h2>
 <p>To keep their tax-transparent status, S-REITs must distribute <strong>at least 90% of their taxable income</strong> to unitholders. That rule forces a high payout, which is why REIT distribution yields — often <strong>5–7%</strong> — tend to be higher than the dividend yields of ordinary shares. For individual investors, those distributions are also <strong>tax-exempt</strong>.</p>
+<div class="g-eg">The rule: an S-REIT must pay out <b>at least 90%</b> of its taxable income to stay tax-transparent &rarr; which is why the yields run <b>5&ndash;7%</b>, higher than ordinary shares.</div>
 <h2>The main types</h2>
 <p>S-REITs are usually grouped by the property they hold: <strong>retail</strong> (malls), <strong>industrial &amp; logistics</strong> (warehouses, business parks), <strong>office</strong>, <strong>hospitality</strong> (hotels, serviced apartments), <strong>data centre</strong>, <strong>healthcare</strong>, and <strong>diversified</strong>. Each behaves a little differently — hospitality is more cyclical, while data centres and logistics have been structural growth areas.</p>
 <h2>The numbers to check before you buy</h2>
