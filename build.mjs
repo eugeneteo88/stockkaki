@@ -1096,6 +1096,9 @@ function homepage(listed, index, hub, upcoming) {
     tileSpan('/savings/', 'Compare all savings rates side by side'),
   ].join('\n');
   const trending = (hub.trending||[]).slice(0,8).map(trCard).join('\n');
+  // Most-searched stocks — internal links that funnel equity to the pages people actually search for.
+  const MOST_SEARCHED = [['Jardine Matheson','jardine-matheson-holdings'],['DBS','dbs-group-holdings-ltd'],['OCBC','oversea-chinese-banking-corp'],['UOB','united-overseas-bank-ltd'],['SATS','sats-ltd'],['Sembcorp','sembcorp-industries-ltd'],['ST Engineering','singapore-tech-engineering-ltd'],['Singtel','singtel'],['CapLand Ascendas REIT','capitaland-ascendas-reit'],['Genting','genting-singapore-ltd']];
+  const searchedChips = MOST_SEARCHED.map(([n,s]) => `<a class="tchip" href="/stock/${s}/">${n}</a>`).join('');
   const body = `  <section class="hub-hero">
     <span class="kicker">Singapore dividends · updated daily</span>
     <h1>Every Singapore stock, one clean search.</h1>
@@ -1116,6 +1119,8 @@ ${grpCash}
   <div class="tilegrid">
 ${grpTools}
   </div>
+  <div class="seclabel">Most searched</div>
+  <div class="trend" style="margin-top:0;margin-bottom:2px">${searchedChips}</div>
   <div class="hub-h">Trending stocks <a href="/trending/">See top ${hub.trendingCount||30} →</a></div>
   <div class="trgrid">
 ${trending}
