@@ -498,16 +498,28 @@ const STYLE = `
   .guide h1.serif{font-size:34px;line-height:1.14;max-width:none;margin:0 0 4px} @media(min-width:820px){ .guide h1.serif{font-size:40px} }
   .guide .prose{max-width:none;margin-top:26px}
   .guide .prose>p:first-of-type{font-size:19px;line-height:1.62;color:#2b323d}
-  .guide .prose h2{margin:46px 0 14px;padding-left:16px;position:relative}
-  .guide .prose h2::before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;width:4px;border-radius:3px;background:var(--accent)}
+  .guide .prose h2{margin:46px 0 12px}
   .guide .prose ul{list-style:none;margin-left:0}
-  .guide .prose ul li{position:relative;padding-left:28px;margin:12px 0}
-  .guide .prose ul li::before{content:"\\2192";position:absolute;left:2px;top:0;color:var(--accent);font-weight:700}
+  .guide .prose ul li{position:relative;padding-left:24px;margin:11px 0}
+  .guide .prose ul li::before{content:"";position:absolute;left:2px;top:9px;width:7px;height:7px;border-radius:2px;background:var(--accent)}
   .gnext{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:40px 0 6px;text-decoration:none;color:inherit;transition:border-color .2s,box-shadow .2s}
   .gnext:hover{border-color:var(--accent);box-shadow:0 3px 12px rgba(38,71,221,.08)}
   .gnext .t{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .gnext .h{font-family:'IBM Plex Serif',serif;font-weight:600;font-size:17px;margin-top:3px;color:var(--ink)}
   .gnext .go{color:var(--accent);font-size:22px;flex:0 0 auto}
+  /* --- rich guide elements: hero stat, example/note callouts, dark closing card --- */
+  .g-hero{display:flex;align-items:center;gap:26px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 28px;margin:26px 0 10px;box-shadow:var(--card-sh)}
+  .g-hero .n{font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:600;line-height:1;letter-spacing:-.03em;color:var(--up)}
+  .g-hero .n.neu{color:var(--accent)}
+  .g-hero .say{font-size:15px;color:var(--muted);max-width:340px} .g-hero .say b{color:var(--ink);font-weight:600}
+  @media(max-width:819px){ .g-hero{gap:14px;padding:20px 22px} .g-hero .n{font-size:44px} }
+  .prose .g-eg{background:#F1F3F9;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 18px;font-family:'JetBrains Mono',monospace;font-size:13.5px;line-height:1.5;color:#2b323d} .prose .g-eg b{color:var(--ink)}
+  .prose .g-note{background:var(--accent-soft);border-radius:12px;padding:16px 18px;margin:22px 0;font-size:14.5px;line-height:1.6;color:#243} .prose .g-note b{color:var(--accent-dk)}
+  .g-close{background:#0F1319;border-radius:16px;padding:28px 30px 26px;margin:46px 0 0;color:#E8EAF0}
+  .g-close h3{font-family:'IBM Plex Serif',serif;font-weight:600;font-size:21px;margin:0 0 9px;color:#fff}
+  .g-close p{color:#AAB1C2;font-size:15px;line-height:1.6;margin:0 0 20px}
+  .g-close a.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:600;font-size:14.5px;padding:11px 22px;border-radius:10px;text-decoration:none;border:0}
+  .g-close a.cta:hover{background:var(--accent-dk)}
   /* guides index: left-aligned to the nav/logo, roomier cards */
   .guideindex{max-width:none}
   .gcard{padding:20px 22px;border-radius:12px;transition:border-color .2s,box-shadow .2s} .gcard:hover{box-shadow:0 3px 12px rgba(38,71,221,.07)}
@@ -2775,33 +2787,42 @@ const GUIDES = [
     desc: `Are dividends taxable in Singapore? The short answer is no — Singapore does not tax dividends from local companies, and there's no capital-gains tax. Plus REITs, US withholding (30%) and the Irish-domiciled ETF fix.`,
     h1: `Are dividends taxed in Singapore?`,
     blurb: `The short answer is no — but there are a few nuances worth knowing (REITs, US stocks, ETFs, and when it applies).`,
-    body: `<p><strong>For dividends from Singapore-resident companies, the answer is no — dividend income is tax-free in your hands.</strong> There is also no capital-gains tax, so profits when you sell are yours to keep. This is a big part of why Singapore is such a friendly place for income investors — the yield you see is very close to the yield you actually keep.</p>
-<div class="ltable" style="margin:20px 0">
-<table>
-<thead><tr><th>What you hold</th><th class="r">Tax on the dividend</th></tr></thead>
-<tbody>
-<tr><td>SGX-listed Singapore company (e.g. DBS, Singtel)</td><td class="r"><strong>0%</strong> &mdash; tax-free</td></tr>
-<tr><td>Singapore REITs (S-REITs), held personally</td><td class="r"><strong>0%</strong> &mdash; tax-exempt</td></tr>
-<tr><td>US-listed shares (e.g. Apple, Coca-Cola)</td><td class="r">30% withheld at source</td></tr>
-<tr><td>US shares via an Irish-domiciled ETF</td><td class="r">~15% at fund level</td></tr>
-<tr><td>Capital gains (selling any of the above)</td><td class="r"><strong>0%</strong> &mdash; no CGT</td></tr>
-</tbody>
-</table>
-</div>
-<h2>Why Singapore dividends are not taxed</h2>
-<p>Singapore uses a <strong>one-tier corporate tax system</strong>. Companies pay tax on their profits, and when those after-tax profits are paid out as dividends, they are <em>not</em> taxed again at the shareholder level. So a dividend from an SGX-listed Singapore company arrives with no further tax to pay, and nothing to declare on your income tax return.</p>
-<h2>Do you need to declare dividends in Singapore?</h2>
-<p>For tax-exempt Singapore dividends &mdash; no. You do not declare them and you do not pay tax on them. IRAS lists a few narrow exceptions (such as certain co-operatives and partnerships), but a typical investor buying SGX shares has nothing to file.</p>
-<h2>What about REIT distributions?</h2>
-<p>Distributions from <a href="/reits/">Singapore REITs</a> are generally <strong>tax-exempt for individuals</strong> holding units in their personal capacity. Different rules can apply if you hold them through a business or as a trading activity &mdash; but for ordinary income investors, S-REIT distributions land tax-free, part of what makes them so popular for passive income.</p>
-<h2>The nuance: foreign (US) stocks</h2>
-<p>The tax-free treatment applies to <em>Singapore</em> dividends. If you own foreign shares, the <strong>source country may withhold tax</strong> before the dividend reaches you. The big one: US-listed stocks withhold <strong>30%</strong> on dividends for Singapore residents, because there is no US–Singapore tax treaty to reduce it. Singapore does not tax it again &mdash; but that 30% is already gone at source.</p>
-<h2>The 15% fix: Irish-domiciled ETFs</h2>
-<p>Here is the part many Singapore investors miss. If you get your US exposure through an <strong>Irish-domiciled ETF</strong> (for example an S&amp;P 500 ETF like CSPX rather than a US-listed one like VOO), the fund only suffers <strong>15%</strong> US withholding at the fund level, thanks to the US–Ireland tax treaty &mdash; and Ireland does not withhold again on the way to you. Same underlying US companies, roughly half the dividend leakage. It is the standard reason SG investors prefer Irish-domiciled ETFs for US and global exposure. (Browse <a href="/etfs/">Singapore-listed ETFs</a> by yield.)</p>
-<h2>When could Singapore tax apply?</h2>
-<p>For ordinary investors buying and holding SGX stocks, dividends and capital gains are not taxed. Tax can enter the picture in narrower cases — for instance if IRAS assesses you as <em>trading</em> shares as a business rather than investing — but that is the exception, not the rule for a typical dividend investor.</p>
-<p>Because the yield you see is close to the yield you keep, comparing SGX payers is refreshingly simple — start with the <a href="/dividends/">best dividend stocks</a> page.</p>
-<p style="font-size:14px;color:var(--muted)"><em>This is general information, not tax advice, and tax rules can change. For your own situation, check <a href="https://www.iras.gov.sg/" target="_blank" rel="noopener nofollow">IRAS</a> or a qualified tax professional.</em></p>`,
+    hero: { stat: `$0`, line: `tax on your Singapore dividends. <b>Nothing to declare, nothing to pay.</b>` },
+    close: { h: `Bottom line`, p: `If you're a normal Singapore investor, your dividends are tax-free and there's nothing to declare — so spend your energy on the yield and the payout dates, not the taxman.`, cta: { href: `/dividends/`, label: `See which SG stocks are paying &rarr;` } },
+    body: `<p>Short answer: <strong>for almost everyone, no.</strong> If you're a regular investor holding Singapore shares or REITs, your dividends land in your account tax-free &mdash; and you don't even have to put them in your tax return.</p>
+<div class="seclabel">The short version</div>
+<ul>
+<li><strong>Singapore stocks</strong> (DBS, Singtel, ST Engineering&hellip;) &mdash; dividends are tax-free.</li>
+<li><strong>Singapore REITs</strong> &mdash; the payouts you receive are also tax-free, for you.</li>
+<li><strong>Foreign stocks</strong> (US, HK, China&hellip;) &mdash; Singapore won't tax them. But the country the company sits in usually takes a cut <em>before</em> the money reaches you.</li>
+<li><strong>Your tax return</strong> &mdash; there's no box to tick. You don't declare any of this.</li>
+</ul>
+<h2>Why Singapore dividends are tax-free</h2>
+<p>Because the company already paid the tax. When a Singapore company earns profit, it pays 17% corporate tax on it. The dividend it pays you comes out of what's left &mdash; money that's <em>already been taxed once</em>. Singapore doesn't tax the same dollar twice, so by the time it reaches you, the taxman is done.</p>
+<p>That's what people mean by the <strong>&ldquo;one-tier&rdquo; system</strong> &mdash; and it's the reason your dividend is yours to keep. <a href="https://www.iras.gov.sg/taxes/individual-income-tax/basics-of-individual-income-tax/what-is-taxable-what-is-not/dividends" target="_blank" rel="noopener nofollow">IRAS spells it out here</a> if you want the official version.</p>
+<div class="g-eg">Say <b>DBS</b> pays you a <b>$500</b> dividend. You keep <b>$500</b> &mdash; no tax, no form, no follow-up.</div>
+<h2>REITs &mdash; same deal for you</h2>
+<p>The distributions you get from a <a href="/reits/">Singapore REIT</a> (Mapletree, CapitaLand Ascendas, Frasers&hellip;) are <strong>not taxable in your hands</strong> as a normal investor. The REIT sorts out the tax higher up the chain, so the yield you see is &mdash; tax-wise &mdash; the yield you keep.</p>
+<p>This is a big part of why REITs are so popular here with everyday investors. A 6% yield is actually a 6% yield.</p>
+<h2>Foreign stocks &mdash; here's the catch</h2>
+<p>Singapore doesn't tax your foreign dividends as an individual. But most countries skim a <strong>withholding tax</strong> at the source, before the money ever leaves for your account:</p>
+<ul>
+<li><strong>US stocks</strong> &mdash; 30% is withheld on dividends. There's no US&ndash;Singapore tax treaty to lower it, so a US$100 dividend arrives as about <strong>US$70</strong>.</li>
+<li><strong>Other markets vary</strong> &mdash; Hong Kong takes nothing on most dividends, China around 10%, Malaysia nothing.</li>
+</ul>
+<p>The important bit: this tax isn't Singapore's, it's taken overseas, and you <strong>can't claim it back</strong> here. It's just the cost of owning the foreign share.</p>
+<div class="g-note"><b>Worth knowing &rarr;</b> This 30% US bite is exactly why some Singapore investors buy <strong>Irish-domiciled ETFs</strong> for US exposure &mdash; the withholding drops to 15%. That's a whole guide on its own. <a href="/etfs/">Browse SGX-listed ETFs &rarr;</a></div>
+<h2>Do I need to declare my dividends?</h2>
+<p>No. Tax-free dividends don't go into your income tax form, and IRAS isn't waiting for them. If you ever see dividends listed on your Notice of Assessment, they're there for your information &mdash; not because you owe anything.</p>
+<details class="dr"><summary><div class="ds"><div class="dt">The rare cases where dividends <em>are</em> taxed</div><div class="dv">Two edge cases &mdash; neither hits a normal investor</div></div><span class="chev">&rsaquo;</span></summary><div class="dr-body">
+<p>Two edge cases, and neither applies to a normal buy-and-hold investor:</p>
+<ul>
+<li>You <strong>trade shares as a business</strong> &mdash; dealing in shares is your actual trade, not investing on the side. Then it's business income.</li>
+<li>You receive the dividend <strong>through a partnership</strong> in Singapore.</li>
+</ul>
+<p>If you're just buying shares and REITs in your own name and holding them, you're in the tax-free 99%.</p>
+</div></details>
+<p style="font-size:13.5px;color:var(--muted);margin-top:28px"><em>This is a plain-English guide, not tax advice &mdash; the edge cases have their own rules. For your own situation, check <a href="https://www.iras.gov.sg/" target="_blank" rel="noopener nofollow">IRAS</a> or a tax professional. Figures current as of 2026.</em></p>`,
     faqs: [
       { q: `Is dividend income taxable in Singapore?`, a: `No. Under Singapore's one-tier corporate tax system, dividends from SGX-listed Singapore-resident companies are tax-exempt for shareholders, and there is no capital-gains tax. For a typical investor there is nothing to pay and nothing to declare.` },
       { q: `Do I need to declare dividends from Singapore stocks?`, a: `Generally no. Tax-exempt dividends from Singapore-resident companies do not need to be declared on your income tax return. Narrow exceptions exist (for example certain co-operatives), but they don't apply to ordinary SGX shareholders.` },
@@ -2844,6 +2865,43 @@ const GUIDES = [
       { q: `Does the share price drop after a special dividend?`, a: `Yes. On the ex-dividend date the share price typically falls by roughly the amount of the payout — the same mechanic as a regular dividend. It's an adjustment, not a loss, because the cash is being paid out to shareholders.` },
     ],
   },
+  {
+    slug: 'iedge-s-reit-leaders-index',
+    title: `What Is the iEdge S-REIT Leaders Index? (Singapore) | StockKaki`,
+    desc: `The iEdge S-REIT Leaders Index tracks Singapore's biggest, most-traded REITs. What's inside it, how it's built, and the CSOP ETF (SGX: SRT) that buys the whole index in one trade.`,
+    h1: `What is the iEdge S-REIT Leaders Index?`,
+    blurb: `Singapore's benchmark for its biggest, most-traded REITs — what's inside it, and how to buy the whole thing in one trade.`,
+    body: `<p>If you follow Singapore REITs, you'll see the <strong>iEdge S-REIT Leaders Index</strong> come up a lot &mdash; usually as "the benchmark" for the sector. In plain terms, it's a single number that tracks <strong>Singapore's biggest and most actively traded REITs</strong>, so you can see how the leading part of the S-REIT market is doing at a glance.</p>
+<p>It's run by SGX's own index arm, and it's the index behind one of the most popular REIT ETFs on the exchange &mdash; so it's worth understanding even if you never buy it directly.</p>
+<h2>Why &ldquo;Leaders&rdquo;?</h2>
+<p>Singapore has around 40 listed REITs and property trusts. The Leaders index doesn't hold all of them &mdash; it screens for the <strong>largest and most liquid</strong> ones. "Liquid" just means heavily traded, so you can buy and sell without moving the price much. The result is roughly <strong>the top 20-plus S-REITs</strong> &mdash; the household names rather than the tiny, thinly traded ones.</p>
+<p>As of 2026 there are around <strong>22 REITs</strong> in it, including names like CapitaLand Integrated Commercial Trust, CapitaLand Ascendas REIT and Mapletree Logistics Trust. You can see them all, ranked by yield, on the <a href="/reits/">Singapore REITs page</a>.</p>
+<h2>How the index is built</h2>
+<p>A few simple rules keep it sensible:</p>
+<ul>
+<li><strong>Weighted by size</strong> &mdash; bigger REITs count for more, using adjusted free-float market value (the shares actually available to trade).</li>
+<li><strong>A liquidity tilt</strong> &mdash; on top of size, the more heavily traded REITs get a small boost, so the index leans toward the ones you can actually move in and out of.</li>
+<li><strong>Capped at 10%</strong> &mdash; no single REIT can be more than 10% of the index. That stops one giant name from dominating and keeps you diversified.</li>
+<li><strong>Reshuffled twice a year</strong> &mdash; the index is reviewed and rebalanced every <strong>March and September</strong>, so it stays current as REITs grow, shrink, or get added.</li>
+</ul>
+<h2>How to actually invest in it</h2>
+<p>You can't buy an index directly &mdash; but you can buy a fund that copies it. The main one is the <strong>CSOP iEdge S-REIT Leaders Index ETF</strong> (SGX code: <strong>SRT</strong>), which holds the same REITs in the same proportions. Buy one unit and you own a slice of the whole leading S-REIT market in a single trade &mdash; the same way an <a href="/guides/how-to-buy-etf-in-singapore/">STI ETF</a> gives you the blue chips. It trades through any broker, just like a stock.</p>
+<p>Some robo-advisers (such as Syfe's REIT+ portfolio) are also built around this index, if you'd rather have it managed for you.</p>
+<h2>Buy the index, or pick your own REITs?</h2>
+<p>It's the classic trade-off:</p>
+<ul>
+<li><strong>The index (via the ETF)</strong> is hands-off and instantly diversified &mdash; you own the leading REITs across malls, offices, warehouses and data centres in one go, with the 10% cap doing the risk-spreading for you. The trade-off is a small annual fund fee, and you can't avoid the weaker names in the basket.</li>
+<li><strong>Picking your own</strong> lets you concentrate on the REITs you rate most and skip the rest &mdash; but it takes research, and getting it wrong hurts more. Our <a href="/guides/singapore-reits-explained/">guide to how S-REITs work</a> walks through the numbers to check.</li>
+</ul>
+<p>Neither is &ldquo;right&rdquo; &mdash; the ETF is the easy default for broad, low-effort REIT income, while individual picks suit people who want to back specific names. Compare every S-REIT by distribution yield on the <a href="/reits/">Singapore REITs page</a>, or see how the index-tracking ETF stacks up on the <a href="/etfs/">best Singapore ETFs</a> page.</p>
+<p>One more thing worth knowing: whichever route you take, the distributions you receive as an individual investor are <a href="/guides/are-dividends-taxed-in-singapore/">tax-free in Singapore</a> &mdash; so the yield you see is close to the yield you keep.</p>`,
+    faqs: [
+      { q: `What is the iEdge S-REIT Leaders Index?`, a: `It's an index run by SGX that tracks Singapore's largest and most heavily traded REITs — around 22 of them as of 2026. Constituents are weighted by size with a liquidity tilt, each capped at 10%, and the list is rebalanced every March and September. It's the main benchmark for the S-REIT market.` },
+      { q: `How can I invest in the iEdge S-REIT Leaders Index?`, a: `You can't buy an index directly, but you can buy a fund that tracks it. The CSOP iEdge S-REIT Leaders Index ETF (SGX: SRT) holds the same REITs in the same proportions, so one trade gives you the leading S-REITs. Some robo-advisers, such as Syfe's REIT+ portfolio, are also built around this index.` },
+      { q: `How many REITs are in the iEdge S-REIT Leaders Index?`, a: `Around 22 as of 2026 — the biggest, most-traded Singapore REITs. The exact list changes at each March and September rebalance as REITs grow, shrink, or are added.` },
+      { q: `Is the iEdge S-REIT Leaders ETF better than buying individual REITs?`, a: `Neither is automatically better. The ETF is hands-off and diversified, with a 10% cap per REIT spreading your risk — but you pay a small fund fee and can't avoid the weaker names. Picking your own lets you concentrate on the REITs you rate most, at the cost of more research and more risk if you're wrong.` },
+    ],
+  },
 ];
 function guidePage(g) {
   const faqHTML = (g.faqs && g.faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${g.faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
@@ -2871,12 +2929,17 @@ function guidePage(g) {
     'how-to-buy-etf-in-singapore': { href:'/etfs/', h:'Browse Singapore ETFs by yield' },
     'are-dividends-taxed-in-singapore': { href:'/dividends/', h:'Find tax-free SGX dividend stocks' },
     'what-is-a-special-dividend': { href:'/dividend-calendar/', h:'See upcoming dividends and ex-dates' },
+    'iedge-s-reit-leaders-index': { href:'/reits/', h:'Compare every S-REIT by distribution yield' },
     'how-to-read-fixed-deposit-rates-singapore': { href:'/fixed-deposits/', h:'Compare the latest fixed deposit rates' },
     'where-to-park-cash-singapore': { href:'/savings/', h:'See where your cash earns the most' },
     'singapore-savings-bonds-vs-t-bills': { href:'/ssb/', h:"Check this month's SSB rate" },
   };
   const c = CTA[g.slug];
   const ctaCard = c ? `<a class="gnext" href="${c.href}"><div><div class="t">Put it to use</div><div class="h">${c.h}</div></div><span class="go">&rarr;</span></a>` : '';
+  // Optional big hero stat (e.g. "$0" for the tax guide). neu = neutral accent colour instead of green.
+  const heroCard = g.hero ? `<div class="g-hero"><div class="n${g.hero.neu ? ' neu' : ''}">${g.hero.stat}</div><div class="say">${g.hero.line}</div></div>` : '';
+  // Optional dark closing card; when present it replaces the light "Put it to use" cross-link.
+  const closeCard = g.close ? `<div class="g-close"><h3>${g.close.h}</h3><p>${g.close.p}</p>${g.close.cta ? `<a class="cta" href="${g.close.cta.href}">${g.close.cta.label}</a>` : ''}</div>` : '';
   const body = `  <div class="guide">
   <section class="hero" style="padding:26px 0 4px">
     <div class="crumb"><a href="/guides/">Guides</a> › ${g.h1}</div>
@@ -2884,8 +2947,9 @@ function guidePage(g) {
     <h1 class="serif">${g.h1}</h1>
     ${byline}
   </section>
+  ${heroCard}
   <article class="prose">${g.body}</article>
-  ${ctaCard}
+  ${g.close ? closeCard : ctaCard}
   ${authorCard}
   ${faqHTML}
   </div>
@@ -2903,6 +2967,7 @@ function guidesIndexPage(guides) {
     'how-to-buy-dividend-stocks-in-singapore': 'Dividends',
     'are-dividends-taxed-in-singapore': 'Dividends',
     'what-is-a-special-dividend': 'Dividends',
+    'iedge-s-reit-leaders-index': 'REITs & ETFs',
     'how-to-buy-etf-in-singapore': 'REITs & ETFs',
     'singapore-reits-explained': 'REITs & ETFs',
   };
