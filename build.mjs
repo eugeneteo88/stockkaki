@@ -2552,6 +2552,7 @@ const GUIDES = [
     desc: 'A plain-English guide to reading Singapore fixed deposit rates — headline vs effective rate, fresh funds, tenure, minimums and customer tiers. Know what you’ll really earn.',
     h1: 'How to read Singapore fixed deposit rates',
     blurb: 'Headline vs effective rate, fresh funds, tenures and tiers — how to know what you’ll actually earn.',
+    close: { h: "The one number that matters", p: "Cut through the &ldquo;up to&rdquo; headlines and compare the <b>effective rate</b> for the tenure, minimum and tier you actually qualify for &mdash; that&rsquo;s the honest number.", cta: { href: "/fixed-deposits/", label: "Compare the latest FD rates &rarr;" } },
     body: `<p>A Singapore fixed deposit rate looks simple &mdash; one number, "% p.a." &mdash; but the figure in the ad often isn't what lands in your pocket. Here's how to read it properly, in plain English.</p>
 <h2>Headline rate vs effective rate</h2>
 <p>This is the big one. Many promotions advertise an "up to" rate that's higher than what you'll really earn. It usually means the rate <strong>steps up</strong> over the term &mdash; lower at the start, reaching the headline only near the end. Average it across the whole period and you get the <strong>effective rate</strong>, which is what you actually take home.</p>
@@ -2578,6 +2579,8 @@ const GUIDES = [
     desc: 'Fixed deposit, high-interest savings account, Singapore Savings Bond or T-bill? A plain-English comparison of the four safe places to park cash in Singapore, and who each suits.',
     h1: 'Where to park your cash in Singapore',
     blurb: 'FD vs savings account vs SSB vs T-bills — the four safe options compared, and who each one suits.',
+    hero: { stat: "4", line: "safe places to park spare cash in Singapore. Here&rsquo;s which one suits you.", neu: true },
+    close: { h: "The quick answer", p: "All four are capital-safe. It comes down to how long you can set the money aside and how much flexibility you want.", cta: { href: "/savings/", label: "See where your cash earns most &rarr;" } },
     body: `<p>You've got some cash you won't need for a while. In Singapore you have four safe, popular homes for it &mdash; a fixed deposit, a high-interest savings account, Singapore Savings Bonds, and Treasury bills. Here's how they compare, and who each one suits.</p>
 <h2>Fixed deposit</h2>
 <p>Lock a lump sum away for a set term (usually 6&ndash;12 months) at a <strong>guaranteed</strong> rate. Simple, no hoops. The trade-off: your money's tied up, and pulling it out early usually forfeits the interest. <strong>Best if</strong> you have a sum you won't touch and you want certainty. See current <a href="/fixed-deposits/">fixed deposit rates</a>.</p>
@@ -2607,6 +2610,8 @@ const GUIDES = [
     desc: 'Dividend yield explained simply — the formula, a worked SGX example, trailing vs forward yield, and what actually counts as a good yield in Singapore. Free, no jargon.',
     h1: 'How is dividend yield calculated?',
     blurb: 'The formula, a worked SGX example, and what actually counts as a good yield in Singapore.',
+    hero: { stat: "4&ndash;6%", line: "a solid, sustainable dividend yield for an SGX blue chip or REIT.", neu: true },
+    close: { h: "Put it to use", p: "Compare every SGX payer on the same trailing-yield basis, and check the payout is sustainable before you buy.", cta: { href: "/dividends/", label: "See every SGX payer ranked by yield &rarr;" } },
     body: `<p><strong>Dividend yield</strong> tells you how much income a stock pays each year <strong>relative to its price</strong>. It's the single most useful number for comparing dividend stocks — a S$50 share and a S$2 share can't be compared on dividend amount alone, but their yields put them on the same footing.</p>
 <h2>The formula</h2>
 <div class="formula">Dividend yield (%) = Annual dividend per share ÷ Share price × 100</div>
@@ -2643,6 +2648,8 @@ const GUIDES = [
     desc: `Singapore Savings Bonds vs Treasury Bills compared: tenor, interest, early exit, minimums and when each makes sense. Both are Singapore-Government-backed. Plain English.`,
     h1: `Singapore Savings Bonds vs T-bills`,
     blurb: `Both are backed by the Singapore Government — but they suit very different needs. A plain comparison.`,
+    hero: { stat: "2", line: "government-backed ways to park cash &mdash; same safety, very different flexibility.", neu: true },
+    close: { h: "Which one?", p: "SSB for flexibility &mdash; redeem any month, no penalty. T-bill to lock a known return for 6&ndash;12 months, or to put idle CPF-OA to work.", cta: { href: "/ssb/", label: "Check this month&rsquo;s SSB rate &rarr;" } },
     body: `<p>Both <strong>Singapore Savings Bonds (SSBs)</strong> and <strong>Treasury Bills (T-bills)</strong> are issued by the Singapore Government, so both are about as low-risk as an investment gets. But they work differently, and the right one depends on your time horizon and how much flexibility you want.</p>
 <h2>What each one is</h2>
 <p><strong>Singapore Savings Bonds</strong> are long-dated (up to 10 years) but flexible. Interest <em>steps up</em> the longer you hold, and you can redeem in any month with no penalty and get your capital back plus accrued interest. A new issue is offered every month.</p>
@@ -2672,6 +2679,7 @@ const GUIDES = [
     desc: `The ex-dividend date is the cut-off to receive a dividend. Learn the key dates, how to qualify, why the price drops on the ex-date, and the dividend-capture myth. SGX-focused.`,
     h1: `What is an ex-dividend date?`,
     blurb: `The cut-off that decides who gets the dividend — plus the key dates around it, explained simply.`,
+    close: { h: "The one rule", p: "Own the shares <b>before</b> the ex-date to get the dividend &mdash; buying at least a trading day earlier is the safe move.", cta: { href: "/dividend-calendar/", label: "See upcoming ex-dividend dates &rarr;" } },
     body: `<p>The <strong>ex-dividend date</strong> (or "ex-date") is the cut-off that decides who receives a dividend. The rule is simple: <strong>you must already own the shares before the ex-date</strong> to be entitled to that dividend. Buy on the ex-date or later, and the dividend goes to the seller instead.</p>
 <h2>The four dates to know</h2>
 <ul>
@@ -2699,6 +2707,8 @@ const GUIDES = [
     desc: `A step-by-step guide to buying dividend stocks in Singapore: opening a brokerage (CDP vs custodian), funding, choosing stocks, placing a trade, and collecting dividends.`,
     h1: `How to buy dividend stocks in Singapore`,
     blurb: `From opening a brokerage to placing your first trade and collecting dividends — a step-by-step start.`,
+    hero: { stat: "5", line: "steps from opening a brokerage to collecting your first dividend.", neu: true },
+    close: { h: "Ready to start?", p: "Open a broker, fund it, pick a few solid payers and hold for the dividends. Singapore has no dividend or capital-gains tax, so the income is yours.", cta: { href: "/dividends/", label: "Browse the best SGX dividend stocks &rarr;" } },
     body: `<p>Buying dividend stocks on the SGX is straightforward once your account is set up. Here is the whole process, start to finish.</p>
 <h2>Step 1 — Open a brokerage account</h2>
 <p>You will need a broker to place trades. There are two account types to understand:</p>
@@ -2729,6 +2739,8 @@ const GUIDES = [
     desc: `A step-by-step guide to buying ETFs in Singapore: choosing an ETF, opening a brokerage, Regular Savings Plans for dollar-cost averaging, and the US vs Ireland-domiciled withholding-tax difference.`,
     h1: `How to buy an ETF in Singapore`,
     blurb: `Pick an ETF, open a broker, and start — including Regular Savings Plans and the withholding-tax trick that saves you money.`,
+    hero: { stat: "5", line: "steps to your first ETF &mdash; including the RSP and the withholding-tax trick.", neu: true },
+    close: { h: "The easy start", p: "Pick an ETF, open a broker, and consider a monthly Regular Savings Plan so you dollar-cost-average in without timing the market.", cta: { href: "/etfs/", label: "Browse Singapore ETFs by yield &rarr;" } },
     body: `<p>An <strong>ETF</strong> (exchange-traded fund) holds a whole basket of stocks or bonds in one unit, and it trades on an exchange just like a share. Buying one in Singapore is the same process as buying a stock — here it is, start to finish.</p>
 <h2>Step 1 — Choose an ETF</h2>
 <p>Decide what you want exposure to first:</p>
@@ -2759,6 +2771,8 @@ const GUIDES = [
     desc: `What Singapore REITs (S-REITs) are, why they yield more, the key numbers to check — distribution yield, gearing, occupancy, WALE — and the main risks. Plain English.`,
     h1: `Singapore REITs explained`,
     blurb: `What S-REITs are, why they yield more, and the key numbers to check before buying.`,
+    hero: { stat: "90%", line: "of taxable income S-REITs must pay out &mdash; which is why the yields run high.", neu: true },
+    close: { h: "Before you buy", p: "Check the distribution yield is sustainable, gearing is comfortable, occupancy is high and the sponsor is strong.", cta: { href: "/reits/", label: "Compare every S-REIT by yield &rarr;" } },
     body: `<p>A <strong>REIT</strong> — Real Estate Investment Trust — owns a portfolio of income-producing property (malls, offices, warehouses, data centres) and passes the rental income to unitholders. Singapore's REITs, or <strong>S-REITs</strong>, are one of the most popular ways locals earn passive income.</p>
 <h2>Why S-REITs yield more than ordinary stocks</h2>
 <p>To keep their tax-transparent status, S-REITs must distribute <strong>at least 90% of their taxable income</strong> to unitholders. That rule forces a high payout, which is why REIT distribution yields — often <strong>5–7%</strong> — tend to be higher than the dividend yields of ordinary shares. For individual investors, those distributions are also <strong>tax-exempt</strong>.</p>
@@ -2838,6 +2852,7 @@ const GUIDES = [
     desc: `A special dividend is a one-off bonus payout on top of a company's regular dividend. Why companies pay them, how they inflate the yield, and how ex-dates and tax work in Singapore.`,
     h1: `What is a special dividend?`,
     blurb: `A one-off bonus on top of the regular dividend — why companies pay them, and why the yield it creates isn't repeatable.`,
+    close: { h: "The takeaway", p: "Treat a special as a welcome bonus on a stock you&rsquo;d want anyway &mdash; not a reason on its own, and don&rsquo;t bank on the inflated yield repeating.", cta: { href: "/dividend-calendar/", label: "See upcoming dividends and ex-dates &rarr;" } },
     body: `<p>A <strong>special dividend</strong> is a one-off payout a company makes <em>on top of</em> its usual dividend &mdash; a bonus, not part of the regular schedule. It's the company's way of saying: "we've got extra cash this year, and we'd rather hand it to shareholders than sit on it."</p>
 <h2>Why a company pays one</h2>
 <p>It almost always comes down to a pile of cash the company didn't expect to be holding. The usual reasons:</p>
@@ -2871,6 +2886,8 @@ const GUIDES = [
     desc: `The iEdge S-REIT Leaders Index tracks Singapore's biggest, most-traded REITs. What's inside it, how it's built, and the CSOP ETF (SGX: SRT) that buys the whole index in one trade.`,
     h1: `What is the iEdge S-REIT Leaders Index?`,
     blurb: `Singapore's benchmark for its biggest, most-traded REITs — what's inside it, and how to buy the whole thing in one trade.`,
+    hero: { stat: "~22", line: "of Singapore&rsquo;s biggest, most-traded REITs &mdash; in one index.", neu: true },
+    close: { h: "Buy the index?", p: "One ETF (CSOP, SGX: SRT) tracks the whole index &mdash; the leading S-REITs in a single trade, capped at 10% each so you stay diversified.", cta: { href: "/reits/", label: "Compare every S-REIT by yield &rarr;" } },
     body: `<p>If you follow Singapore REITs, you'll see the <strong>iEdge S-REIT Leaders Index</strong> come up a lot &mdash; usually as "the benchmark" for the sector. In plain terms, it's a single number that tracks <strong>Singapore's biggest and most actively traded REITs</strong>, so you can see how the leading part of the S-REIT market is doing at a glance.</p>
 <p>It's run by SGX's own index arm, and it's the index behind one of the most popular REIT ETFs on the exchange &mdash; so it's worth understanding even if you never buy it directly.</p>
 <h2>Why &ldquo;Leaders&rdquo;?</h2>
