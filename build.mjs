@@ -1273,7 +1273,8 @@ function listPage({ title, desc, kicker, h1, sub, list, canon, typeChips, intro,
   const faqHTML = (faqs && faqs.length) ? `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>` : '';
   const jsonLd = (faqs && faqs.length) ? `<script type="application/ld+json">${JSON.stringify({ "@context":"https://schema.org", "@type":"FAQPage", "mainEntity":faqs.map(f => ({ "@type":"Question", "name":f.q, "acceptedAnswer":{ "@type":"Answer", "text":f.a } })) }).replace(/</g,'\\u003c')}</script>` : '';
   const body = `  <section class="hero" style="padding:22px 0 4px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
+    ${kicker ? `<div class="g-eyebrow"><span class="g-brk"></span>${kicker}</div>` : ''}
+    <h1 class="serif" style="font-size:30px;margin:2px 0 4px">${h1}</h1>
     <p class="sub" style="margin-bottom:2px">${sub}</p>
   </section>
   <div class="listbar">
@@ -1363,6 +1364,7 @@ const reitRangePos = (c) => {
   return Math.max(0, Math.min(100, (c.price - f.w52lo) / (f.w52hi - f.w52lo) * 100));
 };
 function bestPerfReitsPage(reitList) {
+  const kicker = `Singapore REITs · by 1-year return`;
   const rows = reitList.map(c => ({ c, ret: reitRet1y(c), pos: reitRangePos(c) }));
   const useReturn = rows.filter(r => r.ret != null).length >= 5;   // full build → real returns; fast build → range fallback
   const ranked = (useReturn ? rows.filter(r => r.ret != null) : rows.filter(r => r.pos != null))
@@ -1393,7 +1395,8 @@ function bestPerfReitsPage(reitList) {
   const faqHTML = `<div class="faq-head">Common questions</div><div class="faqlist">${faqs.map(f => `<details class="faq-item" name="skfaq"><summary><span class="fqp">+</span><span>${f.q}</span></summary><div class="faq-a">${f.a}</div></details>`).join('')}</div>`;
   const jsonLd = `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }).replace(/</g, '\\u003c')}</script>`;
   const body = `  <section class="hero" style="padding:22px 0 4px">
-    <h1 class="serif" style="font-size:27px;margin:0 0 4px">${h1}</h1>
+    ${kicker ? `<div class="g-eyebrow"><span class="g-brk"></span>${kicker}</div>` : ''}
+    <h1 class="serif" style="font-size:30px;margin:2px 0 4px">${h1}</h1>
     <p class="sub" style="margin-bottom:2px">${sub}</p>
   </section>
   <div class="hub-h" style="margin:14px 0 12px">Ranked by ${metricLabel} <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-dk);background:var(--accent-soft);border-radius:999px;padding:3px 10px;margin-left:2px">best first</span></div>
@@ -3544,7 +3547,7 @@ mkdirSync(new URL('dividends/', out), { recursive: true });
 writeFileSync(new URL('dividends/index.html', out), listPage({
   title: `Best Dividend Stocks in Singapore ${YEAR} — Highest SGX Dividend Yields | StockKaki`,
   desc: `The highest-yielding SGX dividend stocks and REITs for ${YEAR}, ranked by dividend yield and updated daily. Search, filter and compare the best Singapore dividend stocks — free, no clutter.`,
-  h1: `Best dividend stocks in Singapore — ${YEAR}`, sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listedUniq.length} listed stocks above.)`,
+  kicker: `Singapore dividends · updated daily`, h1: `Best dividend stocks in Singapore — ${YEAR}`, sub: `${dividendStocks.length} SGX counters currently paying dividends — ranked by yield, updated daily. (Search any of ${listedUniq.length} listed stocks above.)`,
   intro: `Singapore is one of the world's best places for dividend investors — there is <b>no tax on dividends and no capital-gains tax</b>. Above are all <b>${dividendStocks.length}</b> SGX counters currently paying a dividend, ranked by trailing 12-month yield and updated daily. Use the filters for Stocks, REITs or ETFs — and note that an unusually high yield can signal a one-off special dividend or higher risk.`,
   faqs: [
     { q: `What are the best dividend stocks in Singapore in ${YEAR}?`, a: 'This page ranks every SGX counter currently paying a dividend by trailing 12-month yield — the leaders are usually high-yield REITs, trusts and selected blue chips. Filter by Stocks, REITs or ETFs above; a very high yield may include a one-off special or reflect higher risk.' },
@@ -3561,7 +3564,7 @@ const reitList = listedUniq.filter(c => c.isReit);
 writeFileSync(new URL('reits/index.html', out), listPage({
   title: `Best REITs to Buy in Singapore ${YEAR} — S-REIT Dividend Yields | StockKaki`,
   desc: `All SGX-listed REITs and business trusts ranked by distribution yield for ${YEAR} — CapitaLand, Mapletree, Keppel, Frasers and more. Live, clean, updated daily.`,
-  h1: `Best REITs to buy in Singapore — ${YEAR}`, sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
+  kicker: `Singapore REITs · updated daily`, h1: `Best REITs to buy in Singapore — ${YEAR}`, sub: `All ${reitList.length} SGX-listed REITs and business trusts, ranked by distribution yield.`,
   intro: `Singapore REITs (S-REITs) are among the most popular income investments here — they must distribute at least 90% of income, so yields are typically higher than ordinary stocks, and distributions are <b>tax-free</b> for individuals. Above are all <b>${reitList.length}</b> SGX-listed REITs and business trusts, ranked by trailing distribution yield and updated daily. Looking for price gains rather than income? See the <a href="/best-performing-reits/">best performing S-REITs by 1-year return</a>.`,
   faqs: [
     { q: `What is the best REIT to buy in Singapore in ${YEAR}?`, a: 'There is no single best REIT — it depends on your goals. This page ranks all SGX-listed S-REITs and business trusts by trailing distribution yield so you can compare income; also weigh the sector, gearing and track record before deciding.' },
@@ -3581,7 +3584,7 @@ const etfList = listedUniq.filter(c => c.secType==='etfs' && (c.ttm>0 || c.divIn
 writeFileSync(new URL('etfs/index.html', out), listPage({
   title: `Best Singapore ETFs ${YEAR} — Top SGX ETFs by Dividend Yield | StockKaki`,
   desc: `SGX-listed ETFs ranked by distribution yield for ${YEAR} — STI, bond, REIT and dividend ETFs. Compare Singapore ETFs, clean and updated daily.`,
-  h1: `Best ETFs in Singapore — ${YEAR}`, sub: `${etfList.length} SGX-listed ETFs that distribute, ranked by yield.`,
+  kicker: `Singapore ETFs · updated daily`, h1: `Best ETFs in Singapore — ${YEAR}`, sub: `${etfList.length} SGX-listed ETFs that distribute, ranked by yield.`,
   intro: `Exchange-traded funds (ETFs) let you own a whole basket of stocks or bonds in a single trade, and they trade on the SGX just like shares. Above are the <b>${etfList.length}</b> SGX-listed ETFs that currently distribute, ranked by trailing yield — useful for income. For growth, the underlying index matters more than the yield. New to this? See <a href="/guides/how-to-buy-etf-in-singapore/">how to buy an ETF in Singapore</a>.`,
   faqs: [
     { q: `What are the best ETFs in Singapore in ${YEAR}?`, a: 'Popular SGX ETFs include the Straits Times Index (STI) ETF and a range of bond, REIT and dividend ETFs. This page ranks the distributing SGX ETFs by yield — best for income; for growth, look at the underlying index rather than the yield.' },
