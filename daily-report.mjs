@@ -127,6 +127,14 @@ const movDaily=build(['sess','users'],[daysAgo(1)],[daysAgo(2)]);               
 const movWeek =build(['sess','users','impr','clk','pos'],rng(7,1),rng(14,8));      // full picture, search lag absorbed by the sum
 const movMonth=build(['sess','users','impr','clk','pos'],rng(30,1),rng(60,31));
 
+// ---------- overall WEEKLY verdict (this week vs last week) — the headline "are we up or down" ----------
+const wUp = movWeek.filter(s=>!s.flat && s.improved).length;
+const wDn = movWeek.filter(s=>!s.flat && !s.improved).length;
+const verdict = wUp>wDn ? {tag:'Up week',   emoji:'📈', col:'#1a7f4b', bg:'#e7f4ec'}
+             : wUp<wDn ? {tag:'Down week', emoji:'📉', col:'#b23a44', bg:'#f7e8ea'}
+             :           {tag:'Flat week', emoji:'➡️', col:'#8a7a3a', bg:'#f4efe0'};
+const vLine = movWeek.map(s=>`${s.label} ${s.flat?'—':(s.noBase?'▲ new':(s.improved?'▲':'▼')+s.pct+'%')}`).join('  ·  ');
+
 // ---------- console ----------
 console.log('════════ StockKaki growth · '+iso(new Date())+' ════════');
 console.log(`\n📈 SEARCH (GSC 28d, ${START}→${END})`);
@@ -142,8 +150,8 @@ console.log('\n📣 WHERE VISITORS CAME FROM (28d)'); channels.forEach(c=>consol
 console.log('\n🔗 BY CAMPAIGN (your UTM-tagged links)'); campaigns.length ? campaigns.forEach(c=>console.log(`   ${String(c.s).padStart(4)} sess · ${c.u} users  ${c.camp}  (${c.src})`)) : console.log('   (no tagged campaigns yet)');
 console.log('\n📅 IMPRESSIONS TREND (14d)'); daily.forEach(r=>console.log(`   ${r.keys[0]}  ${n(r.impressions)} imp / ${n(r.clicks)} clk`));
 const printMovers=(title,rows)=>{ console.log('\n'+title); rows.forEach(s=>{const chg=s.flat?'— flat':s.noBase?'▲ new':((s.improved?'▲':'▼')+s.pct+'% '+(s.improved?'better':'softer'));console.log('   '+s.label.padEnd(15)+String(s.fmt(s.cur)).padStart(9)+'  (was '+s.fmt(s.prev)+')   '+chg);}); };
-printMovers('📊 WHAT MOVED — vs yesterday ('+daysAgo(1)+' vs '+daysAgo(2)+', organic traffic)', movDaily);
-if(isSun) printMovers('📅 WEEK vs WEEK (last 7d vs prior 7d)', movWeek);
+console.log('\n'+verdict.emoji+' OVERALL: '+verdict.tag.toUpperCase()+' vs last week — '+vLine);
+printMovers('📅 THIS WEEK vs LAST WEEK (last 7d vs prior 7d)', movWeek);
 if(isMonthEnd) printMovers('🗓️  MONTH vs MONTH (last 30d vs prior 30d)', movMonth);
 
 // ---------- reader feedback (last ~26h) ----------
@@ -188,22 +196,24 @@ if(RESEND_API_KEY){
     <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px"><tr style="color:#8a8378;font-size:10px;text-transform:uppercase;letter-spacing:.05em"><td style="padding:5px 10px">Area</td><td style="padding:5px 10px;text-align:right">Now</td><td style="padding:5px 10px;text-align:right">Before</td><td style="padding:5px 10px;text-align:right">Change</td></tr>${tr}</table>`;
   };
   const html=`<div style="max-width:600px;margin:0 auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1c2430;background:#faf8f4;padding:22px">
-  <div style="font-size:13px;color:#8a8378;letter-spacing:.06em;text-transform:uppercase">StockKaki · growth</div>
-  <h1 style="font-family:Georgia,serif;font-size:23px;margin:2px 0 14px">Good morning, Eugene ☀️</h1>
-  ${fbHTML}
+  <div style="font-size:13px;color:#8a8378;letter-spacing:.06em;text-transform:uppercase">StockKaki · weekly review</div>
+  <h1 style="font-family:Georgia,serif;font-size:23px;margin:2px 0 12px">Your week in search, Eugene</h1>
+  <div style="background:${verdict.bg};border:1px solid ${verdict.col}44;border-radius:12px;padding:14px 16px;margin:0 0 16px">
+    <div style="font-size:18px;font-weight:700;color:${verdict.col};font-family:Georgia,serif">${verdict.emoji} ${verdict.tag} — vs last week</div>
+    <div style="font-size:12.5px;color:#5c6470;margin-top:5px;line-height:1.7">${vLine}</div>
+  </div>
   <table cellspacing="8" style="width:100%;border-collapse:separate"><tr>
     ${card('Impressions 28d',n(tot.impressions),'wk '+impΔ)}
     ${card('Indexed & surfacing',pages.length,'of '+submitted+' submitted')}
     ${card('Organic 7d',orgCurS+' sess',orgCurU+' users · '+orgΔ)}
   </tr></table>
   <p style="font-size:13px;color:#6b6459;margin:14px 4px">Clicks 28d: <b>${n(tot.clicks)}</b> · CTR ${(n(tot.ctr)*100).toFixed(1)}% · avg position <b>${n(tot.position).toFixed(1)}</b> · ${queries.length} distinct queries. Week-on-week: impressions ${chip(impΔ)}, clicks ${chip(clkΔ)}, organic ${chip(orgΔ)}.</p>
-  ${moverHTML('📊 What moved — yesterday vs the day before', 'Organic visits, '+daysAgo(1)+' vs '+daysAgo(2)+' (near-real-time). Single days swing a lot — search stats sit in the weekly view, where the 2-day reporting lag evens out.', movDaily)}
-  ${isSun?moverHTML('📅 This week vs last week', 'Last 7 days vs the 7 before it.', movWeek):''}
+  ${moverHTML('📅 This week vs last week', 'The full picture: last 7 days vs the 7 before it. Green = improved, red = softer.', movWeek)}
   ${isMonthEnd?moverHTML('🗓️ This month vs last month', 'Last 30 days vs the 30 before it.', movMonth):''}
   ${channelSection}
   ${campaignSection}
   <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🪜 Striking distance — one push from page 1</h3>
-  <p style="font-size:12px;color:#6b6459;margin:0 4px 6px">Searches where StockKaki ranks <b>position 8–20</b> (bottom of page 1 / top of page 2). These pages are the fastest wins — a better title, more content, or a clearer answer nudges them onto page one. Work top-down.</p>
+  <p style="font-size:12px;color:#6b6459;margin:0 4px 6px">Searches where StockKaki ranks <b>position 8–20</b> (bottom of page 1 / top of page 2) — your fastest wins. <b>This is the shortlist of what to write or improve this week:</b> a sharper title, more content, or a clearer answer nudges these onto page one. Work top-down.</p>
   <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${strikeRows}</table>
   <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🔎 What people Googled to find you</h3>
   <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${rowsQ}</table>
@@ -212,9 +222,9 @@ if(RESEND_API_KEY){
   <h3 style="font-family:Georgia,serif;font-size:15px;margin:18px 4px 6px">🤖 Found via AI answer engines (AEO)</h3>
   <p style="font-size:12px;color:#6b6459;margin:0 4px 6px">People who arrived from an AI tool in the last 28 days${aiTotS?` — <b>${aiTotS}</b> sessions, ${aiTotU} users, week-on-week ${chip(delta(aiCur7S,aiPrev7S))}`:''}.</p>
   <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e6e3dc;border-radius:8px">${aiRowsHTML}</table>
-  <p style="font-size:11px;color:#a29b8f;margin-top:20px">Google Search Console + Analytics · ${START} → ${END} · sent by your StockKaki growth job. Search data lags ~2 days.</p>
+  <p style="font-size:11px;color:#a29b8f;margin-top:20px">Weekly review · Google Search Console + Analytics · ${START} → ${END} · emailed every Sunday 10am. Search data lags ~2 days.</p>
   </div>`;
-  const r = await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:'StockKaki <alerts@stockkaki.com>',to,subject:`📈 StockKaki: ${n(tot.impressions)} impressions · ${pages.length} pages indexed · organic ${orgΔ}`,html})});
+  const r = await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:'StockKaki <alerts@stockkaki.com>',to,subject:`${verdict.emoji} StockKaki weekly · ${verdict.tag} — impressions ${impΔ}, clicks ${clkΔ}`,html})});
   const jr = await r.json();
   console.log(jr.id?`\n✉️  emailed ${to} (${jr.id})`:`\n✉️  email FAILED: ${JSON.stringify(jr)}`);
 } else {

@@ -1,9 +1,11 @@
 name: StockKaki growth report
 
-# Emails Eugene a morning summary of Search Console indexing + GA organic growth.
+# Emails Eugene a WEEKLY review of Search Console + GA organic growth: are we
+# up or down vs last week, what improved, what to write. (Reader feedback now
+# has its own near-instant alert — feedback-alert.yml — not this weekly email.)
 on:
   schedule:
-    - cron: '0 0 * * *'   # 08:00 SGT (GitHub cron is best-effort; may arrive 1-3h later)
+    - cron: '0 2 * * 0'   # Sun 02:00 UTC = Sun 10:00 SGT (GitHub cron is best-effort; may arrive 1-3h later)
   workflow_dispatch:       # manual "Run workflow" button for testing
 
 permissions:

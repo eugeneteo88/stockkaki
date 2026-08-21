@@ -1,0 +1,27 @@
+name: StockKaki feedback alert
+
+# Checks hourly for new reader feedback and emails Eugene the moment any lands.
+# Silent when there's nothing — no feedback, no email. Feedback is its own
+# channel now, separate from the weekly Sunday performance report.
+on:
+  schedule:
+    - cron: '0 * * * *'   # top of every hour (GitHub cron is best-effort)
+  workflow_dispatch:       # manual "check now" button
+
+permissions:
+  contents: read
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check for new feedback and alert
+        run: node feedback-alert.mjs
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_TO: eugeneteo1988@gmail.com
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
