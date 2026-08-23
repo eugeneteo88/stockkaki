@@ -1,0 +1,25 @@
+name: StockKaki data accuracy check
+
+# Weekly cross-check of live yields/prices vs an independent source (Yahoo).
+# Emails Eugene only the counters that drift past tolerance; silent when clean.
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # Sun 03:00 UTC = Sun 11:00 SGT (after the 10:00 growth report)
+  workflow_dispatch:       # manual "check now" button
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Cross-check data vs Yahoo and alert on drift
+        run: node accuracy-check.mjs
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_TO: eugeneteo1988@gmail.com

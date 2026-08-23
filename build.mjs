@@ -3404,7 +3404,7 @@ const applyY = (c, rec) => {
   }
 };
 for (const c of companies) if (cache[c.slug]) applyY(c, cache[c.slug]);   // 1) last-good baseline
-const yTargets = SKIP_YAHOO ? [] : companies.filter(c => c.ticker && (c.isReit || c.secType==='etfs' || c.divs.length > 0));   // incl. ETFs so their distributions load
+const yTargets = SKIP_YAHOO ? [] : companies.filter(c => c.ticker && (c.isReit || c.secType==='etfs' || c.divs.length > 0 || (c.cur && c.cur !== 'SGD')));   // incl. ETFs + all foreign-currency counters (e.g. J36/DFI in USD) so their dividends load from Yahoo — SGX's SG corp-actions feed misses secondary USD listings, which left their yield blank
 let yFixed = 0, yNews = 0;
 const fresh = {};                                                          // this run's successful fetches → persisted to cache
 if (SKIP_YAHOO) console.log(`SKIP_YAHOO=1 — fast build using cache (${Object.keys(cache).length} cached counters), no live fetch.`);
