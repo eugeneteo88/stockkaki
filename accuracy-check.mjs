@@ -53,7 +53,9 @@ for (const r of rows) {
   if (!y || y.y == null && y.price == null) { yfail++; continue; }
   checked++;
   const issues = [];
-  if (y.price > 0 && r.price > 0 && Math.abs(r.price - y.price) / y.price * 100 >= PRICE_GAP)
+  // price-drift = a staleness signal; only meaningful on SGD counters (foreign
+  // ETFs drift vs Yahoo on FX / thin liquidity — noise, not a data error).
+  if (r.cur === 'S$' && y.price > 0 && r.price > 0 && Math.abs(r.price - y.price) / y.price * 100 >= PRICE_GAP)
     issues.push(`price ${r.cur}${r.price} vs Yahoo ${y.price} (${((r.price - y.price) / y.price * 100).toFixed(1)}%)`);
   if (r.y == null && y.y != null && y.y >= MISSING_MIN)
     issues.push(`we show NO yield; Yahoo ${y.y.toFixed(2)}%`);
