@@ -1,0 +1,26 @@
+# StockKaki — Singapore dividend & stock tracker
+> Free, clean tool for SGX dividends, ex-dates, yields and stock info. Data sourced from the Singapore Exchange (SGX), updated daily. Not financial advice.
+
+## Key pages
+- Upcoming SGX dividends & ex-dates: https://stockkaki.com/
+- Best dividend stocks (ranked by yield): https://stockkaki.com/dividends/
+- Singapore REITs by distribution yield: https://stockkaki.com/reits/
+- Best performing S-REITs (ranked by 1-year share-price return): https://stockkaki.com/best-performing-reits/
+- Where to park cash (fixed deposits, savings accounts, SSB, T-bills) compared: https://stockkaki.com/savings/
+- Best fixed deposit rates in Singapore (verified against each bank): https://stockkaki.com/fixed-deposits/
+- Best high-interest savings accounts in Singapore (with real conditions): https://stockkaki.com/savings-accounts/
+- Dividend payment (pay) dates — when SGX dividends land in your account: https://stockkaki.com/dividend-payout-dates/
+- Singapore Savings Bonds (SSB) rates, step-up schedule & returns calculator: https://stockkaki.com/ssb/
+- SGX corporate actions / announcements: https://stockkaki.com/announcements/
+- Per-stock pages (price, dividend history, yield, ex-dates) for all 976 SGX counters: https://stockkaki.com/stock/<slug>/ — full list in https://stockkaki.com/sitemap.xml
+
+## What each stock page answers
+- Latest last price, day change and volume
+- Next ex-date, amount and pay date
+- Dividend history (up to ~6 years) and dividends-by-year with indicative yield
+- Trailing-12-month dividend and indicative yield (TTM dividends / last price)
+- Pay frequency and year-over-year dividend growth
+
+## Notes
+- Yields are indicative (trailing 12-month dividends / last price). Verify against official SGX announcements.
+- Disclaimer: https://stockkaki.com/disclaimer/
