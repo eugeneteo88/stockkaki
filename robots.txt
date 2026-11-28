@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /account/
+Disallow: /confirm/
+Disallow: /unsubscribe/
+Sitemap: https://stockkaki.com/sitemap.xml
